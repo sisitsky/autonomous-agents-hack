@@ -71,7 +71,7 @@
           <span class="muted">range ${fmt.num(c.old.min)}–${fmt.num(c.old.max)} → ${fmt.num(c.new.min)}–${fmt.num(c.new.max)}</span>
           <span class="tag">${esc(c.strength)} evidence · weight ${c.evidence_weight} vs prior ${c.prior_weight}</span>
           ${c.pr && c.pr.url ? `<a href="${esc(c.pr.url)}" target="_blank" rel="noopener">view pull request →</a>` : ""}</div>
-        <details class="explain"><summary>Calibration reasoning and Bayesian update</summary><div>
+        <details class="explain" open><summary>Calibration reasoning and Bayesian update</summary><div>
           <p>${esc(c.reasoning)}</p>
           <p class="muted small">Implied change ${(c.implied_change * 100).toFixed(0)}% · mode′ = (w₀·mode + wₑ·implied) / (w₀ + wₑ) = (${c.prior_weight} × ${fmt.num(c.old.mode)} + ${c.evidence_weight} × ${fmt.num(c.old.mode * (1 + c.implied_change))}) / ${c.prior_weight + c.evidence_weight} = ${fmt.num(c.new.mode)}${c.scaled_by ? ` · scaled to ${c.scaled_by * 100}% to pass guardrails` : ""} · run ${esc(c.run_id)}</p></div></details></div>`;
     }).join("") || `<div class="skeleton">No model changes yet${f ? " in this filter" : ""}.</div>`;

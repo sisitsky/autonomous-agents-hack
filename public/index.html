@@ -50,7 +50,7 @@
         <div class="premium" id="premium">—</div>
         <div class="premium-sub" id="premium-sub"></div>
         <p class="headline" id="headline"></p>
-        <details class="explain"><summary>Summary</summary><div id="summary"></div></details>
+        <details class="explain" open><summary>Summary</summary><div id="summary"></div></details>
       </div>
       <div class="card compare-card">
         <div class="card-title">Same company. Same documents.</div>
@@ -64,7 +64,7 @@
     <div class="section-head"><h2>Plans</h2><p class="muted">Every plan priced for this system with the same simulation. Click a plan to see its full quote.</p></div>
     <div class="plans" id="plan-cards"></div>
     <p class="muted small" id="plan-note"></p>
-    <details class="explain"><summary>Which plan fits</summary><div id="explain-plans"></div></details>
+    <details class="explain" open><summary>Which plan fits</summary><div id="explain-plans"></div></details>
   </section>
 
   <section id="loop">
@@ -94,7 +94,7 @@
       </div>
       <div class="card-title mt">Convergence: the estimate settles as years accumulate</div>
       <div class="chart" id="chart-conv"></div>
-      <details class="explain"><summary>How the simulation works</summary><div>
+      <details class="explain" open><summary>How the simulation works</summary><div>
         <p><b>Two layers.</b> The outer layer draws the uncertain parameters (error rate, claim propensity, claim size, systemic risk…) 2,000 times. For each draw the inner layer simulates 200 policy years of luck: a Poisson number of claims per peril, each with a lognormal-plus-Pareto size, then the deductible, per-claim limit, and aggregate limit, plus a possible systemic event at the model provider.</p>
         <p><b>The lines</b> are years picked evenly across parameter draws, so they show both kinds of uncertainty: what we don't know about the risk, and luck. Colors run from blue (a cheap year) through gray to red (several times the expected loss). Flat stretches are months with no claims; each jump is one claim paid.</p>
         <p><b>The cloud</b> is built from 4,000 simulated years: the darker band holds the middle half, the lighter band 90%. The density on the right is the whole simulation's annual-loss distribution.</p>
@@ -109,7 +109,7 @@
       <div class="card">
         <div class="card-title">Premium build-up</div>
         <div class="chart" id="chart-waterfall"></div>
-        <details class="explain"><summary>Explain the build-up</summary><div id="explain-buildup"></div><div class="eq" id="eq-gross"></div></details>
+        <details class="explain" open><summary>Explain the build-up</summary><div id="explain-buildup"></div><div class="eq" id="eq-gross"></div></details>
       </div>
       <div class="card">
         <div class="card-head">
@@ -120,7 +120,7 @@
             <option value="99">P99 (1 in 100)</option><option value="99.5">P99.5 (1 in 200)</option></select></div>
         </div>
         <div class="chart" id="chart-loss"></div>
-        <details class="explain"><summary>What a typical and a bad year look like</summary><div id="explain-loss"></div><div class="table-wrap" id="pct-table"></div></details>
+        <details class="explain" open><summary>What a typical and a bad year look like</summary><div id="explain-loss"></div><div class="table-wrap" id="pct-table"></div></details>
       </div>
     </div>
 
@@ -131,7 +131,7 @@
       </div>
       <div class="chart" id="chart-tornado"></div>
       <div class="legend"><span><i class="sw sw-lo"></i>parameter at its P10</span><span><i class="sw sw-hi"></i>parameter at its P90</span></div>
-      <details class="explain"><summary>Why these, and what evidence would narrow them</summary><div id="explain-tornado"></div><ul id="evidence"></ul></details>
+      <details class="explain" open><summary>Why these, and what evidence would narrow them</summary><div id="explain-tornado"></div><ul id="evidence"></ul></details>
     </div>
 
     <div class="card wide" id="cred-card">
@@ -147,7 +147,7 @@
         <div><div class="muted small">Credibility Z rises with the number of cases tested</div><div class="chart" id="chart-cred-curve"></div></div>
         <div><div class="muted small">Each system's rate is pulled toward the portfolio mean</div><div class="chart" id="chart-cred-shrink"></div></div>
       </div>
-      <details class="explain"><summary>How credibility works here</summary><div id="explain-cred"></div>
+      <details class="explain" open><summary>How credibility works here</summary><div id="explain-cred"></div>
         <div class="eq" id="eq-cred"></div><div class="eq" id="eq-bs"></div><div class="eq" id="eq-cprior"></div>
         <div class="eq" id="eq-dir"></div>
         <p class="muted small">Jewell (1974): for the Dirichlet–multinomial the credibility estimate is exactly the Bayesian posterior mean, with one Z for every failure type. μ and A are re-estimated on every underwriting run from every other system tested on the same suite, so each new result updates the collective. The seed portfolio is fictional. Runs from this web page are not saved to the portfolio (read-only deployment); runs from the CLI are.</p></details>
@@ -162,7 +162,7 @@
         <div id="whatif-options" class="chips"></div>
         <div class="whatif-result" id="whatif-result"></div>
       </div>
-      <details class="explain"><summary>Recommendations</summary><div id="explain-controls"></div></details>
+      <details class="explain" open><summary>Recommendations</summary><div id="explain-controls"></div></details>
     </div>
   </section>
 

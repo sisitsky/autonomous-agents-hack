@@ -462,7 +462,7 @@
 
   // ---------------------------------------------------------------- method
   function renderMethod(calc, check) {
-    $("equations").innerHTML = calc.equations.map(e => `<details><summary>${esc(e.name)}</summary>
+    $("equations").innerHTML = calc.equations.map(e => `<details open><summary>${esc(e.name)}</summary>
       <div class="tex" data-tex="${esc(e.latex)}"></div><div class="meaning">${esc(e.meaning)}</div>
       <div class="muted small"><code>${esc(e.formula)}</code></div></details>`).join("");
     $("equations").querySelectorAll(".tex").forEach(n => tex(n, n.dataset.tex));

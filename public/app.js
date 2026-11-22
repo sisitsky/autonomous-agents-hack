@@ -357,8 +357,46 @@
       <div class="facts"><span>${x.expected_claims_per_year.toFixed(2)} claims / yr</span><span>modifier ×${x.modifier.toFixed(2)}</span>
       ${x.failure_type ? `<span class="tag">red-team measured</span>` : `<span class="tag">profile priced</span>`}
       ${x.rating_factors.map(f => `<span class="tag">${esc(f.factor)} ${esc(f.level)} ×${f.relativity}</span>`).join("")}</div></div>`).join("");
-    const qs = ((p && p.open_questions) || []).concat(b.review_notes || []);
-    $("questions").innerHTML = qs.map(q => `<li>${esc(q)}</li>`).join("") || "<li>None.</li>";
+    const qs = ((p && p.open_questions) || []).concat(b.uwFollowUps || []);
+    const done = new Set(b.uwAnswered || []);
+    $("questions").innerHTML = qs.map((q, i) => `<li class="${done.has(i) ? "done" : ""}">${esc(q)}</li>`).join("")
+      + (b.review_notes || []).map(q => `<li class="muted">${esc(q)}</li>`).join("") || "<li>None.</li>";
+    $("uw-log").innerHTML = (b.uwLog || []).map(m => m.html).join("") || `<div class="muted small">No answers yet.</div>`;
+  }
+
+  // ---------------------------------------------------------------- underwriter chat
+  async function uwSend(e) {
+    e.preventDefault();
+    const input = $("uw-input"), msg = input.value.trim();
+    if (!msg) return;
+    const b = state.bundles[state.current];
+    b.uwLog = b.uwLog || []; b.uwHistory = b.uwHistory || []; b.uwAnswered = b.uwAnswered || [];
+    b.uwLog.push({ html: `<div class="msg me">${esc(msg)}</div>` });
+    b.uwLog.push({ html: `<div class="msg bot" id="uw-pending">Updating the risk profile…</div>` });
+    $("uw-log").innerHTML = b.uwLog.map(m => m.html).join(""); input.value = "";
+    const before = gross(b.calculation);
+    try {
+      const qs = ((b.profile && b.profile.open_questions) || []).concat(b.uwFollowUps || []);
+      const r = await api("/api/underwriter/chat", { insured: b.calculation.insured_full || b.insured, profile: b.profile,
+        open_questions: qs, history: b.uwHistory, message: msg, plan: b.calculation.insured.plan,
+        access_code: $("live-code").value });
+      b.uwHistory.push({ role: "underwriter", content: msg }, { role: "assistant", content: r.reply });
+      r.answered.forEach(i => { if (!b.uwAnswered.includes(i)) b.uwAnswered.push(i); });
+      b.uwFollowUps = (b.uwFollowUps || []).concat(r.follow_up_questions || []);
+      let px = "";
+      if (r.calculation) {
+        b.calculation = r.calculation; b.insured = r.insured; state.planCache = {};
+        const after = gross(r.calculation);
+        px = `<div class="px">Premium ${fmt.money(before)} → ${fmt.money(after)} (${after >= before ? "+" : ""}${((after / before - 1) * 100).toFixed(1)}%)</div>`;
+      }
+      b.uwLog.pop();
+      b.uwLog.push({ html: `<div class="msg bot">${esc(r.reply)}${r.changes.length ? `<ul class="chg">${r.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}${px}</div>` });
+      render(shown());
+      document.getElementById("uw-log").scrollTop = 1e9;
+    } catch (err) {
+      b.uwLog.pop(); b.uwLog.push({ html: `<div class="msg bot error">${esc(err.message)}</div>` });
+      $("uw-log").innerHTML = b.uwLog.map(m => m.html).join("");
+    }
   }
 
   // ---------------------------------------------------------------- red team
@@ -523,6 +561,7 @@
     $("case-cat").onchange = drawCases;
     $("case-verdict").onchange = drawCases;
     $("chat-form").onsubmit = chat;
+    $("uw-form").onsubmit = uwSend;
     $("live-form").onsubmit = runLive;
     $("live-files").onchange = e => readFiles(e.target.files);
     $("load-sample").onclick = loadSample;

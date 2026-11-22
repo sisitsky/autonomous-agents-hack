@@ -47,5 +47,9 @@ factors:
     levels: {none: 1.0, provider_ip_indemnity: 0.6}
     source: Model provider contractually indemnifies IP claims.
 
+# Underwriter adjustments (from answered open questions) are one relativity per peril,
+# bounded here, recorded with a reason, and applied only to that insured.
+underwriter_adjustment_bounds: {min: 0.5, max: 1.5}
+
 # Combined modifier per peril is capped to stop stacked factors producing extreme prices.
 combined_modifier_bounds: {min: 0.5, max: 3.0}

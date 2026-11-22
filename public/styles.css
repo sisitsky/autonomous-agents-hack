@@ -314,3 +314,10 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 
 .l2-run { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
 .l2-run input { width: 200px; }
+
+.uw-chat { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.questions li.done { color: var(--muted); text-decoration: line-through; }
+.questions li.done::marker { content: "✓ "; color: #6be06b; }
+.msg .chg { margin-top: 6px; font-size: 12.5px; color: var(--ink-2); }
+.msg .chg li { margin: 2px 0; }
+.msg .px { margin-top: 6px; font-weight: 600; }

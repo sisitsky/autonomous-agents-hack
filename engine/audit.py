@@ -180,7 +180,10 @@ def calculation(insured: dict, params: dict, quote: dict, tornado: dict | None =
             "base_claims_per_year": d["base_claims_per_year"],
 
             "rating_factors": [{"factor": f, "level": insured["factors"][f], "relativity": rel,
-                                "source": rf["factors"][f]["source"]} for f, rel in detail.items()],
+                                "source": rf["factors"][f]["source"]} if f in rf["factors"] else
+                               {"factor": f, "level": "underwriter", "relativity": rel,
+                                "source": (insured.get("underwriter_adjustments") or {}).get(name, {}).get("reason", "")}
+                               for f, rel in detail.items()],
             "combined_relativity_raw": raw,
             "modifier_bounds": rf["combined_modifier_bounds"],
             "modifier": d["modifier"],

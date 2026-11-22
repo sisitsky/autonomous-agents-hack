@@ -158,6 +158,14 @@ def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict
         rel = spec["levels"][level]
         detail[name] = rel
         combined *= rel
+    # Underwriter adjustment from answered open questions: one bounded relativity
+    # per peril, recorded with its reason (insured-specific, not a global prior).
+    adj = (insured.get("underwriter_adjustments") or {}).get(peril)
+    if adj:
+        lo, hi = rf.get("underwriter_adjustment_bounds", {"min": 0.5, "max": 1.5}).values()
+        m = min(max(float(adj["multiplier"]), lo), hi)
+        detail["underwriter_adjustment"] = m
+        combined *= m
     b = rf["combined_modifier_bounds"]
     capped = min(max(combined, b["min"]), b["max"])
     return capped, detail

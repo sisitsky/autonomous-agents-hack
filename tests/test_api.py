@@ -47,3 +47,18 @@ def test_price_untested_insured_on_every_plan():
     assert r.status_code == 200
     plans = r.json()["calculation"]["plans"]
     assert all(v["gross_premium"] > 0 for v in plans.values())
+
+
+def test_underwriter_updates_are_validated():
+    from agents.underwriter_chat import apply_updates
+    params = load_params()
+    ins = load_insured("shopbot")
+    upd = {"factors": {"governance": "weak", "autonomy": "not_a_level", "jurisdiction": "unchanged"},
+           "outputs_per_year": 500000, "add_perils": ["unsafe_advice"], "remove_perils": [], "provider": "unchanged",
+           "adjustments": [{"peril": "data_leakage", "multiplier": 0.1, "reason": "verified control"}]}
+    new, changes = apply_updates(ins, upd, params)
+    assert new["factors"]["governance"] == "weak" and new["factors"]["autonomy"] == ins["factors"]["autonomy"]
+    assert new["perils"]["wrong_information"] == {"outputs_per_year": 500000} and "unsafe_advice" in new["perils"]
+    assert new["underwriter_adjustments"]["data_leakage"]["multiplier"] == 0.5     # clipped to bounds
+    assert ins["factors"]["governance"] == "strong"                                # original untouched
+    assert len(changes) == 4

@@ -170,7 +170,12 @@
     <div class="grid-2">
       <div class="card"><div class="card-title">Profile</div><div id="profile"></div></div>
       <div class="card"><div class="card-title">Per peril</div><div id="perils"></div>
-        <div class="card-title mt">Open questions for the underwriter</div><ul id="questions" class="questions"></ul></div>
+        <div class="card-title mt">Open questions for the underwriter</div><ul id="questions" class="questions"></ul>
+        <div class="uw-chat">
+          <div class="muted small">Answer a question below. The underwriting agent turns your answer into changes to this risk profile; the engine re-prices immediately.</div>
+          <div id="uw-log" class="chat-log"></div>
+          <form id="uw-form" class="chat-form"><input id="uw-input" placeholder="e.g. Order lookup is gated on email verification in code since March" autocomplete="off"><button class="btn">Send</button></form>
+        </div></div>
     </div>
   </section>
 
@@ -208,7 +213,6 @@
         A calibration agent turns relevant evidence into a Bayesian update of a pricing parameter; a validation agent re-prices the benchmark book and checks the guardrails;
         the change lands as a GitHub pull request. Merging it is the human decision.</p></div>
     <div class="l2-run">
-      <input id="l2-code" type="password" placeholder="Access code">
       <button type="button" class="btn primary" id="l2-run">▶ Run Loop 2 now</button>
       <span class="muted small" id="l2-run-status">Runs automatically every hour at :07. This adds an extra run now; the schedule is unchanged.</span>
     </div>

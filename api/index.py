@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from fastapi import FastAPI, HTTPException, Request  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
-from agents import explainer, intake, pricer, redteam  # noqa: E402
+from agents import explainer, intake, pricer, redteam, underwriter_chat  # noqa: E402
 from agents.config import llm_available  # noqa: E402
 from agents.target_bot import shopbot  # noqa: E402
 from engine.model import load_params  # noqa: E402
@@ -42,6 +42,7 @@ async def _restore_path(request: Request, call_next):
             request.scope["path"] = "/api/" + sub.lstrip("/")
     return await call_next(request)
 BOTS = {"deterministic", "llm"}
+COOLDOWN_S = 600   # minimum gap between manual Loop 2 runs
 
 
 def _require_code(body: dict) -> None:
@@ -201,12 +202,27 @@ async def api_loop2_run(request: Request):
     import json as _json
     import urllib.error
     import urllib.request
-    body = await request.json()
-    _require_code(body)
     tok = os.environ.get("GITHUB_DISPATCH_TOKEN")
     if not tok:
         raise HTTPException(503, "Run-now is not configured: add GITHUB_DISPATCH_TOKEN in the Vercel project settings.")
     repo = os.environ.get("GITHUB_REPOSITORY", "sisitsky/autonomous-agents-hack")
+    # No access code: instead, a cooldown caps how often anyone can start a run.
+    from datetime import datetime, timezone
+    gh = {"Authorization": f"Bearer {tok}", "Accept": "application/vnd.github+json", "User-Agent": "ai-underwriter"}
+    try:
+        with urllib.request.urlopen(urllib.request.Request(
+                f"https://api.github.com/repos/{repo}/actions/workflows/calibrate.yml/runs?per_page=1", headers=gh), timeout=15) as r:
+            runs = _json.loads(r.read()).get("workflow_runs", [])
+    except urllib.error.URLError:
+        runs = []
+    if runs:
+        last = runs[0]
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(last["created_at"].replace("Z", "+00:00"))).total_seconds()
+        if last["status"] != "completed":
+            raise HTTPException(429, f"Loop 2 is already running ({last['status'].replace('_', ' ')}). Follow it: {last['html_url']}")
+        if age < COOLDOWN_S:
+            raise HTTPException(429, f"Loop 2 ran {int(age // 60)} min ago; the next manual run is available in "
+                                     f"{int((COOLDOWN_S - age) // 60) + 1} min (hourly runs continue automatically).")
     req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/workflows/calibrate.yml/dispatches",
                                  method="POST", data=_json.dumps({"ref": "main"}).encode(),
                                  headers={"Authorization": f"Bearer {tok}", "Accept": "application/vnd.github+json",
@@ -216,3 +232,19 @@ async def api_loop2_run(request: Request):
     except urllib.error.HTTPError as e:
         raise HTTPException(502, f"GitHub refused the dispatch ({e.code}): check the token's Actions permission.")
     return {"ok": True, "actions_url": f"https://github.com/{repo}/actions/workflows/calibrate.yml"}
+
+
+@app.post("/api/underwriter/chat")
+async def api_underwriter_chat(request: Request):
+    """Answer open questions: Claude proposes validated changes to this insured,
+    the deterministic engine re-prices, and the new quote comes back."""
+    body = await request.json()
+    _require_code(body); _require_llm()
+    ins = _insured(body)
+    msg = str(body.get("message") or "").strip()
+    if not msg:
+        raise HTTPException(400, "Write an answer or a question for the underwriting agent")
+    r = _call(underwriter_chat.chat, ins, body.get("profile") or {}, body.get("open_questions") or [],
+              body.get("history") or [], msg)
+    calc = _call(pricer.compute, r["insured"], plan=body.get("plan"))["calculation"] if r["changes"] else None
+    return {**r, "calculation": calc}

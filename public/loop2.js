@@ -97,7 +97,7 @@
     const before = await latestRun().catch(() => null);
     try {
       const r = await fetch("/api/loop2/run", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_code: $("l2-code").value || (document.getElementById("live-code") || {}).value }) });
+        body: "{}" });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.detail || "Could not start the run");
       st.innerHTML = `<span class="badge run">starting</span> Loop 2 dispatched on GitHub Actions…`;

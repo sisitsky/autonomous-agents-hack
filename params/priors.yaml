@@ -19,8 +19,8 @@
 # pricing; severities reflect that most chatbot harms are small and the expensive
 # cases are rare group claims and regulatory actions. Judgment, illustrative.
 
-version: 1.1.0
-updated: 2026-11-22
+version: 1.1.1
+updated: '2026-11-22'
 
 # ---------------------------------------------------------------- red-team measured perils
 # frequency mode red_team:
@@ -78,7 +78,7 @@ perils:
         median: {dist: pert, min: 400, mode: 1200, max: 3000, source: "Value of an enforced promise plus handling (illustrative)."}
         p90: {dist: pert, min: 4000, mode: 9000, max: 25000, source: "Illustrative."}
       tail:
-        prob: {dist: pert, min: 0.0005, mode: 0.002, max: 0.006, source: "Share becoming group claims over a systematic promise (illustrative)."}
+        prob: {dist: pert, min: 0.0005196, mode: 0.002078, max: 0.006235, source: "Share becoming group claims over a systematic promise (illustrative). Updated 2026-11-22 by calibration 20261122-222415: manual 'A (fictional) state appellate court held a retailer liable for refund promises' (moderate), mode 0.002 → 0.002078."}
         threshold: 100000
         alpha: {dist: pert, min: 1.8, mode: 2.4, max: 3.2, source: "Illustrative."}
 
@@ -106,7 +106,7 @@ perils:
       mode: red_team
       failure_type: prompt_injection
       exposure_field: outputs_per_year
-      p_harm_given_failure: {dist: pert, min: 0.002, mode: 0.01, max: 0.04, source: "Share of successful injections that are malicious and cause loss (illustrative)."}
+      p_harm_given_failure: {dist: pert, min: 0.002019, mode: 0.01009, max: 0.04037, source: "Share of successful injections that are malicious and cause loss (illustrative). Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Data Destruction via Indirect Prompt Injection Targeting Claude Computer-Use' (weak), mode 0.01 → 0.01005. Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Data Exfiltration from Slack AI via Indirect Prompt Injection' (weak), mode 0.01005 → 0.01007. Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Financial Transaction Hijacking with M365 Copilot as an Insider' (weak), mode 0.01007 → 0.01009."}
       p_claim_given_harm: {dist: pert, min: 0.001, mode: 0.004, max: 0.012, source: "Share of malicious injections producing a third-party claim (illustrative; cyber analog)."}
     severity:
       body:
@@ -166,8 +166,8 @@ perils:
 # Correlated failure across insureds that share an underlying model provider
 # (bad model update, new jailbreak technique, adverse court ruling).
 systemic:
-  annual_prob:        {dist: pert, min: 0.01, mode: 0.03, max: 0.10, source: Scenario workshop (illustrative).}
-  share_affected:     {dist: pert, min: 0.10, mode: 0.30, max: 0.70, source: Share of a provider's insureds hit in an event (illustrative).}
+  annual_prob: {dist: pert, min: 0.01002, mode: 0.03007, max: 0.1002, source: "Scenario workshop (illustrative). Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Code to Deploy Destructive AI Agent Discovered in Amazon Q VS Code Extension' (weak), mode 0.03 → 0.03007."}
+  share_affected: {dist: pert, min: 0.10, mode: 0.30, max: 0.70, source: Share of a provider's insureds hit in an event (illustrative).}
   burst_multiple: {dist: pert, min: 1.2, mode: 2.5, max: 5.0, source: "Loss per affected policy as a multiple of its normal expected annual loss: a provider-wide failure produces a burst of ordinary claims (illustrative)."}
 
 simulation:

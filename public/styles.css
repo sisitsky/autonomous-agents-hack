@@ -311,3 +311,6 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .l2-evidence { display: grid; gap: 6px; max-height: 420px; overflow: auto; }
 .l2-evidence .row { font-size: 13px; border-bottom: 1px solid var(--line); padding: 6px 0; }
 .l2-evidence a { color: var(--ink); }
+
+.l2-run { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+.l2-run input { width: 200px; }

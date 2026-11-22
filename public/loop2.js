@@ -85,7 +85,45 @@
       ${e.url && /^https?:/.test(e.url) ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)}</a>` : esc(e.title)} <span class="muted small">${esc(e.date || "")}</span></div>`).join("");
   }
 
-  document.addEventListener("DOMContentLoaded", () => { $("l2-filter").onchange = () => data && render(); });
-  if (document.readyState !== "loading") $("l2-filter").onchange = () => data && render();
+  // ---- run now: dispatch the GitHub workflow, then follow it live
+  const RUNS = "https://api.github.com/repos/sisitsky/autonomous-agents-hack/actions/workflows/calibrate.yml/runs?per_page=1";
+  async function latestRun() {
+    const r = await fetch(RUNS + "&t=" + Date.now());
+    return r.ok ? ((await r.json()).workflow_runs || [])[0] : null;
+  }
+  async function runNow() {
+    const btn = $("l2-run"), st = $("l2-run-status");
+    btn.disabled = true;
+    const before = await latestRun().catch(() => null);
+    try {
+      const r = await fetch("/api/loop2/run", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_code: $("l2-code").value || (document.getElementById("live-code") || {}).value }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.detail || "Could not start the run");
+      st.innerHTML = `<span class="badge run">starting</span> Loop 2 dispatched on GitHub Actions…`;
+      const t0 = Date.now();
+      const poll = async () => {
+        const run = await latestRun().catch(() => null);
+        const fresh = run && (!before || run.id !== before.id);
+        if (fresh) {
+          const secs = Math.round((Date.now() - t0) / 1000);
+          if (run.status !== "completed") {
+            st.innerHTML = `<span class="badge run">${esc(run.status.replace("_", " "))}</span> monitor → calibrate → validate → PR · ${secs}s ·
+              <a href="${esc(run.html_url)}" target="_blank" rel="noopener">watch on GitHub</a>`;
+          } else {
+            st.innerHTML = `<span class="badge ${run.conclusion === "success" ? "ok" : "error"}">${esc(run.conclusion)}</span>
+              Loop 2 finished in ${secs}s · <a href="${esc(run.html_url)}" target="_blank" rel="noopener">run log</a>`;
+            btn.disabled = false; data = null; await load(); return;
+          }
+        }
+        if (Date.now() - t0 < 20 * 60 * 1000) setTimeout(poll, 8000);
+        else { btn.disabled = false; st.textContent = "Still running; check GitHub Actions."; }
+      };
+      setTimeout(poll, 5000);
+    } catch (e) { st.innerHTML = `<span class="error">${esc(e.message)}</span>`; btn.disabled = false; }
+  }
+
+  function bind() { $("l2-filter").onchange = () => data && render(); $("l2-run").onclick = runNow; }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind); else bind();
   load();
 })();

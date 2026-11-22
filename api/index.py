@@ -191,3 +191,28 @@ async def api_chat(request: Request):
         return {"reply": shopbot.llm_reply(msg)}
     return {"reply": shopbot.deterministic_reply(msg)}
 
+
+
+@app.post("/api/loop2/run")
+async def api_loop2_run(request: Request):
+    """Start the Loop 2 workflow now (GitHub workflow_dispatch). The hourly schedule
+    is unaffected; this just adds a run. Needs GITHUB_DISPATCH_TOKEN (a fine-grained
+    token with Actions: read and write on this repository) in the Vercel environment."""
+    import json as _json
+    import urllib.error
+    import urllib.request
+    body = await request.json()
+    _require_code(body)
+    tok = os.environ.get("GITHUB_DISPATCH_TOKEN")
+    if not tok:
+        raise HTTPException(503, "Run-now is not configured: add GITHUB_DISPATCH_TOKEN in the Vercel project settings.")
+    repo = os.environ.get("GITHUB_REPOSITORY", "sisitsky/autonomous-agents-hack")
+    req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/workflows/calibrate.yml/dispatches",
+                                 method="POST", data=_json.dumps({"ref": "main"}).encode(),
+                                 headers={"Authorization": f"Bearer {tok}", "Accept": "application/vnd.github+json",
+                                          "User-Agent": "ai-underwriter"})
+    try:
+        urllib.request.urlopen(req, timeout=20)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(502, f"GitHub refused the dispatch ({e.code}): check the token's Actions permission.")
+    return {"ok": True, "actions_url": f"https://github.com/{repo}/actions/workflows/calibrate.yml"}

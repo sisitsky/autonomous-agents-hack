@@ -711,5 +711,154 @@
    }
   },
   "status": "waiting_for_review"
+ },
+ {
+  "run_id": "20261122-234405",
+  "run_at": "2026-11-22T23:44:07+00:00",
+  "items_reviewed": 60,
+  "changes": [
+   {
+    "item_id": "nvd:4dd254fcc68c9d24",
+    "event": "CVE-2026-123965 (prompt injection)",
+    "event_description": "A prompt injection in the Jet Admin cloud platform let a free-account user extract configuration files and credentials. The vendor has since mitigated it.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-123965",
+    "event_date": "2026-11-13",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002019,
+     "mode": 0.01009,
+     "max": 0.04037
+    },
+    "new": {
+     "min": 0.002024,
+     "mode": 0.01011,
+     "max": 0.04047
+    },
+    "mode_change_pct": 0.001982160555004775,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 20.0,
+    "evidence_weight": 1.0,
+    "reasoning": "Another documented case of prompt injection leading to data exfiltration in a production platform. No losses are reported, so this is only weak support for slightly higher harm conversion."
+   },
+   {
+    "item_id": "nvd:28ce76b5c8a8f978",
+    "event": "CVE-2026-123498 (prompt injection)",
+    "event_description": "In Vikunja veans, project members can plant instructions in project or task text that a coding agent loads and obeys, causing it to modify code or run commands.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-123498",
+    "event_date": "2026-11-08",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002024,
+     "mode": 0.01011,
+     "max": 0.04047
+    },
+    "new": {
+     "min": 0.002029,
+     "mode": 0.01013,
+     "max": 0.04056
+    },
+    "mode_change_pct": 0.001978239366963397,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 21.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This is indirect prompt injection via third-party content driving agent actions, adding to the pattern of agentic injection risk. It is a single advisory with no reported losses, so the evidence is weak."
+   }
+  ],
+  "relevant": 2,
+  "scaled": null,
+  "guardrails_passed": true,
+  "validation": {
+   "passed": true,
+   "problems": [],
+   "benchmark": [
+    {
+     "insured": "shopbot",
+     "current": 14231.387983921668,
+     "proposed": 14239.442288736038,
+     "change": 0.0005659535685114125
+    },
+    {
+     "insured": "hirescreen",
+     "current": 22017.688722729978,
+     "proposed": 22017.688722729978,
+     "change": 0.0
+    },
+    {
+     "insured": "copydesk",
+     "current": 7713.872643828777,
+     "proposed": 7713.872643828777,
+     "change": 0.0
+    },
+    {
+     "insured": "book",
+     "current": 43962.94935048042,
+     "proposed": 43971.00365529479,
+     "change": 0.00018320665317883567
+    }
+   ],
+   "limits": {
+    "max_benchmark_premium_change": 0.15,
+    "max_book_premium_change": 0.08
+   },
+   "accumulation": {
+    "before": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28945.770920057563,
+       "systemic_expected_loss": 1032.1402364949022,
+       "systemic_capital": 133184.34387439312,
+       "premium": 85876.64442743872,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.08135303163,
+       "premium": 23519.676503509036,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    },
+    "after": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28967.197263693255,
+       "systemic_expected_loss": 1032.7825163426714,
+       "systemic_capital": 132984.6796905972,
+       "premium": 85904.42885252126,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.08135303163,
+       "premium": 23519.676503509036,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    }
+   }
+  },
+  "status": "waiting_for_review"
  }
 ]

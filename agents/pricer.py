@@ -25,7 +25,7 @@ import yaml
 from engine.audit import EQUATIONS, calculation
 from engine.cli import load_insured
 from engine.controls import control_options
-from engine.model import load_params, price
+from engine.model import apply_plan, load_params, price
 from engine.tornado import tornado
 
 from .config import RUNS_DIR
@@ -47,18 +47,50 @@ def resolve(target: str) -> tuple[dict, Path]:
     return insured, RUNS_DIR / insured["id"]
 
 
-def compute(insured: dict, with_tornado: bool = True, with_controls: bool = True) -> dict:
-    """Pure core (no files): price, verify reproducibility, build the archive."""
+def plan_summaries(insured: dict, params: dict) -> dict:
+    """Price the insured on every coverage plan (deterministic, same seed)."""
+    out = {}
+    for pid, plan in params["plans"]["plans"].items():
+        ins = apply_plan(insured, params, pid)
+        row = {"id": pid, "name": plan["name"], "blurb": plan["blurb"], "policy": plan["policy"],
+               "minimum_premium": plan.get("minimum_premium", 0),
+               "covers": list(ins["perils"]),
+               "not_covered": [p for p in insured["perils"] if p not in ins["perils"]],
+               "plan_covers": plan["covers"]}
+        if ins["perils"]:
+            q = price(ins, params)
+            row.update(gross_premium=q["gross_premium"], rate_on_line=q["rate_on_line"],
+                       expected_loss=q["expected_loss"], technical_premium=q["technical_premium"],
+                       minimum_applied=q["minimum_applied"],
+                       by_peril={k: v["expected_loss"] for k, v in q["by_peril"].items()})
+        else:
+            row.update(gross_premium=None, note="Covers none of this system's exposures.")
+        out[pid] = row
+    return out
+
+
+def compute(insured: dict, with_tornado: bool = True, with_controls: bool = True,
+            plan: str | None = None) -> dict:
+    """Pure core (no files): price on the chosen plan, verify reproducibility,
+    price every plan for comparison, and build the archive."""
     params = load_params()
+    full = insured
+    insured = apply_plan(full, params, plan)
+    if not insured["perils"]:
+        raise SystemExit(f"The {insured['plan']} plan covers none of this system's exposures")
     quote = price(insured, params, illustrate=120)
     again = price(insured, params, illustrate=120)
     if again["gross_premium"] != quote["gross_premium"] or again["expected_loss"] != quote["expected_loss"]:
         raise NotReproducible("Two runs with the same inputs and seed gave different premiums")
 
+    plans = plan_summaries(full, params)
+    quote["plan_info"] = plans[insured["plan"]]
     tor = tornado(insured, params) if with_tornado else None
     ctl = control_options(insured, params, base=quote) if with_controls else None
     calc = calculation(insured, params, quote, tor, ctl)
     calc["meta"]["reproducibility_check"] = "passed: priced twice, identical results"
+    calc["plans"] = plans
+    calc["insured_full"] = full
     return {"quote": quote, "calculation": calc}
 
 
@@ -141,6 +173,22 @@ def render_markdown(c: dict) -> str:
          f"{_m(pol['aggregate_limit'])} aggregate",
          f"- Model provider bucket: {ins.get('provider', 'unmapped (portfolio average)')}", ""]
 
+    if c.get("plans"):
+        L += ["## Plans", "", "| Plan | Limits | Deductible | Premium | Covers |", "|---|---|---|---|---|"]
+        for v in c["plans"].values():
+            prem = _m(v["gross_premium"]) if v.get("gross_premium") else "n/a"
+            L.append(f"| {v['name']} | {_m(v['policy']['limit_per_claim'])} / {_m(v['policy']['aggregate_limit'])} | "
+                     f"{_m(v['policy']['deductible'])} | {prem} | {', '.join(v['covers'])} |")
+        L.append("")
+    cr = c.get("red_team_credibility")
+    if cr:
+        L += ["## Dirichlet / Jewell credibility", "",
+              f"{cr['n']} cases, Z = {cr['z']:.3f}, A = {cr['A']:.2f}, {cr['r']} other insureds ({cr['status']}).", "",
+              "| Outcome | Count | Observed | Portfolio μ | Credibility-weighted | Posterior α |", "|---|---|---|---|---|---|"]
+        for k in cr["mu"]:
+            obs = f"{cr['observed'][k]:.3f}" if cr["observed"][k] is not None else "n/a"
+            L.append(f"| {k} | {cr['counts'][k]} | {obs} | {cr['mu'][k]:.3f} | {cr['estimate'][k]:.3f} | {cr['alpha'][k]:.2f} |")
+        L.append("")
     L += ["## Premium build-up", "", "| Step | Amount | Equation |", "|---|---|---|"]
     for s in c["premium_build_up"]:
         val = f"{s['value']:.1%}" if s["id"] == "rate_on_line" else _m(s["value"])
@@ -160,8 +208,8 @@ def render_markdown(c: dict) -> str:
               f"- Frequency: `{EQ[p['equation']]['formula']}`",
               f"- Exposure: {p['exposure'] or 'annual rate (no exposure field)'}",
               f"- Base claims per year (before rating factors): {_num(p['base_claims_per_year'])}"]
-        if p.get("red_team_leak_relativity") is not None:
-            L.append(f"- Red-team data-leak relativity ρ_leak: ×{p['red_team_leak_relativity']:.2f}")
+        if p.get("failure_type"):
+            L.append(f"- Red-team failure type: {p['failure_type']} (Dirichlet component)")
         rels = " × ".join(f"{f['factor']} {f['level']} ({f['relativity']})" for f in p["rating_factors"]) or "none"
         b = p["modifier_bounds"]
         L += [f"- Rating factors: {rels} = {p['combined_relativity_raw']:.3f}, "

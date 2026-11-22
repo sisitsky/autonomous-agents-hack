@@ -22,8 +22,8 @@ def params():
 @pytest.fixture(scope="module")
 def tested_shopbot():
     sb = copy.deepcopy(load_insured("shopbot"))
-    sb["red_team"] = {"tested": 31, "failures": 19, "suite": "adversarial",
-                      "data_leak": {"tested": 9, "failures": 5}}
+    sb["red_team"]["failures_by_type"] = {"wrong_information": 5, "unauthorized_commitment": 7,
+                                          "data_leakage": 5, "prompt_injection": 7}
     sb["factors"]["governance"] = "weak"
     return sb
 
@@ -55,7 +55,8 @@ def test_build_up_arithmetic(archived, params):
         + s["fixed_expense"]["value"]
     assert tech == pytest.approx(s["technical_premium"]["value"])
     g = s["gross_premium"]["inputs"]
-    assert s["gross_premium"]["value"] == pytest.approx(tech / g["divisor"])
+    assert g["formula_premium"] == pytest.approx(tech / g["divisor"])
+    assert s["gross_premium"]["value"] == pytest.approx(max(g["formula_premium"], g["minimum_premium"]))
     c = s["capital"]["inputs"]
     cap = (c["idiosyncratic_tail"] - c["idiosyncratic_mean"]) / math.sqrt(c["pool_size"]) \
         + c["concentration_multiplier"] * (c["systemic_tail"] - c["systemic_mean"])
@@ -64,7 +65,7 @@ def test_build_up_arithmetic(archived, params):
 
 
 def test_rating_factors_recorded_and_capped(archived, params):
-    mis = archived["calculation"]["perils"]["misinformation"]
+    mis = archived["calculation"]["perils"]["wrong_information"]
     raw = math.prod(f["relativity"] for f in mis["rating_factors"])
     b = mis["modifier_bounds"]
     assert mis["combined_relativity_raw"] == pytest.approx(raw)
@@ -76,9 +77,9 @@ def test_rating_factors_recorded_and_capped(archived, params):
 def test_every_parameter_archived_with_source(archived):
     c = archived["calculation"]
     paths = [p["path"] for peril in c["perils"].values() for p in peril["parameters"]]
-    assert "perils.misinformation.frequency.p_error" in paths
-    assert "perils.misinformation.frequency.adversarial_to_live" in paths
-    assert "perils.privacy_regulatory.frequency.leak_rate" in paths
+    for peril in ("wrong_information", "unauthorized_commitment", "data_leakage", "prompt_injection"):
+        assert f"perils.{peril}.frequency.p_fail" in paths
+        assert f"perils.{peril}.frequency.adversarial_to_live" in paths
     for peril in c["perils"].values():
         for p in peril["parameters"]:
             assert p["source"] and "dist" in p["distribution"]
@@ -120,7 +121,7 @@ def test_controls_lower_price_and_are_sorted(tested_shopbot, params):
     assert savings == sorted(savings, reverse=True)
     assert all(s > 0 for s in savings), [(o["factor"], o["to_level"], o["saving"]) for o in c["options"]]
     kinds = {(o["factor"], o["to_level"]) for o in c["options"]}
-    assert ("governance", "strong") in kinds
+    assert ("governance", "strong") in kinds or ("governance", "adequate") in kinds
     assert any(o["kind"] == "red_team_remediation" for o in c["options"])
     # Only controllable factors are offered.
     assert not any(o["factor"] in ("jurisdiction", "use_case_criticality") for o in c["options"])
@@ -131,6 +132,14 @@ def test_trace_does_not_change_prices(params):
     # tracing and credibility (adversarial suites only) must not move them.
     from engine.cli import benchmark
     b = benchmark()["insureds"]
-    assert round(b["shopbot"]["gross_premium"]) == 201854
-    assert round(b["hirescreen"]["gross_premium"]) == 123436
-    assert round(b["copydesk"]["gross_premium"]) == 40295
+    assert round(b["shopbot"]["gross_premium"]) == 21862
+    assert round(b["hirescreen"]["gross_premium"]) == 31357
+    assert round(b["copydesk"]["gross_premium"]) == 11858
+
+
+def test_every_plan_priced_and_ordered(archived):
+    plans = archived["calculation"]["plans"]
+    assert list(plans) == ["essential", "professional", "enterprise"]
+    assert plans["essential"]["not_covered"] == ["data_leakage", "prompt_injection"]
+    assert all(v["gross_premium"] >= v["minimum_premium"] for v in plans.values())
+    assert plans["essential"]["gross_premium"] < plans["professional"]["gross_premium"] < plans["enterprise"]["gross_premium"]

@@ -1,0 +1,32 @@
+# Coverage tiers. ILLUSTRATIVE. Changes go through a pull request only.
+# Each plan covers a set of perils with its own limits and deductible. A plan
+# prices only the perils that both the plan covers and the insured is exposed to.
+# Minimum premiums follow market practice (e.g. published AI-liability tiers start
+# around $15k/yr; broker benchmarks put small AI startups at $2.5k-$10k for $1M).
+
+version: 1.0.0
+
+default_plan: professional
+
+plans:
+  essential:
+    name: Essential
+    blurb: Core chatbot errors for small, low-stakes deployments.
+    covers: [wrong_information, unauthorized_commitment]
+    policy: {limit_per_claim: 250000, aggregate_limit: 500000, deductible: 5000}
+    minimum_premium: 2500
+
+  professional:
+    name: Professional
+    blurb: Adds privacy, security, and IP for customer-facing AI with personal data.
+    covers: [wrong_information, unauthorized_commitment, data_leakage, prompt_injection, ip_infringement]
+    policy: {limit_per_claim: 1000000, aggregate_limit: 2000000, deductible: 10000}
+    minimum_premium: 7500
+
+  enterprise:
+    name: Enterprise
+    blurb: Every AI pitfall, higher limits, for high-volume or high-stakes systems.
+    covers: [wrong_information, unauthorized_commitment, data_leakage, prompt_injection,
+             ip_infringement, bias_discrimination, harmful_content, unsafe_advice]
+    policy: {limit_per_claim: 2500000, aggregate_limit: 5000000, deductible: 25000}
+    minimum_premium: 25000

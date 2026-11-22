@@ -35,7 +35,7 @@ from engine.audit import DISCLAIMER
 from . import charts, llm, pricer
 from .config import MODEL_FAST, ROOT, llm_available
 
-SECTIONS = ["headline", "summary", "price_build_up", "loss_distribution", "tornado", "credibility",
+SECTIONS = ["headline", "summary", "price_build_up", "loss_distribution", "tornado", "credibility", "plans",
             "red_team", "changes_since_last_quote"]
 
 
@@ -86,9 +86,8 @@ def _red_team_facts(insured: dict, summary: dict | None, results: list[dict] | N
     rt = insured.get("red_team")
     if not rt:
         return None
-    out = {"priced_counts": {"p_error": f"{rt['failures']} of {rt['tested']}"}}
-    if rt.get("data_leak"):
-        out["priced_counts"]["data_leak"] = f"{rt['data_leak']['failures']} of {rt['data_leak']['tested']}"
+    out = {"priced_outcomes": {k.replace("_", " "): f"{v} of {rt['tested']}"
+                               for k, v in (rt.get("failures_by_type") or {}).items()}}
     if summary:
         s = summary
         out["total"] = f"{s['failures']} of {s['tested']}"
@@ -112,15 +111,30 @@ def _red_team_facts(insured: dict, summary: dict | None, results: list[dict] | N
 
 
 def _cred_facts(c: dict) -> dict:
+    base = {"cases_tested": str(c["n"]), "credibility_Z": f"{c['z']:.2f}",
+            "dirichlet_concentration_A": f"{c['A']:.1f}", "portfolio_insureds": str(c["r"]),
+            "meaning": "Jewell credibility: one Z for every failure type. Z is the weight on this system's own "
+                       "test results; 1 − Z goes to the portfolio mean. More tests give more credibility."}
     if c["status"] == "insufficient_experience":
-        return {"status": "not enough portfolio experience; uniform prior used", "cases_tested": str(c["n"])}
-    return {"measure": "error rate" if c["measure"] == "p_error" else "data-leak rate",
-            "cases_tested": str(c["n"]), "observed_rate": _p(c["observed"]),
-            "credibility_Z": f"{c['z']:.2f}", "credibility_constant_k": f"{c['k']:.1f}",
-            "portfolio_mean": _p(c["mu"]), "portfolio_insureds": str(c["r"]),
-            "credibility_weighted_rate": _p(c["estimate"]),
-            "meaning": "Z is the weight on this system's own test result; 1 − Z goes to the portfolio mean. "
-                       "More tests give more credibility."}
+        base["status"] = "not enough portfolio experience; fallback prior used"
+    base["by_outcome"] = {k.replace("_", " "): {"observed": _p(c["observed"][k]) if c["observed"][k] is not None else "not tested",
+                                                 "portfolio_mean": _p(c["mu"][k]),
+                                                 "credibility_weighted": _p(c["estimate"][k])}
+                          for k in c["mu"]}
+    return base
+
+
+def _plan_facts(plans: dict, current: str) -> list[dict]:
+    rows = []
+    for pid, v in plans.items():
+        rows.append({"plan": v["name"], "this_quote": pid == current,
+                     "limits": f"{_m(v['policy']['limit_per_claim'])} per claim / {_m(v['policy']['aggregate_limit'])} aggregate",
+                     "deductible": _m(v["policy"]["deductible"]),
+                     "premium": _m(v["gross_premium"]) if v.get("gross_premium") else "not applicable",
+                     "rate_on_line": _p(v["rate_on_line"]) if v.get("rate_on_line") else "n/a",
+                     "covers": [c.replace("_", " ") for c in v["covers"]],
+                     "not_covered_exposures": [c.replace("_", " ") for c in v["not_covered"]]})
+    return rows
 
 
 def fact_sheet(calc: dict, rt_summary: dict | None = None, rt_results: list[dict] | None = None,
@@ -157,9 +171,7 @@ def fact_sheet(calc: dict, rt_summary: dict | None = None, rt_results: list[dict
                        "expected_loss": _m(p["expected_loss"]),
                        "rating_modifier": f"×{p['modifier']:.2f}",
                        "rating_factors": {f["factor"]: f"{f['level']} ×{f['relativity']}" for f in p["rating_factors"]},
-                       **({"red_team_leak_multiplier": f"×{p['red_team_leak_relativity']:.2f}"}
-                          if p.get("red_team_leak_relativity") is not None else {}),
-                       **({"buhlmann_credibility": _cred_facts(p["credibility"])} if p.get("credibility") else {})}
+                       "description": p["description"]}
                    for n, p in calc["perils"].items()},
         "loss_distribution": {
             "prob_any_loss_in_a_year": _p(ld["prob_any_loss"]),
@@ -168,6 +180,8 @@ def fact_sheet(calc: dict, rt_summary: dict | None = None, rt_results: list[dict
             "simulated_years": f"{calc['meta']['simulation']['n_years']:,}",
         },
         "tornado": None, "controls": [], "red_team": _red_team_facts(ins, rt_summary, rt_results),
+        "credibility": _cred_facts(calc["red_team_credibility"]) if calc.get("red_team_credibility") else None,
+        "plans": _plan_facts(calc["plans"], ins.get("plan")) if calc.get("plans") else [],
         "changes_since_last_quote": None,
     }
     if calc.get("tornado"):
@@ -273,8 +287,11 @@ SCHEMA = {
         "loss_distribution": {"type": "string", "description": "What a typical year and a bad year look like, "
                                                                "using the percentiles."},
         "tornado": {"type": "string", "description": "Which uncertain parameters move the price most and why."},
-        "credibility": {"type": "string", "description": "How Bühlmann credibility blended the red-team result with "
-                                                         "the portfolio, in plain English. Empty string if not used."},
+        "credibility": {"type": "string", "description": "How the Dirichlet / Jewell credibility model blended the "
+                                                         "red-team outcomes with the portfolio, in plain English. "
+                                                         "Empty string if not used."},
+        "plans": {"type": "string", "description": "Compare the coverage plans: what each covers, its limits, its "
+                                                   "premium, and which suits this system. Use only fact-sheet numbers."},
         "evidence_to_narrow": {"type": "array", "description": "For the top three tornado parameters.",
                                "items": {"type": "object", "properties": {
                                    "parameter": {"type": "string"}, "evidence": {"type": "string"}},
@@ -287,7 +304,7 @@ SCHEMA = {
                                                       "Empty string if there was no red team."},
         "changes_since_last_quote": {"type": "string", "description": "Empty string if there is no previous quote."},
     },
-    "required": ["headline", "summary", "price_build_up", "loss_distribution", "tornado", "credibility",
+    "required": ["headline", "summary", "price_build_up", "loss_distribution", "tornado", "credibility", "plans",
                  "evidence_to_narrow", "controls", "red_team", "changes_since_last_quote"],
     "additionalProperties": False,
 }
@@ -331,18 +348,21 @@ def template_narrative(facts: dict) -> dict:
         "red_team": "",
         "changes_since_last_quote": "",
         "credibility": "",
+        "plans": "",
     }
-    creds = [(n, p["buhlmann_credibility"]) for n, p in facts["perils"].items()
-             if p.get("buhlmann_credibility", {}).get("credibility_Z")]
-    if creds:
-        n["credibility"] = " ".join(
-            f"For the {c['measure']}, {c['cases_tested']} tests gave an observed rate of {c['observed_rate']}; "
-            f"with credibility Z = {c['credibility_Z']} (k = {c['credibility_constant_k']}) against a portfolio mean of "
-            f"{c['portfolio_mean']} across {c['portfolio_insureds']} insureds, the priced rate is "
-            f"{c['credibility_weighted_rate']}." for _, c in creds)
+    c = facts.get("credibility")
+    if c:
+        n["credibility"] = (f"{c['cases_tested']} test cases get credibility Z = {c['credibility_Z']} against a "
+                            f"portfolio of {c['portfolio_insureds']} insureds (Dirichlet concentration A = "
+                            f"{c['dirichlet_concentration_A']}). " + " ".join(
+            f"{k.capitalize()}: observed {v['observed']}, portfolio {v['portfolio_mean']}, priced {v['credibility_weighted']}."
+            for k, v in c["by_outcome"].items() if k != "pass"))
+    if facts.get("plans"):
+        n["plans"] = " ".join(f"{r['plan']} ({r['limits']}, deductible {r['deductible']}): {r['premium']}."
+                              for r in facts["plans"])
     rt = facts.get("red_team")
     if rt:
-        n["red_team"] = (f"Testing found material failures in {rt.get('total', rt['priced_counts']['p_error'])} cases"
+        n["red_team"] = (f"Testing found material failures in {rt.get('total', 'the tested')} cases"
                          + (" (" + ", ".join(f"{k.replace('_', ' ')} {v}" for k, v in rt["by_category"].items()) + ")"
                             if rt.get("by_category") else "") + ".")
     ch = facts.get("changes_since_last_quote")

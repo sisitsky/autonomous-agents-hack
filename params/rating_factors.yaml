@@ -1,42 +1,43 @@
 # Multiplicative rating factors. ILLUSTRATIVE relativities set by judgment.
 # Each factor lists the perils it applies to, so it only moves the risks it affects.
-# Measured model performance is NOT a factor here: it enters directly through
-# red-team test counts (p_error), and counting it twice would double-charge.
-# Changes to this file go through a pull request only.
+# Measured model behavior is NOT a factor here: it enters directly through
+# red-team test counts (the Dirichlet failure rates), and counting it twice would
+# double-charge. Changes to this file go through a pull request only.
 
-version: 0.2.0
+version: 1.0.0
 
 factors:
   use_case_criticality:
-    applies_to: [misinformation, discrimination]
+    applies_to: [wrong_information, unauthorized_commitment, bias_discrimination, unsafe_advice]
     levels: {low: 0.6, medium: 1.0, high: 1.8, critical: 3.0}
     source: Consequence of a wrong output (internal drafting vs. credit, hiring, medical).
 
   autonomy:
     controllable: true   # the insured can change this; quote reports show the saving
-    applies_to: [misinformation, discrimination]
+    applies_to: [wrong_information, unauthorized_commitment, prompt_injection, bias_discrimination, unsafe_advice]
     levels: {advisory_human_signoff: 0.7, human_review_sampled: 0.85, autonomous: 1.0, autonomous_actions: 1.5}
-    source: Human review catches errors before they reach customers.
+    source: Human review catches errors before they reach customers; tool-using agents amplify injection.
 
   governance:
     controllable: true   # the insured can change this; quote reports show the saving
-    applies_to: [misinformation, privacy_regulatory, discrimination, ip_infringement]
+    applies_to: [wrong_information, unauthorized_commitment, data_leakage, prompt_injection,
+                 bias_discrimination, ip_infringement, harmful_content, unsafe_advice]
     levels: {strong: 0.85, adequate: 1.0, weak: 1.2}
     source: Monitoring, logging, incident response, NIST AI RMF / ISO 42001 alignment.
 
   data_sensitivity:
     controllable: true   # the insured can change this; quote reports show the saving
-    applies_to: [privacy_regulatory]
+    applies_to: [data_leakage, prompt_injection]
     levels: {none: 0.3, personal: 1.0, financial_or_health: 1.6}
     source: Sensitive data in prompts, context, or outputs.
 
   jurisdiction:
-    applies_to: [privacy_regulatory, discrimination]
+    applies_to: [data_leakage, bias_discrimination, unsafe_advice]
     levels: {us_low_reg: 0.9, us_high_reg: 1.2, eu: 1.4}
     source: EU AI Act high-risk categories; state AI and privacy laws.
 
   customer_facing:
-    applies_to: [misinformation, ip_infringement]
+    applies_to: [wrong_information, unauthorized_commitment, ip_infringement, harmful_content]
     levels: {internal: 0.5, public: 1.0}
     source: Public outputs create third-party exposure.
 

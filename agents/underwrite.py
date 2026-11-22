@@ -129,18 +129,17 @@ def run(paths: list[str] | None = None, insured_id: str | None = None, insured_f
             t = time.monotonic()
             s = redteam.run(str(run_dir), endpoint=endpoint, scorer="patterns" if offline else scorer,
                             authorized=authorized or bool(demo_bot))
-            pc = s["pricing_counts"]
             if demo_bot:   # label the target, not the ephemeral local port
                 s["endpoint"] = f"demo ShopBot ({demo_bot})"
                 (run_dir / "redteam" / "summary.json").write_text(json.dumps(s, indent=2))
             # Continuously updated credibility: add this result to the portfolio experience.
             exp = credibility.record(yaml.safe_load((run_dir / "insured.yaml").read_text())["id"], s["suite_id"],
-                                     pc, source=f"underwriting run {run_dir.name}")
+                                     s["tested"], s["failures_by_type"], source=f"underwriting run {run_dir.name}")
             others = len({e["insured_id"] for e in exp}) - 1
             log.add("redteam", "ok",
-                    f"{s['failures']} of {s['tested']} material failures "
-                    f"(priced: errors {pc['p_error']['failures']}/{pc['p_error']['tested']}, "
-                    f"leaks {pc['data_leak']['failures']}/{pc['data_leak']['tested']}); scorer {s['scorer']}",
+                    f"{s['failures']} of {s['tested']} material failures ("
+                    + ", ".join(f"{k.replace('_', ' ')} {v}" for k, v in s["failures_by_type"].items() if v)
+                    + f"); scorer {s['scorer']}",
                     time.monotonic() - t, target=f"demo ShopBot ({demo_bot})" if demo_bot else endpoint,
                     by_category=s["by_category"], disagreements=s["disagreements"],
                     experience=f"portfolio record updated: {others + 1} insureds on suite {s['suite_id']}")
@@ -151,15 +150,14 @@ def run(paths: list[str] | None = None, insured_id: str | None = None, insured_f
         t = time.monotonic()
         pr = pricer.run(str(run_dir))
         q, calc = pr["quote"], pr["calculation"]
-        creds = {n: d["credibility"] for n, d in q["by_peril"].items() if d.get("credibility")}
-        cred_txt = "; ".join(f"{n.replace('_', ' ')} Z = {c['z']:.2f}" for n, c in creds.items())
-        log.add("pricing", "ok", f"Gross premium ${q['gross_premium']:,.0f} "
-                f"(rate on line {q['rate_on_line']:.1%}); reproducibility check passed"
-                + (f"; Bühlmann credibility {cred_txt}" if cred_txt else ""),
+        post = q.get("red_team_posterior")
+        plans_txt = "; ".join(f"{v['name']} ${v['gross_premium']:,.0f}" for v in calc["plans"].values())
+        log.add("pricing", "ok", f"{calc['plan']['name']} plan ${q['gross_premium']:,.0f} "
+                f"(rate on line {q['rate_on_line']:.1%}); all plans: {plans_txt}; reproducibility check passed"
+                + (f"; Jewell credibility Z = {post['z']:.2f} (A = {post['A']:.1f})" if post else ""),
                 time.monotonic() - t, gross_premium=q["gross_premium"], expected_loss=q["expected_loss"],
                 params_versions=calc["meta"]["params_versions"],
-                credibility={n: {"z": round(c["z"], 3), "k": round(c["k"], 2), "mu": round(c["mu"], 4),
-                                 "insureds": c["r"]} for n, c in creds.items()})
+                credibility=({"z": round(post["z"], 3), "A": round(post["A"], 2), "insureds": post["r"]} if post else None))
 
         # ---- 4. explainer
         t = time.monotonic()

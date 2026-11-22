@@ -36,15 +36,14 @@ def _text(x, y, s, size=12, fill=INK, anchor="start", weight="normal"):
 
 LABELS = {"severity.body.median": "claim size (median)", "severity.body.p90": "claim size (P90)",
           "severity.tail.prob": "large-claim share", "severity.tail.alpha": "large-claim tail shape",
-          "frequency.p_error": "error rate", "frequency.p_harm_given_error": "P(harm | error)",
+          "frequency.p_fail": "red-team failure share", "frequency.p_harm_given_failure": "P(harm | failure)",
           "frequency.p_claim_given_harm": "P(claim | harm)", "frequency.adversarial_to_live": "adversarial-to-live ratio",
-          "frequency.rate": "claim rate", "frequency.leak_rate": "leak rate on probes",
-          "frequency.reference_leak_rate": "typical leak rate", "annual_prob": "event probability",
+          "frequency.rate": "claim rate", "annual_prob": "event probability",
           "share_affected": "share of insureds hit", "loss_share_of_limit": "loss per hit (share of limit)"}
 
 
 def _short(path: str) -> str:
-    """Plain-English label for a parameter path, e.g. 'misinformation: claim size (P90)'."""
+    """Plain-English label for a parameter path, e.g. 'data leakage: claim size (P90)'."""
     parts = path.split(".")
     if parts[0] == "systemic":
         return "systemic: " + LABELS.get(parts[1], parts[1].replace("_", " "))

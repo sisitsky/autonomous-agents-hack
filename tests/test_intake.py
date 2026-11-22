@@ -27,8 +27,11 @@ NORTHWIND_PROFILE = {
     "vendor_indemnity": {"level": "none", "evidence": "02_architecture.md: no IP indemnity clause"},
     "model_provider": {"name": "Acme AI (Acme Large)", "hosting": "vendor_api",
                        "evidence": "02_architecture.md: Acme AI's hosted LLM API"},
-    "perils": [{"peril": "misinformation", "rationale": "Wrong refund or policy answers."},
-               {"peril": "privacy_regulatory", "rationale": "Order lookup exposes personal data."}],
+    "perils": [{"peril": "wrong_information", "rationale": "Wrong policy answers."},
+               {"peril": "unauthorized_commitment", "rationale": "Refund promises."},
+               {"peril": "data_leakage", "rationale": "Order lookup exposes personal data."},
+               {"peril": "prompt_injection", "rationale": "Pasted text reaches the bot."},
+               {"peril": "ip_infringement", "rationale": "Public text output."}],
     "exposure": {"outputs_per_year": 2_000_000, "evidence": "01_application.md: roughly 2 million responses"},
     "requested_policy": {"limit_per_claim": 1_000_000, "aggregate_limit": 2_000_000, "deductible": 10_000},
     "test_endpoint": "http://127.0.0.1:8765/chat",
@@ -73,7 +76,10 @@ def test_profile_maps_to_priceable_insured(params):
     insured, notes = intake.to_insured(NORTHWIND_PROFILE, params, "northwind", intake.load_aliases())
     assert insured["id"] == "northwind"
     assert insured["provider"] == "provider_a"
-    assert insured["perils"] == {"misinformation": {"outputs_per_year": 2_000_000}, "privacy_regulatory": {}}
+    vol = {"outputs_per_year": 2_000_000}
+    assert insured["perils"] == {"wrong_information": vol, "unauthorized_commitment": vol, "data_leakage": vol,
+                                 "prompt_injection": vol, "ip_infringement": {}}
+    assert insured["plan"] == "professional" and insured["policy"]["aggregate_limit"] == 2_000_000
     assert insured["factors"]["jurisdiction"] == "us_high_reg"      # strictest region wins
     assert "red_team" not in insured                                 # never invented by intake
     assert any("outside the US and EU" in n for n in notes)
@@ -97,8 +103,8 @@ def test_missing_volume_drops_chain_peril(params):
     p = copy.deepcopy(NORTHWIND_PROFILE)
     p["exposure"]["outputs_per_year"] = 0
     insured, notes = intake.to_insured(p, params)
-    assert "misinformation" not in insured["perils"]
-    assert "privacy_regulatory" in insured["perils"]
+    assert "wrong_information" not in insured["perils"] and "data_leakage" not in insured["perils"]
+    assert "ip_infringement" in insured["perils"]
     assert any("outputs_per_year" in n for n in notes)
 
 
@@ -113,7 +119,16 @@ def test_default_policy_when_not_requested(params):
     p = copy.deepcopy(NORTHWIND_PROFILE)
     p["requested_policy"] = {"limit_per_claim": 0, "aggregate_limit": 0, "deductible": 0}
     insured, notes = intake.to_insured(p, params)
-    assert insured["policy"] == intake.DEFAULT_POLICY
+    assert insured["plan"] == params["plans"]["default_plan"]
+    assert insured["policy"] == params["plans"]["plans"][insured["plan"]]["policy"]
+
+
+def test_requested_limits_choose_smallest_fitting_plan(params):
+    for agg, plan in ((400_000, "essential"), (2_000_000, "professional"), (4_000_000, "enterprise"),
+                      (50_000_000, "enterprise")):
+        p = copy.deepcopy(NORTHWIND_PROFILE)
+        p["requested_policy"]["aggregate_limit"] = agg
+        assert intake.to_insured(p, params)[0]["plan"] == plan
 
 
 def test_documents_become_labeled_blocks(tmp_path):

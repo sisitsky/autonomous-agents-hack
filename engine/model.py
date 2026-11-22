@@ -18,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+from scipy import stats
 
 from . import credibility as CRED
 from . import distributions as D
@@ -30,7 +31,7 @@ PARAMS_DIR = Path(__file__).resolve().parent.parent / "params"
 def load_params(params_dir: Path | str = PARAMS_DIR) -> dict:
     params_dir = Path(params_dir)
     out = {}
-    for name in ("priors", "rating_factors", "pricing", "guardrails"):
+    for name in ("priors", "rating_factors", "pricing", "guardrails", "plans"):
         with open(params_dir / f"{name}.yaml") as f:
             out[name] = yaml.safe_load(f)
     # Portfolio red-team experience for Bühlmann credibility (data, not assumptions).
@@ -78,71 +79,69 @@ def uncertain_paths(priors: dict, perils: list[str]) -> list[str]:
 
 # ---------------------------------------------------------------- insured setup
 
-def _red_team_beta(params: dict, insured: dict, measure: str, tested: int, failures: int,
-                   suite: str, what: str) -> dict:
-    """Beta for a red-team failure rate.
+def red_team_posterior(params: dict, insured: dict) -> dict:
+    """Dirichlet posterior over red-team outcomes, with a Jewell credibility prior.
 
-    Adversarial suites with enough portfolio experience use the Bühlmann–Straub
-    prior Beta(μk, (1 − μ)k), so the posterior mean is the credibility estimate
-    Z·X + (1 − Z)·μ with Z = n / (n + k). Otherwise the uniform prior Beta(1, 1).
+    Outcomes are pass plus the failure types in priors.red_team.failure_types.
+    The prior Dirichlet(A·μ) is estimated from the rest of the portfolio; the
+    insured's own counts are added to it. With no red-team test the posterior is
+    the prior (the portfolio average, with its full uncertainty).
     """
+    rt_cfg = params["priors"]["red_team"]
+    types = list(rt_cfg["failure_types"])
     rt = insured.get("red_team") or {}
-    if suite == "adversarial" and params.get("experience") is not None:
-        cred = CRED.credibility(insured.get("id"), measure, rt.get("suite_id", "customer_service"),
-                                tested, failures, params["experience"])
-        a0, b0 = cred["prior_alpha"], cred["prior_beta"]
-        how = (f"Bühlmann credibility Z = {cred['z']:.2f} (k = {cred['k']:.1f}, collective μ = {cred['mu']:.3f}, "
-               f"{cred['r']} insureds)" if cred["status"] != "insufficient_experience" else cred["note"])
-        return {"dist": "beta", "alpha": failures + a0, "beta": tested - failures + b0,
-                "source": f"{what}; {how}.", "credibility": cred}
-    return {"dist": "beta", "alpha": failures + 1, "beta": tested - failures + 1, "source": f"{what}."}
+    tested = int(rt.get("tested", 0))
+    counts = rt.get("failures_by_type") or {}
+    unknown = set(counts) - set(types)
+    if unknown:
+        raise ValueError(f"Unknown red-team failure types: {sorted(unknown)}")
+    if any(int(v) < 0 for v in counts.values()) or sum(int(v) for v in counts.values()) > tested:
+        raise ValueError(f"red_team needs 0 <= failures and sum(failures_by_type) <= tested: {rt}")
+    if rt and rt.get("suite", "adversarial") != "adversarial":
+        raise ValueError("Only adversarial red-team suites are supported (suite: adversarial)")
+    return CRED.credibility(insured.get("id"), rt.get("suite_id", "customer_service"), tested, counts,
+                            ["pass"] + types, params.get("experience") or [], rt_cfg["fallback_prior"])
 
 
 def insured_priors(params: dict, insured: dict) -> dict:
-    """Copy of priors with insured-specific evidence applied (red-team counts).
+    """Copy of priors with insured-specific evidence applied.
 
-    Red-team counts become a Beta(failures + 1, passes + 1) for P(error), the
-    posterior from a uniform prior. Two kinds of test are supported:
-
-      suite: live_sample  (default) cases sampled from ordinary traffic, so the
-                          failure rate is the per-output error rate directly.
-      suite: adversarial  a stress-test suite that over-samples failure modes.
-                          The failure rate is per probe, not per live output, so
-                          it is scaled by `red_team.adversarial_to_live` from
-                          priors (an uncertain ratio, applied as an extra factor
-                          in the frequency chain).
+    Each red-team-measured peril gets p_fail, the marginal of the joint
+    Dirichlet for its failure type (a Beta(α_k, α_0 − α_k)), and the
+    adversarial-to-live ratio. The joint draw happens in price().
     """
     priors = copy.deepcopy(params["priors"])
-    rt = insured.get("red_team")
-    if rt and "misinformation" in priors["perils"]:
-        failures, tested = rt["failures"], rt["tested"]
-        if not 0 <= failures <= tested or tested <= 0:
-            raise ValueError(f"red_team needs 0 <= failures <= tested and tested > 0: {rt}")
-        suite = rt.get("suite", "live_sample")
-        freq = priors["perils"]["misinformation"]["frequency"]
-        freq["p_error"] = _red_team_beta(params, insured, "p_error", tested, failures, suite,
-                                         f"Insured red-team test ({suite}): {failures} failures in {tested} cases")
-        if suite == "adversarial":
-            freq["adversarial_to_live"] = copy.deepcopy(priors["red_team"]["adversarial_to_live"])
-        elif suite != "live_sample":
-            raise ValueError(f"Unknown red_team suite '{suite}' (use live_sample or adversarial)")
-
-    # Data-leak probes scale the privacy peril's rate. The leak rate on probes,
-    # Beta(leaks + 1, passes + 1), is compared with the leak rate of a typical
-    # system on the same kind of probes (`red_team.privacy.reference_leak_rate`).
-    # Their ratio multiplies the privacy rate, within `relativity_bounds`.
-    leak = (rt or {}).get("data_leak")
-    if leak and "privacy_regulatory" in priors["perils"]:
-        leaks, probes = leak["failures"], leak["tested"]
-        if not 0 <= leaks <= probes or probes <= 0:
-            raise ValueError(f"red_team.data_leak needs 0 <= failures <= tested and tested > 0: {leak}")
-        ref = priors["red_team"]["privacy"]
-        freq = priors["perils"]["privacy_regulatory"]["frequency"]
-        freq["leak_rate"] = _red_team_beta(params, insured, "data_leak", probes, leaks, rt.get("suite", "live_sample"),
-                                           f"Insured red-team data-leak probes: {leaks} leaks in {probes} probes")
-        freq["reference_leak_rate"] = copy.deepcopy(ref["reference_leak_rate"])
-        freq["leak_relativity_bounds"] = dict(ref["relativity_bounds"])
+    rt_perils = [p for p in insured["perils"] if priors["perils"][p]["frequency"]["mode"] == "red_team"]
+    if not rt_perils:
+        return priors
+    post = red_team_posterior(params, insured)
+    priors["red_team"]["posterior"] = post
+    for p in rt_perils:
+        freq = priors["perils"][p]["frequency"]
+        k = freq["failure_type"]
+        how = (f"Jewell credibility Z = {post['z']:.2f} (A = {post['A']:.1f}, portfolio share "
+               f"{post['mu'][k]:.3f}, {post['r']} insureds)" if post["status"] != "insufficient_experience"
+               else post["note"])
+        freq["p_fail"] = {"dist": "dirichlet_component", "component": k, "alpha": post["alpha"][k],
+                          "alpha0": post["alpha0"],
+                          "source": f"Red-team {k.replace('_', ' ')}: {post['counts'][k]} of {post['n']} cases; {how}."}
+        freq["adversarial_to_live"] = copy.deepcopy(priors["red_team"]["adversarial_to_live"])
     return priors
+
+
+def apply_plan(insured: dict, params: dict, plan_id: str | None = None) -> dict:
+    """Copy of the insured restricted to a coverage plan: only perils the plan
+    covers, with the plan's limits and deductible."""
+    plans = params["plans"]
+    plan_id = plan_id or insured.get("plan") or plans["default_plan"]
+    if plan_id not in plans["plans"]:
+        raise ValueError(f"Unknown plan '{plan_id}'")
+    plan = plans["plans"][plan_id]
+    out = copy.deepcopy(insured)
+    out["perils"] = {k: v for k, v in insured["perils"].items() if k in plan["covers"]}
+    out["policy"] = dict(plan["policy"])
+    out["plan"] = plan_id
+    return out
 
 
 def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict]:
@@ -166,12 +165,14 @@ def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict
 
 # ---------------------------------------------------------------- simulation
 
-def _draw(priors, path, rng, n, mode, overrides):
+def _draw(priors, path, rng, n, mode, overrides, joint=None):
     if overrides and path in overrides:
         return np.full(n, float(overrides[path]))
     spec = get_path(priors, path)
     if mode == "point":
         return np.full(n, D.central(spec))
+    if D.is_dist(spec) and spec["dist"] == "dirichlet_component":
+        return joint[spec["component"]]
     return D.sample(spec, rng, n)
 
 
@@ -283,8 +284,18 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     claims_log = []   # (peril, year index, paid) per claim, kept only for illustration
     used = {}  # trace: mean of every parameter as actually drawn (no extra randomness)
 
+    # Joint Dirichlet draw of red-team outcome shares (gamma construction with
+    # inverse-transform uniforms, one named stream per outcome: CRN-friendly).
+    joint = None
+    post = priors.get("red_team", {}).get("posterior")
+    if post and mode != "point":
+        g = {k: D.gamma_ppf(stream("param", f"red_team.theta.{k}").random(n_outer), a)
+             for k, a in post["alpha"].items()}
+        tot = sum(g.values())
+        joint = {k: v / tot for k, v in g.items()}
+
     def draw(path):
-        v = _draw(priors, path, stream("param", path), n_outer, mode, overrides)
+        v = _draw(priors, path, stream("param", path), n_outer, mode, overrides, joint)
         used[path] = float(v.mean())
         return v
 
@@ -293,25 +304,17 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         spec = priors["perils"][peril]
         freq = spec["frequency"]
 
-        if freq["mode"] == "chain":
+        if freq["mode"] == "red_team":
             volume = exposure[freq["exposure_field"]]
             lam = volume
-            chain = ["p_error", "p_harm_given_error", "p_claim_given_harm"]
-            if "adversarial_to_live" in freq:
-                chain.append("adversarial_to_live")
-            for p in chain:
+            for p in ("p_fail", "adversarial_to_live", "p_harm_given_failure", "p_claim_given_harm"):
                 lam = lam * draw(f"{base}.frequency.{p}")
-        else:
+        elif freq["mode"] == "annual_rate":
             lam = draw(f"{base}.frequency.rate")
+        else:
+            raise ValueError(f"Unknown frequency mode '{freq['mode']}' for {peril}")
 
         base_claims = float(np.mean(lam))
-        leak_rel = None
-        if "leak_rate" in freq:
-            leak = draw(f"{base}.frequency.leak_rate")
-            ref = draw(f"{base}.frequency.reference_leak_rate")
-            b = freq["leak_relativity_bounds"]
-            leak_rel = np.clip(leak / ref, b["min"], b["max"])
-            lam = lam * leak_rel
 
         modifier, detail = peril_modifier(params, insured, peril)
         lam = lam * modifier
@@ -344,14 +347,11 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             "expected_loss": float(annual.mean()),
             "modifier": modifier,
             "factors": detail,
-            "base_claims_per_year": base_claims,        # before red-team leak and rating factors
+            "base_claims_per_year": base_claims,        # before rating factors
             "parameters": {k: v for k, v in used.items() if k.startswith(base + ".")},
         }
-        for key in ("p_error", "leak_rate"):
-            if isinstance(freq.get(key), dict) and freq[key].get("credibility"):
-                by_peril[peril]["credibility"] = freq[key]["credibility"]
-        if leak_rel is not None:
-            by_peril[peril]["red_team_leak_relativity"] = float(leak_rel.mean())
+        if freq["mode"] == "red_team":
+            by_peril[peril]["failure_type"] = freq["failure_type"]
 
     # Systemic: correlated event at the insured's model provider.
     ev_p = draw("systemic.annual_prob")
@@ -359,8 +359,13 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     loss_share = draw("systemic.loss_share_of_limit")
     o = np.repeat(np.arange(n_outer), n_inner)
     rng = stream("simulate", "systemic")
-    hit = (rng.random(n_years) < ev_p[o]) & (rng.random(n_years) < share[o])
+    event = rng.random(n_years) < ev_p[o]                  # provider-wide event this year
+    hit = event & (rng.random(n_years) < share[o])          # ...and it reaches this policy
     systemic = np.where(hit, loss_share[o] * agg, 0.0)
+    # For capital, allocate the provider-level event to each policy at its expected
+    # share (share x loss per hit): the hit/miss lottery across the provider's book
+    # diversifies; the event itself does not.
+    systemic_alloc = np.where(event, share[o] * loss_share[o] * agg, 0.0)
 
     total = np.minimum(idio + systemic, agg)
     illustration = (_illustration(claims_log, systemic, total, agg, n_inner, illustrate, stream)
@@ -370,23 +375,40 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     pr = params["pricing"]
     expected_loss = float(total.mean())
 
-    per_outer = total.reshape(n_outer, n_inner).mean(axis=1)
-    el_pct = float(np.percentile(per_outer, pr["uncertainty_load"]["percentile"]))
-    unc_load = 0.0 if n_outer == 1 else max(0.0, el_pct - expected_loss)
+    # Parameter-uncertainty load. Each parameter draw's average over n_inner years
+    # mixes parameter uncertainty with process noise; remove the noise with the
+    # variance decomposition Var(EL_j) = σ²_param + E[s²_j] / n_inner, then charge
+    # the gap to the chosen percentile of a normal with that σ_param.
+    blocks = total.reshape(n_outer, n_inner)
+    per_outer = blocks.mean(axis=1)
+    pctl = pr["uncertainty_load"]["percentile"]
+    if n_outer > 1:
+        var_means = float(per_outer.var(ddof=1))
+        process_var = float(blocks.var(axis=1, ddof=1).mean()) / n_inner
+        param_sd = float(np.sqrt(max(var_means - process_var, 0.0)))
+        z_p = float(stats.norm.ppf(pctl / 100))
+        unc_load = max(0.0, z_p * param_sd)
+    else:
+        var_means = process_var = param_sd = z_p = 0.0
+        unc_load = 0.0
+    el_pct = expected_loss + unc_load
 
     cap = pr["capital"]
     tail_fn = _tvar if cap["tail_metric"] == "tvar" else (lambda x, q: float(np.quantile(x, q)))
     conc = cap["provider_concentration"]
     conc_mult = conc.get(insured.get("provider"), np.mean(list(conc.values()))) / np.mean(list(conc.values()))
-    idio_tail, sys_tail = tail_fn(idio_c, cap["level"]), tail_fn(sys_c, cap["level"])
+    idio_tail, sys_tail = tail_fn(idio_c, cap["level"]), tail_fn(systemic_alloc, cap["level"])
     idio_capital = (1 / np.sqrt(cap["portfolio_size"])) * max(0.0, idio_tail - idio_c.mean())
-    sys_capital = conc_mult * max(0.0, sys_tail - sys_c.mean())
+    sys_capital = conc_mult * max(0.0, sys_tail - systemic_alloc.mean())
     capital = idio_capital + sys_capital
     capital_load = cap["cost_of_capital"] * capital
 
     ex = pr["expenses"]
     technical = expected_loss + unc_load + capital_load + ex["fixed_per_policy"]
-    gross = technical / (1 - ex["variable_ratio"] - ex["profit_margin"])
+    formula_gross = technical / (1 - ex["variable_ratio"] - ex["profit_margin"])
+    plan = (params.get("plans") or {}).get("plans", {}).get(insured.get("plan")) if insured.get("plan") else None
+    minimum = float(plan.get("minimum_premium", 0)) if plan else 0.0
+    gross = max(formula_gross, minimum)
 
     return {
         "insured_id": insured.get("id"),
@@ -400,24 +422,30 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         "capital_load": capital_load,
         "fixed_expense": ex["fixed_per_policy"],
         "technical_premium": technical,
+        "formula_premium": formula_gross,
+        "minimum_premium": minimum,
+        "minimum_applied": gross > formula_gross,
         "gross_premium": gross,
         "rate_on_line": gross / agg,
         "loss_percentiles": {str(q): float(np.quantile(total, q / 100))
                              for q in (50, 75, 90, 95, 99, 99.5)},
         "prob_any_loss": float((total > 0).mean()),
         "illustration": illustration,
+        "red_team_posterior": post,
+        "plan": insured.get("plan"),
         "trace": {
             "loss_histogram": _histogram(total, agg),
             "simulation": {"seed": seed, "n_outer": n_outer, "n_inner": n_inner, "n_years": n_years},
             "policy": {"deductible": ded, "limit_per_claim": per_claim, "aggregate_limit": agg},
             "systemic_parameters": {k: v for k, v in used.items() if k.startswith("systemic.")},
             "expected_idiosyncratic_loss": float(idio_c.mean()),
-            "uncertainty": {"percentile": pr["uncertainty_load"]["percentile"],
-                            "expected_loss_at_percentile": el_pct if n_outer > 1 else expected_loss},
+            "uncertainty": {"percentile": pctl, "expected_loss_at_percentile": el_pct,
+                            "variance_of_draw_means": var_means, "process_variance_share": process_var,
+                            "parameter_sd": param_sd, "z": z_p},
             "capital": {"tail_metric": cap["tail_metric"], "level": cap["level"],
                         "portfolio_size": cap["portfolio_size"], "cost_of_capital": cap["cost_of_capital"],
                         "idiosyncratic_tail": idio_tail, "idiosyncratic_mean": float(idio_c.mean()),
-                        "systemic_tail": sys_tail, "systemic_mean": float(sys_c.mean()),
+                        "systemic_tail": sys_tail, "systemic_mean": float(systemic_alloc.mean()),
                         "provider": insured.get("provider"),
                         "provider_share": conc.get(insured.get("provider")),
                         "average_provider_share": float(np.mean(list(conc.values())))},

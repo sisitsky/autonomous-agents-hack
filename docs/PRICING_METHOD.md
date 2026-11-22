@@ -1,4 +1,4 @@
-# Pricing method
+# Pricing method (model 1.0)
 
 How the AI Underwriter turns a risk profile and red-team results into a premium.
 It is written for the web app's "how was this priced?" page and for reviewers.
@@ -11,184 +11,194 @@ It is written for the web app's "how was this priced?" page and for reviewers.
 | Step | Done by | LLM? |
 |---|---|---|
 | Read documents, fill in the risk profile | Intake agent | Yes (classification only, with cited evidence) |
-| Test the AI system, count failures | Red-team agent | Yes (grading against explicit rubrics) |
-| **Everything below: frequencies, rating factors, Monte Carlo, loads, premium** | **Pricing agent → `engine/`** | **No. Deterministic Python** |
-| Write the plain-English report | Explainer agent | Yes (uses only numbers from the archive) |
+| Test the AI system, label each failure with one type | Red-team agent | Yes (grading against explicit rubrics) |
+| **Everything below: Dirichlet / Jewell credibility, frequencies, rating factors, Monte Carlo, loads, plans** | **Pricing agent → `engine/`** | **No. Deterministic Python** |
+| Write the plain-English report | Explainer agent | Yes (uses only numbers from the archive, each one checked) |
 
-The pricing agent (`agents/pricer.py`) calls the engine, prices the insured
-**twice** and checks that both results are identical, then archives the record. Same
-insured + same parameter files + same seed ⇒ identical numbers.
+The pricing agent prices the chosen plan **twice** and checks that both results
+are identical before archiving. Same insured + same parameter files + same
+experience store + same seed ⇒ identical numbers.
 
 ## Where the numbers live
 
 | File | Contents |
 |---|---|
-| `params/priors.yaml` | Distributions for every uncertain parameter, each with a `source:` note |
-| `params/rating_factors.yaml` | Rating factors, their levels and relativities, the modifier cap |
+| `params/priors.yaml` | The eight perils, red-team settings, distributions for every uncertain parameter (each with a `source:` note) |
+| `params/rating_factors.yaml` | Rating factors, their levels and relativities, which perils each applies to, the modifier cap |
+| `params/plans.yaml` | Coverage tiers: covered perils, limits, deductibles, minimum premiums |
 | `params/pricing.yaml` | Uncertainty percentile, capital (TVaR level, pool size, cost of capital, provider shares), expenses |
 | `params/guardrails.yaml` | Bounds and change limits enforced on every parameter change |
-| `data/portfolio/redteam_experience.jsonl` | Portfolio red-team results for Bühlmann credibility (data, updated by every run) |
+| `data/portfolio/redteam_experience.jsonl` | Portfolio red-team outcomes for Jewell credibility (data, updated by every run) |
 
-Parameter distributions: `beta(α, β)` for probabilities from test counts,
-`pert(min, mode, max)` for expert three-point estimates, `lognormal(median, p90)`, and
-`uniform(min, max)`.
+## Perils: common AI pitfalls
+
+| Peril | How its frequency is measured | Typical harm |
+|---|---|---|
+| Wrong information (hallucination, wrong policy or price) | Red team | Small individual losses; rare group claims |
+| Unauthorized commitment (refunds, credits, discounts, exceptions) | Red team | Promises the company must honor or defend |
+| Data leakage (personal or internal data disclosed) | Red team | Privacy claims; rare regulatory actions |
+| Prompt injection (hidden instructions take over the AI) | Red team | Fraud, unauthorized actions, breaches |
+| Bias and discrimination | Profile and rating factors | Individual or class discrimination claims |
+| IP infringement | Profile and rating factors | Copyright or trademark claims |
+| Harmful content (toxic or defamatory output) | Profile and rating factors | Defamation and harassment claims |
+| Unsafe advice (medical, financial, legal, safety) | Profile and rating factors | Bodily or financial harm from reliance |
+
+Each peril has its own frequency chain, severity distribution and set of rating
+factors, so risks are priced differently by what can go wrong and how much it costs.
+
+## Plans
+
+| Plan | Covers | Per claim / aggregate | Deductible | Minimum premium |
+|---|---|---|---|---|
+| Essential | Wrong information, unauthorized commitment | $250k / $500k | $5k | $2.5k |
+| Professional | + data leakage, prompt injection, IP | $1M / $2M | $10k | $7.5k |
+| Enterprise | All eight perils | $2.5M / $5M | $25k | $25k |
+
+Every quote prices all three plans with the same seed. A plan prices only the
+perils it covers *and* the insured is exposed to.
+
+**Calibration.** Severities reflect that most chatbot harms are small and that the
+expensive cases are rare group claims and regulatory actions. The parameters are
+set so a well-tested customer-facing bot lands near a 1% rate on line on the
+Professional plan. Market reference points (November 2026, indicative):
+- Brokers quote $2.5k–$10k a year for low-exposure AI startups with a $1M limit.
+- A chatbot endorsement for a company with modest customer-facing exposure runs $8k–$25k.
+- Published AI-liability tiers start around $15k a year.
+- Insurance Insider reports about $25k per $1M of coverage for smaller insureds, and up to $100k per $1M for large ones.
+
+Northwind example, Professional plan: about $20k for a bot that passes all 40
+tests, about $66k for the planted-flaw bot that fails 24 of 40.
 
 ## Equations
 
 The ids match `engine/audit.py: EQUATIONS` and the `equation` fields in each quote's
 `calculation.json`.
 
-### 1. Claim frequency
+### 1. Red-team outcomes: Dirichlet with Jewell credibility
 
-**`frequency_chain`**, for perils driven by output volume (misinformation):
+Each of the n test cases ends in a pass or exactly one failure type (the red-team
+judge records the most serious consequence). The outcome shares
+θ = (θ_pass, θ_wrong_info, θ_commitment, θ_leak, θ_injection) sum to one.
 
-    λ = N × P(error) × P(harm | error) × P(claim | harm) [× r_adv]
+**`dirichlet`**: θ ~ Dirichlet(A μ + counts). Each share's marginal is
+Beta(α_k, α_0 − α_k). The shares are drawn jointly with the gamma construction
+(inverse-transform uniforms, one random stream per outcome). They are negatively
+correlated: a system that fails more one way has less room to fail another.
 
-N is outputs per year from intake. P(error) comes from red-team results when
-available, otherwise from the prior.
+**`jewell_credibility`**: Jewell (1974) showed the Dirichlet–multinomial has exact
+credibility. The posterior mean is linear:
 
-**`frequency_rate`**, for perils with a direct annual rate (privacy, discrimination, IP):
+    E[θ_k | counts] = Z × X_k + (1 − Z) × μ_k,   Z = n / (n + A)
 
-    λ = rate [× ρ_leak]
+One Z applies to every failure type.
 
-**`red_team_beta`**: F failures in T cases update a uniform prior:
+**`buhlmann_straub`**: μ and A are estimated from every *other* insured tested on
+the same suite (leave-one-out). For each outcome k:
 
-    P(error) ~ Beta(F + 1, T − F + 1)
+    μ_k   = Σ nᵢ Xᵢₖ / m
+    EPV_k = Σ nᵢ Xᵢₖ (1 − Xᵢₖ) / Σ (nᵢ − 1)
+    VHM_k = [Σ nᵢ (Xᵢₖ − μ_k)² − (r − 1) EPV_k] / (m − Σ nᵢ² / m)
+    A     = Σ_k EPV_k / Σ_k VHM_k
 
-Few tests give a wide distribution, and that width becomes uncertainty load.
+Under the Dirichlet, EPV_k / VHM_k = A for every outcome, so the outcomes are pooled.
+**This updates continuously.** Every underwriting run records its outcome counts in
+the experience store, replacing any earlier record for that insured, and the next
+quote re-estimates μ and A. The store ships with a FICTIONAL seed portfolio of 12
+bots. With fewer than 5 other insureds a weak fallback prior is used (worth 10 cases).
 
-**`buhlmann_credibility`**: how much to trust the insured's own red-team result
-versus the rest of the portfolio:
+**`adversarial_ratio`**: adversarial suites over-sample failure modes, so the live
+failure rate is θ_k × r_adv, with r_adv ~ pert(0.002, 0.006, 0.02).
 
-    Z = n / (n + k),   k = EPV / VHM,   priced rate = Z × X + (1 − Z) × μ
+### 2. Claim frequency
 
-Here n is the number of cases tested and X the observed failure rate. μ is the
-portfolio mean. EPV is the expected process variance (test-to-test noise within one
-system) and VHM is the variance of hypothetical means (real differences between
-systems). More tests give more credibility.
+**`frequency_red_team`**, for the four red-team perils:
 
-**`buhlmann_straub`**: μ, EPV and VHM are estimated non-parametrically from every
-*other* insured tested with the same suite. The insured's own record is left out,
-so its result is never counted twice.
+    λ_k = N × θ_k × r_adv × P(harm | failure_k) × P(claim | harm_k)
 
-    μ   = Σ nᵢ Xᵢ / m
-    EPV = Σ nᵢ Xᵢ (1 − Xᵢ) / Σ (nᵢ − 1)
-    VHM = [Σ nᵢ (Xᵢ − μ)² − (r − 1) EPV] / (m − Σ nᵢ² / m)
+Here N is outputs per year from intake. Each type has its own harm and claim
+propensities.
 
-This is separate for error cases (P(error)) and data-leak probes (the leak rate).
-**It updates continuously.** Every underwriting run adds its result to
-`data/portfolio/redteam_experience.jsonl`, replacing any earlier record for the same
-insured, and the next quote re-estimates μ, EPV, VHM and k from the larger
-portfolio. The store ships with a FICTIONAL seed portfolio of 12 earlier
-customer-service bots. The SHA-256 of the store is recorded with every quote. With
-fewer than 5 other insureds, the uniform prior Beta(1, 1) is used.
+**`frequency_rate`**, for the four profile perils: λ = rate.
 
-**`credibility_prior`**: credibility enters the Beta as its prior:
-
-    P(fail) ~ Beta(F + μk, n − F + (1 − μ)k)
-
-The posterior mean of this Beta is exactly the Bühlmann estimate, so credibility
-and parameter uncertainty come from one distribution. Live-sample suites (the
-benchmark book) keep Beta(F + 1, n − F + 1).
-
-**`adversarial_ratio`**: adversarial suites over-sample failure modes, so
-
-    P(error)_live = P(fail | probe) × r_adv,   r_adv ~ pert(0.003, 0.01, 0.03)
-
-Tests sampled from live traffic (`suite: live_sample`) skip this step.
-
-**`leak_relativity`**: data-leak probes scale the privacy rate:
-
-    ρ_leak = clip(L / L_ref, 0.5, 3.0),   L ~ Beta(leaks + 1, passes + 1),   L_ref ~ pert(0.05, 0.15, 0.35)
-
-Each red-team case prices one peril only. Leak probes price privacy; everything else
-prices P(error).
-
-### 2. Rating factors
-
-**`rating_modifier`**:
-
-    M = clip(∏ f_i, 0.5, 3.0)
-
-The product runs over the factors that apply to the peril (for example, autonomy
-applies to misinformation and discrimination, not to privacy). A factor intake
-couldn't determine is left out, which is neutral (× 1.0). Measured model
-performance is not a factor: it enters through the red-team counts, and counting
-it twice would double-charge.
+**`rating_modifier`**: M = clip(∏ f_i, 0.5, 3.0) over the factors that apply to the
+peril. A factor intake couldn't determine is left out, which is neutral. Measured
+behavior is not a factor: it enters through the red-team counts.
 
 ### 3. Simulation
 
 **`claim_count`**: claims in a simulated year, `n ~ Poisson(λ × M)`.
 
-**`severity`**: each claim's size,
+**`severity`**: each claim's size, `X ~ Lognormal(μ = ln m, σ = (ln p90 − ln m) / 1.2816)`.
+With probability q, the claim instead comes from a Pareto tail, `X = T × U^(−1/α)`
+(group claims and regulatory actions).
 
-    X ~ Lognormal(μ = ln m, σ = (ln p90 − ln m) / 1.2816)
+**`policy_layer`**: `paid = min(max(X − d, 0), L_claim)`, with the year's total capped
+at the plan's aggregate limit A.
 
-With probability q, the claim instead comes from a Pareto tail, `X = T × U^(−1/α)`.
+**`systemic`**: a provider-wide event (probability p_s) that hits this insured with
+probability s and costs ℓ × A.
 
-**`policy_layer`**: `paid = min(max(X − d, 0), L_claim)`. The year's total is capped
-at the aggregate limit A.
+The Monte Carlo has two layers: n_outer = 2,000 parameter draws × n_inner = 200
+simulated years each, 400,000 years in total, seed 42. Every parameter path and
+every peril's simulation has its own named random stream (common random numbers),
+so the tornado and controls compare like with like.
 
-**`systemic`**: a correlated event at the insured's model provider. It happens with
-probability p_s, hits this insured with probability s, and costs ℓ × A.
-
-The Monte Carlo has two layers: n_outer parameter draws (what we don't know) ×
-n_inner simulated years per draw (luck). The default is 2,000 × 200 = 400,000
-years, seed 42. Every parameter path and every peril's simulation draws from its
-own named random stream (seeded from the seed plus a hash of the name), and
-parameters use inverse-transform sampling. So changing one parameter or peril
-never shifts the random numbers used by any other (common random numbers), and
-price differences in the tornado and controls reflect the change, not noise.
+**Accuracy checks** (`tests/test_math.py`): with every parameter fixed, the
+simulated expected loss matches the closed form λ × [LEV(d + L) − LEV(d)] for
+lognormal claims within 2%, with and without deductibles and per-claim limits.
+The gross-up arithmetic and the aggregate cap are checked exactly. The
+uncertainty load is checked against its closed form when only the claim rate is
+uncertain.
 
 ### 4. Premium
 
 **`expected_loss`**: `EL = mean of min(idiosyncratic + systemic, A)` over all simulated years.
 
-**`uncertainty_load`**: `U = max(0, P75 of per-draw expected loss − EL)`. This charges for
-not knowing the parameters.
+**`uncertainty_load`**: `U = z₀.₇₅ × σ_param`, where
+`σ²_param = Var(EL_j) − E[s²_j] / n_inner`. Each parameter draw's average loss mixes
+parameter uncertainty with luck. The luck part (within-draw variance divided by
+years per draw) is removed, so the load charges only for not knowing the parameters.
 
 **`capital`**:
 
-    C = (TVaR₉₉.₅(idio) − mean(idio)) / √n_pool + c × (TVaR₉₉.₅(sys) − mean(sys))
+    C = (TVaR₉₉.₅(idio) − mean) / √n_pool + c × (TVaR₉₉.₅(event share) − mean)
 
-Independent losses diversify across a pool of n_pool = 400 policies; systemic
-losses get no diversification credit.
+Independent losses diversify across a pool of 400 policies. The provider event is
+allocated to each policy at its expected share (s × ℓ × A), because which policies
+it reaches diversifies but the event itself does not.
 
-**`concentration`**: `c = provider share / average provider share`. Policies on a heavily
-used provider carry more systemic capital.
+**`concentration`**: `c = provider share / average provider share`.
 
 **`capital_load`**: `K = 10% × C`.
 
-**`gross_premium`**: `G = (EL + U + K + F) / (1 − v − π)`, with fixed expense F = $2,500,
-variable expenses v = 25% and profit π = 5%.
+**`gross_premium`**: `G = max((EL + U + K + F) / (1 − v − π), plan minimum)`, with fixed
+expense F = $2,500, variable expenses v = 25% and profit π = 5%.
 
 **`rate_on_line`**: `ROL = G / A`.
 
-## Sensitivity and controls
+## Sensitivity, controls and the simulation graphic
 
-- **Tornado** (`engine/tornado.py`): each uncertain parameter is set to its P10 and P90
-  with the others at their medians, using point pricing (no uncertainty load). Bars
-  are sorted by swing.
-- **Controls** (`engine/controls.py`): the insured is re-priced with the same seed under
-  each change it could make. These are rating factors marked `controllable: true`
-  (autonomy, governance, data sensitivity, vendor indemnity), moved to every cheaper
-  level, plus "fix every red-team failure and re-test".
+- **Tornado** (`engine/tornado.py`): each uncertain parameter, including each Dirichlet
+  share through its Beta marginal, is set to its P10 and P90 with the others at their
+  medians.
+- **Controls** (`engine/controls.py`): re-pricing with the same seed under each change
+  the insured could make: autonomy, governance, data sensitivity and vendor indemnity
+  levels, plus "fix every red-team failure and re-test".
+- **Monte Carlo graphic**: sample policy years taken straight from the simulation. On
+  the web page, "Run simulation" re-runs the engine with a fresh random seed, so the
+  lines, the cloud and the expected-loss estimate genuinely change. Only the
+  official quote is fixed on seed 42.
 
 ## The archive for each quote
 
 `agents/runs/<id>/pricing/calculation.json` (and a readable `calculation.md`) holds:
+- `meta`: provenance (timestamp, git commit, parameter versions, SHA-256 of every
+  parameter, engine and experience file, seed and simulation size, reproducibility check).
+- `plan` and `plans`: the quoted plan and every plan priced for comparison.
+- `red_team_credibility`: counts, μ, A, Z, observed and credibility-weighted shares,
+  posterior α, and every portfolio insured's shrinkage.
+- `perils`, `systemic`, `premium_build_up`, `loss_distribution`, `tornado`, `controls`,
+  `simulation_illustration`, and `equations`.
 
-| Key | Contents |
-|---|---|
-| `meta` | Timestamp, git commit, parameter versions, SHA-256 of every parameter and engine file, seed and simulation size, reproducibility check |
-| `insured` | The exact engine input |
-| `perils.<name>` | Exposure, base claims, leak relativity, each rating factor with its relativity and source, raw and capped modifier, expected claims and loss, and every parameter's distribution, median, mean as drawn, and source |
-| `systemic` | Provider, expected systemic loss, parameters |
-| `premium_build_up` | Each step with its value, equation id, and inputs |
-| `loss_distribution` | Annual-loss percentiles, probability of any loss |
-| `tornado`, `controls` | Sensitivity bars; cheaper options with re-priced premiums |
-| `equations` | This page's equations (plain text, LaTeX for KaTeX, meaning) |
-
-To reproduce a quote, check out the recorded commit (the SHA-256 hashes confirm
-the parameter files match) and run `python -m agents.pricer <insured.yaml>`.
-Example: `docs/examples/northwind_calculation.md`.
+To reproduce a quote, check out the recorded commit (the hashes confirm the files
+match) and run `python -m agents.pricer <insured.yaml>`.

@@ -56,7 +56,9 @@ def test_better_governance_lowers_price(params, shopbot):
 
 
 def test_more_red_team_failures_raises_price(params, shopbot):
-    worse = copy.deepcopy(shopbot); worse["red_team"] = {"tested": 10000, "failures": 60}
+    worse = copy.deepcopy(shopbot)
+    worse["red_team"]["failures_by_type"] = {"wrong_information": 6, "unauthorized_commitment": 8,
+                                             "data_leakage": 6, "prompt_injection": 6}
     assert price(worse, params, **FAST)["expected_loss"] > price(shopbot, params, **FAST)["expected_loss"]
 
 
@@ -68,7 +70,7 @@ def test_limits_respected(params, shopbot):
 def test_modifier_is_capped(params, shopbot):
     extreme = copy.deepcopy(shopbot)
     extreme["factors"].update(use_case_criticality="critical", autonomy="autonomous_actions", governance="weak")
-    mod, _ = peril_modifier(params, extreme, "misinformation")
+    mod, _ = peril_modifier(params, extreme, "wrong_information")
     assert mod == params["rating_factors"]["combined_modifier_bounds"]["max"]
 
 

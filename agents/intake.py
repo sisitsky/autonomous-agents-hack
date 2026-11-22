@@ -242,6 +242,21 @@ def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_") or "insured"
 
 
+def choose_plan(requested: dict, params: dict) -> tuple[str, dict]:
+    """The smallest plan whose aggregate limit covers what the company asked for
+    (or the default plan when it asked for nothing)."""
+    plans = params["plans"]
+    want = int(requested.get("aggregate_limit") or 0)
+    if not want:
+        pid = plans["default_plan"]
+        return pid, plans["plans"][pid]
+    ranked = sorted(plans["plans"].items(), key=lambda kv: kv[1]["policy"]["aggregate_limit"])
+    for pid, plan in ranked:
+        if plan["policy"]["aggregate_limit"] >= want:
+            return pid, plan
+    return ranked[-1]
+
+
 def resolve_provider(profile: dict, params: dict, aliases: dict | None = None) -> str | None:
     """Map the stated vendor to a provider bucket used for systemic capital.
 
@@ -308,7 +323,7 @@ def to_insured(profile: dict, params: dict, insured_id: str | None = None,
     for item in profile["perils"]:
         name = item["peril"]
         freq = priors[name]["frequency"]
-        if freq["mode"] == "chain":
+        if freq["mode"] in ("chain", "red_team"):
             n = int(profile["exposure"]["outputs_per_year"] or 0)
             if n <= 0:
                 notes.append(f"Peril `{name}` needs {freq['exposure_field']}, which the submission does not state. "
@@ -325,13 +340,10 @@ def to_insured(profile: dict, params: dict, insured_id: str | None = None,
         notes.append(f"Model provider '{profile['model_provider']['name']}' is not mapped to a provider bucket; "
                      "systemic capital uses the portfolio average. Add it to agents/provider_aliases.yaml.")
 
-    req = profile["requested_policy"]
-    policy = {k: (req.get(k) or DEFAULT_POLICY[k]) for k in DEFAULT_POLICY}
-    if any(not req.get(k) for k in DEFAULT_POLICY):
-        notes.append(f"Some policy terms not requested; defaults used: {policy}.")
-    if policy["limit_per_claim"] > policy["aggregate_limit"]:
-        policy["aggregate_limit"] = policy["limit_per_claim"]
-        notes.append("Per-claim limit exceeded aggregate; aggregate raised to match.")
+    plan_id, plan = choose_plan(profile["requested_policy"], params)
+    policy = dict(plan["policy"])
+    notes.append(f"Quoted on the {plan['name']} plan ({policy['limit_per_claim']:,} per claim / "
+                 f"{policy['aggregate_limit']:,} aggregate); every plan is priced for comparison.")
 
     insured = {
         "id": insured_id or _slug(profile["system_name"] or profile["company_name"]),
@@ -339,7 +351,7 @@ def to_insured(profile: dict, params: dict, insured_id: str | None = None,
     }
     if provider:
         insured["provider"] = provider
-    insured.update({"perils": perils, "factors": factors, "policy": policy})
+    insured.update({"plan": plan_id, "perils": perils, "factors": factors, "policy": policy})
     return insured, notes
 
 

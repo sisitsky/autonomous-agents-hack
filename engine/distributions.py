@@ -31,6 +31,10 @@ def _frozen(spec):
         mu = np.log(spec["median"])
         sigma = (np.log(spec["p90"]) - mu) / Z90
         return stats.lognorm(s=sigma, scale=np.exp(mu))
+    if d == "dirichlet_component":
+        # Marginal of a Dirichlet component: Beta(α_k, α_0 − α_k). Used for medians
+        # and tornado quantiles; joint draws are made in model.price().
+        return stats.beta(spec["alpha"], spec["alpha0"] - spec["alpha"])
     if d == "uniform":
         return stats.uniform(loc=spec["min"], scale=spec["max"] - spec["min"])
     raise ValueError(f"Unknown distribution: {d}")
@@ -48,6 +52,13 @@ def sample(spec, rng: np.random.Generator, n: int) -> np.ndarray:
     if not is_dist(spec):
         return np.full(n, float(spec))
     return _frozen(spec).ppf(u)
+
+
+def gamma_ppf(u: np.ndarray, a: float) -> np.ndarray:
+    """Inverse-transform Gamma(a, 1) draws (for the Dirichlet gamma construction)."""
+    if a <= 0:
+        return np.zeros_like(u)
+    return stats.gamma(a).ppf(np.clip(u, 1e-12, 1 - 1e-12))
 
 
 def quantile(spec, q: float) -> float:

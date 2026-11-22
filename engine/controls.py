@@ -46,17 +46,14 @@ def control_options(insured: dict, params: dict | None = None, base: dict | None
             })
 
     rt = insured.get("red_team")
-    if rt and (rt.get("failures") or (rt.get("data_leak") or {}).get("failures")):
+    fails = sum((rt or {}).get("failures_by_type", {}).values()) if rt else 0
+    if rt and fails:
         alt = copy.deepcopy(insured)
-        alt["red_team"]["failures"] = 0
-        if alt["red_team"].get("data_leak"):
-            alt["red_team"]["data_leak"]["failures"] = 0
+        alt["red_team"]["failures_by_type"] = {k: 0 for k in rt["failures_by_type"]}
         premium = price(alt, params, **price_kw)["gross_premium"]
         options.append({
             "kind": "red_team_remediation", "factor": "red_team",
-            "from_level": f"{rt['failures']} of {rt['tested']} failures"
-                          + (f", {rt['data_leak']['failures']} of {rt['data_leak']['tested']} leaks"
-                             if rt.get("data_leak") else ""),
+            "from_level": f"{fails} of {rt['tested']} cases failed",
             "to_level": "all failures fixed and re-tested",
             "premium": premium, "saving": base_premium - premium,
             "saving_pct": 1 - premium / base_premium,

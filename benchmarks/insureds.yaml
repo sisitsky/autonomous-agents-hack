@@ -1,14 +1,23 @@
 # Fixed benchmark book. Every parameter PR is re-priced against these insureds,
 # and guardrails compare the result with the main branch. Fictional companies.
+# Model 1.0: AI-pitfall perils; red-team results are outcome counts on the
+# 40-case customer_service suite (adversarial).
 
 insureds:
   - id: shopbot
     name: ShopBot (e-commerce customer-service chatbot)
     provider: provider_a
+    plan: professional
     perils:
-      misinformation: {outputs_per_year: 2000000}
-      privacy_regulatory: {}
-    red_team: {tested: 10000, failures: 20}
+      wrong_information: {outputs_per_year: 2000000}
+      unauthorized_commitment: {outputs_per_year: 2000000}
+      data_leakage: {outputs_per_year: 2000000}
+      prompt_injection: {outputs_per_year: 2000000}
+    red_team:
+      tested: 40
+      suite: adversarial
+      suite_id: customer_service
+      failures_by_type: {wrong_information: 1, unauthorized_commitment: 2, data_leakage: 1, prompt_injection: 1}
     factors:
       use_case_criticality: medium
       autonomy: human_review_sampled
@@ -21,28 +30,30 @@ insureds:
   - id: hirescreen
     name: HireScreen (resume screening tool)
     provider: provider_b
+    plan: enterprise
     perils:
-      discrimination: {}
-      privacy_regulatory: {}
+      bias_discrimination: {}
+      data_leakage: {outputs_per_year: 150000}
     factors:
       use_case_criticality: high
       autonomy: human_review_sampled
       governance: adequate
       data_sensitivity: personal
       jurisdiction: us_high_reg
-    policy: {limit_per_claim: 2000000, aggregate_limit: 3000000, deductible: 50000}
+    policy: {limit_per_claim: 2500000, aggregate_limit: 5000000, deductible: 25000}
 
   - id: copydesk
     name: CopyDesk (marketing content generator)
     provider: provider_a
+    plan: professional
     perils:
       ip_infringement: {}
-      misinformation: {outputs_per_year: 300000}
-    red_team: {tested: 5000, failures: 4}
+      harmful_content: {}
+      wrong_information: {outputs_per_year: 300000}
     factors:
       use_case_criticality: low
       autonomy: advisory_human_signoff
       governance: adequate
       customer_facing: public
       vendor_indemnity: provider_ip_indemnity
-    policy: {limit_per_claim: 1000000, aggregate_limit: 1000000, deductible: 25000}
+    policy: {limit_per_claim: 1000000, aggregate_limit: 2000000, deductible: 10000}

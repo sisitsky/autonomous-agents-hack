@@ -19,7 +19,7 @@
 # pricing; severities reflect that most chatbot harms are small and the expensive
 # cases are rare group claims and regulatory actions. Judgment, illustrative.
 
-version: 1.1.1
+version: 1.1.2
 updated: '2026-11-22'
 
 # ---------------------------------------------------------------- red-team measured perils
@@ -106,7 +106,7 @@ perils:
       mode: red_team
       failure_type: prompt_injection
       exposure_field: outputs_per_year
-      p_harm_given_failure: {dist: pert, min: 0.002019, mode: 0.01009, max: 0.04037, source: "Share of successful injections that are malicious and cause loss (illustrative). Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Data Destruction via Indirect Prompt Injection Targeting Claude Computer-Use' (weak), mode 0.01 → 0.01005. Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Data Exfiltration from Slack AI via Indirect Prompt Injection' (weak), mode 0.01005 → 0.01007. Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Financial Transaction Hijacking with M365 Copilot as an Insider' (weak), mode 0.01007 → 0.01009."}
+      p_harm_given_failure: {dist: pert, min: 0.002024, mode: 0.01011, max: 0.04047, source: "Share of successful injections that are malicious and cause loss (illustrative). Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Data Destruction via Indirect Prompt Injection Targeting Claude Computer-Use' (weak), mode 0.01 → 0.01005. Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Data Exfiltration from Slack AI via Indirect Prompt Injection' (weak), mode 0.01005 → 0.01007. Updated 2026-11-22 by calibration 20261122-222415: mitre_atlas 'Financial Transaction Hijacking with M365 Copilot as an Insider' (weak), mode 0.01007 → 0.01009. Updated 2026-11-22 by calibration 20261122-230406: nvd 'CVE-2026-18883 (prompt injection)' (weak), mode 0.01009 → 0.01011."}
       p_claim_given_harm: {dist: pert, min: 0.001, mode: 0.004, max: 0.012, source: "Share of malicious injections producing a third-party claim (illustrative; cyber analog)."}
     severity:
       body:

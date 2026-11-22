@@ -321,3 +321,8 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .msg .chg { margin-top: 6px; font-size: 12.5px; color: var(--ink-2); }
 .msg .chg li { margin: 2px 0; }
 .msg .px { margin-top: 6px; font-weight: 600; }
+
+.unlock { font: inherit; font-size: 13px; color: var(--ink-2); background: transparent; border: 1px solid var(--line-2);
+  border-radius: 999px; padding: 5px 12px; cursor: pointer; margin-right: 4px; }
+.unlock.on { color: #6be06b; border-color: rgba(12,163,12,.5); }
+@media (max-width: 640px) { .unlock { display: inline-block; } }

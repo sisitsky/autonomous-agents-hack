@@ -17,7 +17,21 @@
   const paras = t => (t || "").split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("");
   const gross = calc => calc.premium_build_up.find(s => s.id === "gross_premium").value;
 
+  // Access code: entered once, remembered in this browser, sent with every call.
+  const CODE_KEY = "uw_access_code";
+  const getCode = () => { try { return localStorage.getItem(CODE_KEY) || ""; } catch { return ""; } };
+  const setCode = c => { try { c ? localStorage.setItem(CODE_KEY, c) : localStorage.removeItem(CODE_KEY); } catch {} renderLock(); };
+  function renderLock() {
+    const b = document.getElementById("unlock"); if (!b) return;
+    const has = !!getCode();
+    b.textContent = has ? "🔓 Unlocked" : "🔒 Enter access code";
+    b.classList.toggle("on", has);
+    const live = document.getElementById("live-code"); if (live && has && !live.value) live.value = getCode();
+  }
+  window.uwAccess = { getCode, setCode };
   async function api(path, body) {
+    if (body && !body.access_code && getCode()) body = { ...body, access_code: getCode() };
+    if (body && body.access_code && body.access_code !== getCode()) setCode(body.access_code);
     const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     let data; try { data = await r.json(); } catch { data = {}; }
     if (!r.ok) throw new Error(data.detail || `${path} failed (${r.status})`);
@@ -562,6 +576,12 @@
     $("case-verdict").onchange = drawCases;
     $("chat-form").onsubmit = chat;
     $("uw-form").onsubmit = uwSend;
+    $("unlock").onclick = () => {
+      if (getCode() && confirm("Forget the access code in this browser?")) return setCode("");
+      const c = prompt("Access code (needed for steps that call Claude):", getCode());
+      if (c !== null) setCode(c.trim());
+    };
+    renderLock();
     $("live-form").onsubmit = runLive;
     $("live-files").onchange = e => readFiles(e.target.files);
     $("load-sample").onclick = loadSample;

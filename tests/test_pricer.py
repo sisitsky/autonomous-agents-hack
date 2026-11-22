@@ -128,13 +128,14 @@ def test_controls_lower_price_and_are_sorted(tested_shopbot, params):
 
 
 def test_trace_does_not_change_prices(params):
-    # Benchmark book prices pinned when per-parameter random streams were introduced;
-    # tracing and credibility (adversarial suites only) must not move them.
-    from engine.cli import benchmark
-    b = benchmark()["insureds"]
-    assert round(b["shopbot"]["gross_premium"]) == 14590
-    assert round(b["hirescreen"]["gross_premium"]) == 21985
-    assert round(b["copydesk"]["gross_premium"]) == 7708
+    """Tracing and the simulation illustration consume no pricing randomness, and
+    pricing is deterministic. (Not pinned to fixed numbers: Loop 2 calibration
+    PRs change parameters, and therefore prices, by design.)"""
+    for b in ("shopbot", "hirescreen", "copydesk"):
+        ins = load_insured(b)
+        plain = price(ins, params)
+        illus = price(ins, params, illustrate=60)
+        assert plain["gross_premium"] == illus["gross_premium"] == price(ins, params)["gross_premium"]
 
 
 def test_every_plan_priced_and_ordered(archived):

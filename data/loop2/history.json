@@ -1,0 +1,236 @@
+[
+ {
+  "run_id": "20261122-222415",
+  "run_at": "2026-11-22T22:24:21+00:00",
+  "items_reviewed": 60,
+  "changes": [
+   {
+    "item_id": "manual:demo-2026-11-chatbot-ruling",
+    "event": "A (fictional) state appellate court held a retailer liable for refund promises",
+    "event_description": "A state appellate court (the item marks it as fictional, a manually entered demo) held a retailer liable for refund promises its customer-service chatbot made. The court rejected the defense that the chatbot was a separate agent responsible for its own statements, and it let affected customers pursue their claims together as a group.",
+    "source": "manual",
+    "source_url": "https://example.com/fictional-ruling",
+    "event_date": "2026-11-20",
+    "evidence_type": "court_ruling",
+    "parameter": "perils.unauthorized_commitment.severity.tail.prob",
+    "old": {
+     "min": 0.0005,
+     "mode": 0.002,
+     "max": 0.006
+    },
+    "new": {
+     "min": 0.0005196,
+     "mode": 0.002078,
+     "max": 0.006235
+    },
+    "mode_change_pct": 0.038999999999999924,
+    "implied_change": 0.3,
+    "strength": "moderate",
+    "prior_weight": 20.0,
+    "evidence_weight": 3.0,
+    "reasoning": "This is directly on point for unauthorized_commitment. Liability for chatbot promises is already reflected in the prior through the Moffatt v. Air Canada reference, so the new element is that group claims were allowed. A systematic chatbot promise made to many customers can now aggregate into a group claim. That points to a higher share of claims becoming group claims, so I propose a +30% change to tail.prob. A possible secondary effect is a higher p_claim_given_harm, but only one parameter can be moved and the group-claim holding is the more novel signal. An appellate ruling would normally rate as strong. I rated it moderate because the item is labeled fictional or demo, comes from a single jurisdiction, and gives no loss figures."
+   },
+   {
+    "item_id": "mitre_atlas:6488863534692109",
+    "event": "Code to Deploy Destructive AI Agent Discovered in Amazon Q VS Code Extension",
+    "event_description": "Malicious code inserted into an official Amazon Q VS Code extension release instructed the AI agent to wipe local and cloud resources. The release was later revoked.",
+    "source": "mitre_atlas",
+    "source_url": "https://atlas.mitre.org/studies/AML.CS0047",
+    "event_date": "2025-07-13",
+    "evidence_type": "incident",
+    "parameter": "systemic.annual_prob",
+    "old": {
+     "min": 0.01,
+     "mode": 0.03,
+     "max": 0.1
+    },
+    "new": {
+     "min": 0.01002,
+     "mode": 0.03007,
+     "max": 0.1002
+    },
+    "mode_change_pct": 0.0023333333333332984,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 20.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This is a real provider-level compromise that shipped to many users at once, which is a precursor of a systemic event. No widespread losses were reported, so it supports only a slight upward nudge."
+   },
+   {
+    "item_id": "mitre_atlas:f5d383d1ff511757",
+    "event": "Data Destruction via Indirect Prompt Injection Targeting Claude Computer-Use",
+    "event_description": "HiddenLayer researchers hid a prompt injection in a PDF. When Claude Computer Use opened the file, it ran a shell command that wiped the filesystem.",
+    "source": "mitre_atlas",
+    "source_url": "https://atlas.mitre.org/studies/AML.CS0046",
+    "event_date": "2024-10-24",
+    "evidence_type": "incident",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002,
+     "mode": 0.01,
+     "max": 0.04
+    },
+    "new": {
+     "min": 0.00201,
+     "mode": 0.01005,
+     "max": 0.04019
+    },
+    "mode_change_pct": 0.004999999999999893,
+    "implied_change": 0.1,
+    "strength": "weak",
+    "prior_weight": 20.0,
+    "evidence_weight": 1.0,
+    "reasoning": "A research demonstration with no real victim. It shows that agentic tool access lets a successful injection cause destructive loss, which supports a small upward nudge to the share of injections that cause harm."
+   },
+   {
+    "item_id": "mitre_atlas:9bebcd563149c2a0",
+    "event": "Data Exfiltration from Slack AI via Indirect Prompt Injection",
+    "event_description": "PromptArmor showed that a malicious post in a public Slack channel could make Slack AI leak private data, such as an API key, to an attacker.",
+    "source": "mitre_atlas",
+    "source_url": "https://atlas.mitre.org/studies/AML.CS0035",
+    "event_date": "2024-08-20",
+    "evidence_type": "incident",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.00201,
+     "mode": 0.01005,
+     "max": 0.04019
+    },
+    "new": {
+     "min": 0.002015,
+     "mode": 0.01007,
+     "max": 0.04028
+    },
+    "mode_change_pct": 0.0019900497512439497,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 21.0,
+    "evidence_weight": 1.0,
+    "reasoning": "A demonstration with no reported loss. It shows a realistic exfiltration path through retrieval-based assistants, so at most a weak signal."
+   },
+   {
+    "item_id": "mitre_atlas:d8a630d1f6d7be42",
+    "event": "Financial Transaction Hijacking with M365 Copilot as an Insider",
+    "event_description": "Zenity researchers sent a crafted email that made Microsoft 365 Copilot give a user the attacker's bank details for a wire transfer.",
+    "source": "mitre_atlas",
+    "source_url": "https://atlas.mitre.org/studies/AML.CS0026",
+    "event_date": "2024-08-08",
+    "evidence_type": "incident",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002015,
+     "mode": 0.01007,
+     "max": 0.04028
+    },
+    "new": {
+     "min": 0.002019,
+     "mode": 0.01009,
+     "max": 0.04037
+    },
+    "mode_change_pct": 0.0019860973187686426,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 22.0,
+    "evidence_weight": 1.0,
+    "reasoning": "A red-team exercise with no actual fraud loss. It is consistent with injection leading to financial fraud, so a weak upward signal."
+   }
+  ],
+  "relevant": 5,
+  "scaled": null,
+  "guardrails_passed": true,
+  "validation": {
+   "passed": true,
+   "problems": [],
+   "benchmark": [
+    {
+     "insured": "shopbot",
+     "current": 14178.180028925688,
+     "proposed": 14231.387983921672,
+     "change": 0.0037528057118354496
+    },
+    {
+     "insured": "hirescreen",
+     "current": 22016.691875957476,
+     "proposed": 22017.688722729978,
+     "change": 4.5276864395260574e-05
+    },
+    {
+     "insured": "copydesk",
+     "current": 7712.147730091963,
+     "proposed": 7713.872643828778,
+     "change": 0.00022366191587375184
+    },
+    {
+     "insured": "book",
+     "current": 43907.01963497513,
+     "proposed": 43962.94935048043,
+     "change": 0.001273821725324975
+    }
+   ],
+   "limits": {
+    "max_benchmark_premium_change": 0.15,
+    "max_book_premium_change": 0.08
+   },
+   "accumulation": {
+    "before": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28857.015576562844,
+       "systemic_expected_loss": 1029.659756431244,
+       "systemic_capital": 132907.01771593184,
+       "premium": 85698.5888843631,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.29188037665,
+       "premium": 23519.69454871004,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    },
+    "after": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28945.770920057563,
+       "systemic_expected_loss": 1032.1402364949022,
+       "systemic_capital": 133184.34387439312,
+       "premium": 85876.64442743872,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.08135303163,
+       "premium": 23519.676503509036,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    }
+   }
+  },
+  "pr": {
+   "number": null,
+   "url": "https://github.com/sisitsky/autonomous-agents-hack/compare/main...calibration/20261122-222415?expand=1",
+   "branch": "calibration/20261122-222415",
+   "draft": false,
+   "needs_click": true
+  },
+  "status": "pr_opened"
+ }
+]

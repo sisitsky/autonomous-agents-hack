@@ -1,4 +1,4 @@
-/* AI Underwriter web app: loads run bundles, renders the quote, and runs the
+/* iacta.ai web app: loads run bundles, renders the quote, and runs the
    loop live against the API (one endpoint per step). */
 (function () {
   const { fmt } = Charts;

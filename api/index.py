@@ -1,4 +1,4 @@
-"""Web API for the AI Underwriter (Vercel Python function, FastAPI).
+"""Web API for iacta.ai, the AI Underwriter (Vercel Python function, FastAPI).
 
 Each Loop 1 step is its own endpoint so the browser can run the loop step by
 step and show progress. All of them wrap the same agent code the CLI uses.
@@ -30,7 +30,7 @@ from agents.config import llm_available  # noqa: E402
 from agents.target_bot import shopbot  # noqa: E402
 from engine.model import load_params  # noqa: E402
 
-app = FastAPI(title="AI Underwriter API", docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(title="iacta.ai API", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 
 @app.middleware("http")

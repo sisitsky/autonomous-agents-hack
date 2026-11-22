@@ -1,4 +1,4 @@
-# AI Underwriter
+# iacta.ai (AI Underwriter)
 
 Autonomous, self-calibrating pricing for AI liability risk, built for the
 "Build business loops" hackathon brief. Start with CLAUDE.md.

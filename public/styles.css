@@ -328,3 +328,5 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 @media (max-width: 640px) { .unlock { display: inline-block; } }
 
 .simplex-chart { max-width: 760px; }
+
+.brand-tld { color: var(--accent); }

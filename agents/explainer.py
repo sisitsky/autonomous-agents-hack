@@ -456,7 +456,7 @@ def render_html(calc: dict, facts: dict, n: dict, notes: dict, check: dict, svgs
             f"pricing record: {', '.join(check['fallback_sections'])}.</p>" if check.get("fallback_sections") else "")
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quote report: {escape(facts['insured']['name'] or '')}</title>
+<title>iacta.ai quote report: {escape(facts['insured']['name'] or '')}</title>
 <style>
 :root {{ --ink:#1f2328; --muted:#59636e; --line:#d8dee4; --accent:#2f6fdf; --bg:#ffffff; --soft:#f6f8fa; }}
 body {{ margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 -apple-system, Segoe UI, Helvetica, Arial, sans-serif; }}

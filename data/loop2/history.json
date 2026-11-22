@@ -510,5 +510,206 @@
    "draft": false
   },
   "status": "pr_opened"
+ },
+ {
+  "run_id": "20261122-232328",
+  "run_at": "2026-11-22T23:23:32+00:00",
+  "items_reviewed": 60,
+  "changes": [
+   {
+    "item_id": "nvd:4dd254fcc68c9d24",
+    "event": "CVE-2026-123965 (prompt injection)",
+    "event_description": "Prompt injection in the Jet Admin Cloud Platform let a free-account user exfiltrate .env credentials. It was mitigated with a sandbox.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-123965",
+    "event_date": "2026-11-13",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002019,
+     "mode": 0.01009,
+     "max": 0.04037
+    },
+    "new": {
+     "min": 0.002024,
+     "mode": 0.01011,
+     "max": 0.04047
+    },
+    "mode_change_pct": 0.001982160555004775,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 20.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This is another example of prompt injection leading to credential exfiltration on a commercial platform. It is a single advisory with no reported losses, so it supports only a marginal upward nudge."
+   },
+   {
+    "item_id": "nvd:28ce76b5c8a8f978",
+    "event": "CVE-2026-123498 (prompt injection)",
+    "event_description": "Vikunja integration lets project members embed instructions in task or project content. A coding agent then executes those instructions, modifying the developer's checkout or running commands.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-123498",
+    "event_date": "2026-11-08",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002024,
+     "mode": 0.01011,
+     "max": 0.04047
+    },
+    "new": {
+     "min": 0.002029,
+     "mode": 0.01013,
+     "max": 0.04056
+    },
+    "mode_change_pct": 0.001978239366963397,
+    "implied_change": 0.05,
+    "strength": "weak",
+    "prior_weight": 21.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This is an indirect prompt injection through third-party content into an agent that takes real actions. It adds to evidence that agentic injections can cause harmful actions, but as a single advisory with no loss it is weak."
+   },
+   {
+    "item_id": "nvd:84ba99b10bf66e58",
+    "event": "CVE-2026-119050 (prompt injection)",
+    "event_description": "In the Agno agent framework, a prompt injection can make the agent call pandas functions, leading to code execution or reading local files.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-119050",
+    "event_date": "2026-10-29",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002029,
+     "mode": 0.01013,
+     "max": 0.04056
+    },
+    "new": {
+     "min": 0.002032,
+     "mode": 0.01014,
+     "max": 0.04061
+    },
+    "mode_change_pct": 0.000987166831194486,
+    "implied_change": 0.03,
+    "strength": "weak",
+    "prior_weight": 22.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This is one more advisory showing that agent tools let a successful injection reach code execution. It is a single CVE with no reported losses, so it supports only a marginal upward nudge."
+   },
+   {
+    "item_id": "nvd:2591f3deaf4aae77",
+    "event": "CVE-2026-115415 (LLM)",
+    "event_description": "In Strands Agents Tools, a crafted prompt can switch off secret masking and expose environment variables, including cloud credentials.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-115415",
+    "event_date": "2026-10-28",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002032,
+     "mode": 0.01014,
+     "max": 0.04061
+    },
+    "new": {
+     "min": 0.002035,
+     "mode": 0.01015,
+     "max": 0.04066
+    },
+    "mode_change_pct": 0.0009861932938854956,
+    "implied_change": 0.03,
+    "strength": "weak",
+    "prior_weight": 23.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This shows prompt injection leading to credential exfiltration, which raises the harm potential of a successful injection. As a single advisory with no reported losses, it is weak evidence."
+   }
+  ],
+  "relevant": 4,
+  "scaled": null,
+  "guardrails_passed": true,
+  "validation": {
+   "passed": true,
+   "problems": [],
+   "benchmark": [
+    {
+     "insured": "shopbot",
+     "current": 14231.387983921668,
+     "proposed": 14242.725347025516,
+     "change": 0.0007966449313767665
+    },
+    {
+     "insured": "hirescreen",
+     "current": 22017.688722729978,
+     "proposed": 22017.688722729978,
+     "change": 0.0
+    },
+    {
+     "insured": "copydesk",
+     "current": 7713.872643828777,
+     "proposed": 7713.872643828777,
+     "change": 0.0
+    },
+    {
+     "insured": "book",
+     "current": 43962.94935048042,
+     "proposed": 43974.286713584275,
+     "change": 0.00025788449754515774
+    }
+   ],
+   "limits": {
+    "max_benchmark_premium_change": 0.15,
+    "max_book_premium_change": 0.08
+   },
+   "accumulation": {
+    "before": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28945.770920057563,
+       "systemic_expected_loss": 1032.1402364949022,
+       "systemic_capital": 133184.34387439312,
+       "premium": 85876.64442743872,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.08135303163,
+       "premium": 23519.676503509036,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    },
+    "after": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28992.711547424973,
+       "systemic_expected_loss": 1033.7064906938144,
+       "systemic_capital": 133362.10753207648,
+       "premium": 85991.06848655004,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.08135303163,
+       "premium": 23519.676503509036,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    }
+   }
+  },
+  "status": "waiting_for_review"
  }
 ]

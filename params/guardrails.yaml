@@ -1,0 +1,32 @@
+# Guardrails: the rules that keep the human ON the loop.
+# Enforced in code by engine/guardrails.py and the CI workflow.
+# Only a human edits this file.
+
+pricing:
+  # Largest allowed change in any benchmark insured's premium in one PR.
+  max_benchmark_premium_change: 0.15
+  # Largest allowed change in the total benchmark book premium in one PR.
+  max_book_premium_change: 0.08
+  # Every parameter change must cite evidence in the PR body.
+  require_evidence_links: true
+  # Agents may never edit these files.
+  protected_files:
+    - params/guardrails.yaml
+    - engine/guardrails.py
+    - .github/workflows/guardrails.yml
+
+parameter_bounds:
+  # Hard sanity bounds on any sampled value, whatever the agent proposes.
+  probability: {min: 0.0, max: 0.5}   # event and claim probabilities, annual rates
+  share: {min: 0.0, max: 1.0}         # shares of policies or limits
+  pareto_alpha: {min: 1.05, max: 5.0}
+
+growth:
+  # Egbe wallet and outreach limits for the growth loop.
+  max_daily_ad_spend_usd: 25
+  max_total_hackathon_spend_usd: 100
+  outreach_template_requires_approval: true
+  max_outreach_emails_per_day: 20
+  # Learning from conversion data may change targeting and messaging only,
+  # never price (many US states prohibit price optimization on willingness to pay).
+  growth_data_may_affect_price: false

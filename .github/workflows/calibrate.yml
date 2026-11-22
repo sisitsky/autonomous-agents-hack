@@ -1,0 +1,71 @@
+# Loop 2: the actuarial self-improvement loop.
+# Runs nightly or on demand. Claude Code proposes parameter changes from new
+# evidence, the guardrails are checked, and a PR is opened for a human to approve.
+#
+# PRs opened with the default GITHUB_TOKEN do not trigger other workflows, so this
+# job runs the guardrail check itself and puts the report in the PR body. Use a
+# GitHub App token if you also want guardrails.yml to run on the PR.
+# Check the Claude Code docs for current headless-mode flags before the demo.
+name: calibrate
+on:
+  schedule: [{ cron: "0 6 * * *" }]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: pip install -r requirements.txt && npm install -g @anthropic-ai/claude-code
+
+      - name: Baseline benchmark
+        run: python -m engine.cli benchmark --out /tmp/base.json > /dev/null
+
+      - name: Claude Code proposes calibration
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "Act as the calibrator subagent defined in .claude/agents/calibrator.md. \
+          Review files in data/incidents/ whose ids are not in data/incidents/processed.txt. \
+          Propose changes to params/priors.yaml or params/rating_factors.yaml only, update \
+          source notes, append processed incident ids, run the tests, and write pr_body.md \
+          explaining each change with its evidence. If no change is warranted, still append \
+          the ids and write NO_CHANGE as the first line of pr_body.md." \
+          --allowedTools "Read,Edit,Write,Bash(python -m engine.cli:*),Bash(python -m pytest:*)"
+
+      - name: Guardrails
+        id: guard
+        run: |
+          if head -1 pr_body.md | grep -q NO_CHANGE; then echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          python -m engine.cli benchmark --out /tmp/cand.json > /dev/null
+          CHANGED=$(git diff --name-only | tr '\n' ' ')
+          set +e
+          python -m engine.guardrails --baseline /tmp/base.json --candidate /tmp/cand.json \
+            --changed-files "$CHANGED" > report.md
+          STATUS=$?
+          set -e
+          echo "passed=$([ $STATUS -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          printf "\n\n" >> pr_body.md && cat report.md >> pr_body.md && rm report.md
+
+      - name: Open PR for human approval
+        if: steps.guard.outputs.skip != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: calibration/${{ github.run_id }}
+          title: "Calibration: proposed parameter update"
+          body-path: pr_body.md
+          # A PR that fails guardrails opens as a draft and cannot be merged as-is.
+          draft: ${{ steps.guard.outputs.passed != 'true' }}
+          labels: calibration, needs-human-approval
+          add-paths: |
+            params/priors.yaml
+            params/rating_factors.yaml
+            data/incidents/processed.txt

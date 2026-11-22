@@ -1,0 +1,11 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+.env*
+.vercel/
+node_modules/
+bench*.json
+report.md
+pr_body.md
+.venv/
+agents/runs/

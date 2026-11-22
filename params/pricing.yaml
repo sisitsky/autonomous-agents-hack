@@ -1,0 +1,29 @@
+# Loads and expenses. ILLUSTRATIVE. Changes go through a pull request only.
+
+version: 0.1.0
+
+uncertainty_load:
+  # Charge the gap between this percentile of the expected-loss distribution
+  # (across parameter draws) and its mean.
+  percentile: 75
+
+capital:
+  tail_metric: tvar       # tvar or var
+  level: 0.995            # 1-in-200
+  cost_of_capital: 0.10
+  # Independent (idiosyncratic) risks diversify in a pool: each policy's share of
+  # capital is roughly its standalone tail capital / sqrt(number of policies).
+  # Systemic losses get no diversification credit.
+  portfolio_size: 400
+  # Share of the portfolio on each provider. A policy on a heavily used provider
+  # gets a larger share of systemic capital (multiplier = share / average share).
+  provider_concentration:
+    provider_a: 0.45
+    provider_b: 0.35
+    provider_c: 0.15
+    self_hosted_open_model: 0.05
+
+expenses:
+  variable_ratio: 0.25    # acquisition, premium tax, claims handling
+  profit_margin: 0.05
+  fixed_per_policy: 2500  # underwriting cost incl. red-team testing

@@ -1,0 +1,48 @@
+# Fixed benchmark book. Every parameter PR is re-priced against these insureds,
+# and guardrails compare the result with the main branch. Fictional companies.
+
+insureds:
+  - id: shopbot
+    name: ShopBot (e-commerce customer-service chatbot)
+    provider: provider_a
+    perils:
+      misinformation: {outputs_per_year: 2000000}
+      privacy_regulatory: {}
+    red_team: {tested: 10000, failures: 20}
+    factors:
+      use_case_criticality: medium
+      autonomy: human_review_sampled
+      governance: strong
+      data_sensitivity: personal
+      jurisdiction: us_low_reg
+      customer_facing: public
+    policy: {limit_per_claim: 1000000, aggregate_limit: 2000000, deductible: 10000}
+
+  - id: hirescreen
+    name: HireScreen (resume screening tool)
+    provider: provider_b
+    perils:
+      discrimination: {}
+      privacy_regulatory: {}
+    factors:
+      use_case_criticality: high
+      autonomy: human_review_sampled
+      governance: adequate
+      data_sensitivity: personal
+      jurisdiction: us_high_reg
+    policy: {limit_per_claim: 2000000, aggregate_limit: 3000000, deductible: 50000}
+
+  - id: copydesk
+    name: CopyDesk (marketing content generator)
+    provider: provider_a
+    perils:
+      ip_infringement: {}
+      misinformation: {outputs_per_year: 300000}
+    red_team: {tested: 5000, failures: 4}
+    factors:
+      use_case_criticality: low
+      autonomy: advisory_human_signoff
+      governance: adequate
+      customer_facing: public
+      vendor_indemnity: provider_ip_indemnity
+    policy: {limit_per_claim: 1000000, aggregate_limit: 1000000, deductible: 25000}

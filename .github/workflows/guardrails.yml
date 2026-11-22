@@ -1,0 +1,44 @@
+# Runs on every PR that touches pricing. PROTECTED: human-only edits.
+name: guardrails
+on:
+  pull_request:
+    paths: ["params/**", "engine/**", "benchmarks/**"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+
+      - name: Price benchmark book on base branch
+        run: |
+          git worktree add /tmp/base ${{ github.event.pull_request.base.sha }}
+          (cd /tmp/base && python -m engine.cli benchmark --out /tmp/base.json > /dev/null)
+
+      - name: Price benchmark book on this PR
+        run: python -m engine.cli benchmark --out /tmp/cand.json > /dev/null
+
+      - name: Guardrails
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Humans may edit protected files; bots and agents may not.
+          ALLOW: ${{ github.event.pull_request.user.type != 'Bot' && '--allow-protected' || '' }}
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD | tr '\n' ' ')
+          set +e
+          python -m engine.guardrails --baseline /tmp/base.json --candidate /tmp/cand.json \
+            --changed-files "$CHANGED" $ALLOW > report.md
+          STATUS=$?
+          set -e
+          cat report.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file report.md
+          exit $STATUS

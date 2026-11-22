@@ -1,0 +1,93 @@
+# Prior assumptions for the AI liability pricing engine.
+# ALL VALUES ARE ILLUSTRATIVE. Changes to this file go through a pull request only.
+#
+# Any numeric parameter may be either a plain number (treated as known) or a
+# distribution spec, which the engine samples to capture parameter uncertainty:
+#   {dist: beta,      alpha: a, beta: b}            probabilities from test counts
+#   {dist: pert,      min: x, mode: y, max: z}       expert three-point estimates
+#   {dist: lognormal, median: m, p90: q}             positive, skewed quantities
+#   {dist: uniform,   min: x, max: z}
+#
+# Every parameter carries a `source` note so reviewers can see where it came from.
+
+version: 0.1.0
+updated: 2026-11-22
+
+perils:
+  misinformation:
+    description: Wrong answers or unauthorized commitments made by the AI cause a customer financial loss.
+    frequency:
+      mode: chain            # outputs_per_year x p_error x p_harm_given_error x p_claim_given_harm
+      exposure_field: outputs_per_year
+      p_error:
+        # Default when the insured has no test results. Overridden by red-team counts.
+        dist: beta
+        alpha: 21
+        beta: 9981
+        source: Placeholder equal to 20 material errors in 10,000 tested outputs.
+      p_harm_given_error:
+        dist: pert
+        min: 0.005
+        mode: 0.02
+        max: 0.06
+        source: Expert elicitation (illustrative).
+      p_claim_given_harm:
+        dist: pert
+        min: 0.001
+        mode: 0.006
+        max: 0.03
+        source: Analog to tech E&O claim propensity, adjusted (illustrative).
+    severity:
+      body:
+        dist: lognormal
+        median: {dist: pert, min: 20000, mode: 35000, max: 60000, source: Tech E&O analog (illustrative).}
+        p90:    {dist: pert, min: 120000, mode: 200000, max: 350000, source: Tech E&O analog (illustrative).}
+      tail:
+        prob:      {dist: pert, min: 0.01, mode: 0.03, max: 0.08, source: Share of claims that become large (illustrative).}
+        threshold: 500000
+        alpha:     {dist: pert, min: 1.2, mode: 1.8, max: 2.6, source: Pareto shape; lower = fatter tail (illustrative).}
+
+  privacy_regulatory:
+    description: Data leakage through the AI system leads to a privacy claim or regulatory action.
+    frequency:
+      mode: annual_rate
+      rate: {dist: pert, min: 0.005, mode: 0.02, max: 0.08, source: Cyber analog, AI-specific share (illustrative).}
+    severity:
+      body:
+        dist: lognormal
+        median: {dist: pert, min: 100000, mode: 200000, max: 400000, source: Cyber analog (illustrative).}
+        p90:    {dist: pert, min: 600000, mode: 1000000, max: 2000000, source: Cyber analog (illustrative).}
+
+  discrimination:
+    description: Biased automated decisions (hiring, lending, eligibility) lead to individual or class claims.
+    frequency:
+      mode: annual_rate
+      rate: {dist: pert, min: 0.002, mode: 0.01, max: 0.05, source: Employment practices analog (illustrative).}
+    severity:
+      body:
+        dist: lognormal
+        median: {dist: pert, min: 150000, mode: 350000, max: 700000, source: EPL analog (illustrative).}
+        p90:    {dist: pert, min: 1000000, mode: 2000000, max: 4000000, source: EPL analog (illustrative).}
+
+  ip_infringement:
+    description: Generated content infringes third-party IP.
+    frequency:
+      mode: annual_rate
+      rate: {dist: pert, min: 0.002, mode: 0.01, max: 0.04, source: Media liability analog (illustrative).}
+    severity:
+      body:
+        dist: lognormal
+        median: {dist: pert, min: 50000, mode: 120000, max: 300000, source: Media liability analog (illustrative).}
+        p90:    {dist: pert, min: 400000, mode: 800000, max: 1500000, source: Media liability analog (illustrative).}
+
+# Correlated failure across insureds that share an underlying model provider
+# (bad model update, new jailbreak technique, adverse court ruling).
+systemic:
+  annual_prob:        {dist: pert, min: 0.01, mode: 0.03, max: 0.10, source: Scenario workshop (illustrative).}
+  share_affected:     {dist: pert, min: 0.10, mode: 0.30, max: 0.70, source: Share of a provider's insureds hit in an event (illustrative).}
+  loss_share_of_limit: {dist: pert, min: 0.01, mode: 0.04, max: 0.15, source: Loss per affected policy as share of aggregate limit (illustrative).}
+
+simulation:
+  n_outer: 2000      # parameter-uncertainty draws
+  n_inner: 200       # simulated years per parameter draw
+  seed: 42

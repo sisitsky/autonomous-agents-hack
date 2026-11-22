@@ -4,7 +4,7 @@
   const { fmt } = Charts;
   const $ = id => document.getElementById(id);
   const esc = fmt.esc;
-  const state = { runs: [], bundles: {}, current: null, live: 0 };
+  const state = { runs: [], bundles: {}, current: null, live: 0, plan: null, planCache: {} };
   const STEP_NAMES = { intake: "Intake", redteam: "Red team", pricing: "Pricing", explainer: "Explainer", review: "Human review" };
   const STEP_DESC = {
     intake: "Claude reads the documents and fills in the risk profile, citing evidence.",
@@ -41,20 +41,34 @@
 
   function select(id) {
     state.current = id;
+    state.plan = null;
     $("run-select").value = id;
     const r = state.runs.find(x => x.id === id);
     $("run-blurb").textContent = r.blurb || "";
     render(state.bundles[id]);
   }
+  // The bundle as shown: the quoted plan, or another plan re-priced live.
+  function shown() {
+    const b = state.bundles[state.current];
+    const quoted = b.calculation.insured.plan;
+    if (!state.plan || state.plan === quoted) return b;
+    const calc = state.planCache[state.current + ":" + state.plan];
+    return calc ? { ...b, calculation: calc, planView: state.plan } : b;
+  }
 
   // ---------------------------------------------------------------- render
   function render(b) {
     const calc = b.calculation, rep = b.report || {}, n = rep.narrative || {}, facts = rep.facts || {};
+    renderPlans(state.bundles[state.current], calc);
     const g = gross(calc);
+    $("status-text").textContent = `${calc.plan ? calc.plan.name + " plan · " : ""}Indicative · pending underwriter review`;
     animateNumber($("premium"), g);
     $("premium-sub").innerHTML = `per year · rate on line <b>${fmt.pct(calc.premium_build_up.find(s => s.id === "rate_on_line").value)}</b>
       · ${fmt.short(calc.policy.limit_per_claim)} per claim / ${fmt.short(calc.policy.aggregate_limit)} aggregate · ${fmt.short(calc.policy.deductible)} deductible`;
-    $("headline").textContent = n.headline || "";
+    const qp = state.bundles[state.current].calculation.plan;
+    $("headline").innerHTML = b.planView
+      ? `<span class="banner">Showing the <b>${esc(calc.plan.name)}</b> plan, re-priced live by the engine. The written report below is for the quoted <b>${esc(qp.name)}</b> plan.</span>`
+      : esc(n.headline || "");
     $("summary").innerHTML = paras(n.summary);
     renderCompare();
     renderTimeline($("timeline"), b.events || []);
@@ -144,9 +158,45 @@
     Charts.tornado($("chart-tornado"), state.bundles[state.current].calculation, +$("tornado-n").value);
   }
 
+  // ---------------------------------------------------------------- plans
+  function renderPlans(b, calc) {
+    const plans = b.calculation.plans;
+    if (!plans) { $("plan-cards").innerHTML = ""; return; }
+    const active = calc.plan ? calc.plan.id : b.calculation.insured.plan;
+    $("plan-cards").innerHTML = Object.values(plans).map(p => `
+      <button type="button" class="plan ${p.id === active ? "on" : ""}" data-plan="${esc(p.id)}">
+        <div class="pn">${esc(p.name)} ${p.id === b.calculation.insured.plan ? '<span class="badge review">quoted</span>' : ""}</div>
+        <div class="pp">${p.gross_premium ? fmt.money(p.gross_premium) : "—"}</div>
+        <div class="pl">${p.gross_premium ? "per year · rate on line " + fmt.pct(p.rate_on_line, 2) : esc(p.note || "")}</div>
+        <div class="pl">${fmt.short(p.policy.limit_per_claim)} per claim · ${fmt.short(p.policy.aggregate_limit)} aggregate · ${fmt.short(p.policy.deductible)} deductible</div>
+        <div class="pb">${esc(p.blurb)}${p.minimum_applied ? " · minimum premium applies" : ""}</div>
+        <div class="chips">${p.covers.map(c => `<span class="chip on">${esc(c.replace(/_/g, " "))}</span>`).join("")}
+          ${p.not_covered.map(c => `<span class="chip no" title="Not covered on this plan">${esc(c.replace(/_/g, " "))}</span>`).join("")}</div>
+      </button>`).join("");
+    $("plan-note").textContent = "Crossed-out risks apply to this system but are not covered by that plan.";
+    const n = (b.report || {}).narrative || {};
+    $("explain-plans").innerHTML = paras(n.plans);
+    $("plan-cards").querySelectorAll(".plan").forEach(el => el.onclick = () => choosePlan(el.dataset.plan));
+  }
+  async function choosePlan(pid) {
+    const b = state.bundles[state.current], key = state.current + ":" + pid;
+    if (pid === b.calculation.insured.plan) { state.plan = null; return render(b); }
+    if (!state.planCache[key]) {
+      const card = document.querySelector(`.plan[data-plan="${pid}"] .pl`);
+      if (card) card.innerHTML = `<span class="badge run">pricing</span>`;
+      try {
+        const r = await api("/api/price", { insured: b.calculation.insured_full || b.insured, plan: pid });
+        state.planCache[key] = r.calculation;
+      } catch (e) { if (card) card.textContent = e.message; return; }
+    }
+    state.plan = pid;
+    render(shown());
+  }
+
   // ---------------------------------------------------------------- Monte Carlo
-  let mc = null, mcSeen = false;
+  let mc = null, mcSeen = false, mcRuns = [], mcSim = null;
   function renderEngine(b) {
+    mcRuns = []; mcSim = null; $("mc-runs").innerHTML = "";
     const calc = b.calculation, sim = calc.meta.simulation, il = calc.simulation_illustration;
     const stat = (k, v) => `<div>${k}<b>${v}</b></div>`;
     $("mc-stats").innerHTML = stat("Parameter draws", sim.n_outer.toLocaleString()) + stat("Years per draw", sim.n_inner.toLocaleString())
@@ -156,52 +206,71 @@
     Charts.convergence($("chart-conv"), calc);
   }
   function drawEngine(play) {
-    const b = state.bundles[state.current];
-    mc = Charts.monteCarlo($("chart-mc"), b.calculation, { layers: $("mc-layers").value, lines: +$("mc-lines").value });
+    const b = shown();
+    mc = Charts.monteCarlo($("chart-mc"), mcSim || b.calculation, { layers: $("mc-layers").value, lines: +$("mc-lines").value });
     if (play && mc.play) mc.play();
+  }
+  function renderRuns(official) {
+    const chip = (r, i) => `<span class="mc-run ${i === mcRuns.length - 1 ? "latest" : ""}">seed <b>${r.seed}</b> · expected loss <b>${fmt.money(r.el)}</b>
+      ${r.se ? `±${fmt.money(2 * r.se)}` : ""} · premium <b>${fmt.money(r.g)}</b></span>`;
+    $("mc-runs").innerHTML = `<span class="mc-run">official quote · seed <b>42</b> · expected loss <b>${fmt.money(official.el)}</b> · premium <b>${fmt.money(official.g)}</b></span>`
+      + mcRuns.map(chip).join("")
+      + (mcRuns.length > 1 ? `<span class="mc-run">spread across ${mcRuns.length} runs: <b>${fmt.money(Math.min(...mcRuns.map(r => r.g)))}</b>–<b>${fmt.money(Math.max(...mcRuns.map(r => r.g)))}</b></span>` : "");
+  }
+  async function runSimulation() {
+    const b = shown(), btn = $("mc-play");
+    btn.disabled = true; btn.textContent = "Simulating 400,000 years…";
+    try {
+      const r = await api("/api/simulate", { insured: b.calculation.insured, plan: b.calculation.insured.plan, lines: +$("mc-lines").value });
+      mcSim = r.calculation_like;
+      mcRuns.push({ seed: r.seed, el: r.expected_loss, g: r.gross_premium, se: r.standard_error });
+      renderRuns({ el: b.calculation.simulation_illustration.expected_loss, g: gross(b.calculation) });
+      const s = r.calculation_like.meta.simulation;
+      $("mc-stats").querySelectorAll("div")[3].innerHTML = `Seed<b>${r.seed}</b>`;
+      $("mc-stats").querySelectorAll("div")[4] && ($("mc-stats").querySelectorAll("div")[4].innerHTML = `Expected loss<b>${fmt.money(r.expected_loss)}</b>`);
+      drawEngine(true);
+    } catch (e) {
+      $("mc-runs").insertAdjacentHTML("beforeend", `<span class="mc-run error">${esc(e.message)}</span>`);
+    } finally { btn.disabled = false; btn.textContent = "▶ Run simulation"; }
   }
 
   // ---------------------------------------------------------------- credibility
-  function credsOf(calc) {
-    const out = [];
-    Object.entries(calc.perils).forEach(([peril, p]) => {
-      if (p.credibility) out.push({ peril, c: p.credibility,
-        label: p.credibility.measure === "p_error" ? "Error rate (misinformation)" : "Data-leak rate (privacy)" });
-    });
-    return out;
+  // Turn the Dirichlet/Jewell record into one view per measure (all failures or one type).
+  function credView(c, measure) {
+    const val = (o) => measure === "all" ? 1 - o.pass : o[measure];
+    return { n: c.n, z: c.z, k: c.A, mu: val(c.mu), observed: c.n ? val(c.observed) : 0, estimate: val(c.estimate),
+             portfolio: c.portfolio.map(g => ({ insured_id: g.insured_id, n: g.n, z: g.z, observed: val(g.observed), estimate: val(g.estimate) })) };
   }
   function renderCredibility(b) {
-    const list = credsOf(b.calculation), card = $("cred-card");
-    if (!list.length) { card.style.display = "none"; return; }
+    const c = b.calculation.red_team_credibility, card = $("cred-card");
+    if (!c) { card.style.display = "none"; return; }
     card.style.display = "";
-    const sel = $("cred-measure");
-    const prev = sel.value;
-    sel.innerHTML = list.map((x, i) => `<option value="${i}">${esc(x.label)}</option>`).join("");
-    if (prev && +prev < list.length) sel.value = prev;
+    const sel = $("cred-measure"), prev = sel.value;
+    const types = Object.keys(c.mu).filter(k => k !== "pass");
+    sel.innerHTML = `<option value="all">All failure types</option>` + types.map(k => `<option value="${k}">${k.replace(/_/g, " ")}</option>`).join("");
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
     drawCredibility();
     const n = (b.report || {}).narrative || {};
     $("explain-cred").innerHTML = paras(n.credibility);
     const eq = id => b.calculation.equations.find(e => e.id === id);
-    if (eq("buhlmann_credibility")) {
-      tex($("eq-cred"), eq("buhlmann_credibility").latex);
-      tex($("eq-bs"), eq("buhlmann_straub").latex);
-      tex($("eq-cprior"), eq("credibility_prior").latex);
-    }
+    ["jewell_credibility:eq-cred", "buhlmann_straub:eq-bs", "dirichlet:eq-dir"].forEach(x => {
+      const [id, el] = x.split(":"); if (eq(id)) tex($(el), eq(id).latex);
+    });
+    $("eq-cprior").innerHTML = "";
   }
   function drawCredibility() {
-    const b = state.bundles[state.current], list = credsOf(b.calculation);
-    if (!list.length) return;
-    const { c } = list[+$("cred-measure").value || 0];
-    if (c.status === "insufficient_experience") {
-      $("cred-stats").innerHTML = `<div class="muted small">${esc(c.note)}</div>`;
-      $("chart-cred-curve").innerHTML = ""; $("chart-cred-shrink").innerHTML = ""; return;
-    }
-    const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
-    $("cred-stats").innerHTML = stat("Observed rate", fmt.pct(c.observed)) + stat("Credibility Z", c.z.toFixed(2))
-      + stat("Portfolio mean μ", fmt.pct(c.mu)) + stat("Priced rate", fmt.pct(c.estimate))
-      + stat("k = EPV / VHM", `${c.k.toFixed(1)} <span class="muted small">(${c.r} insureds)</span>`);
-    Charts.credCurve($("chart-cred-curve"), c);
-    Charts.shrinkage($("chart-cred-shrink"), c, b.id);
+    const b = shown(), c = b.calculation.red_team_credibility;
+    if (!c) return;
+    const v = credView(c, $("cred-measure").value || "all");
+    const stat = (k, x) => `<div class="stat"><div class="k">${k}</div><div class="v">${x}</div></div>`;
+    $("cred-stats").innerHTML = (c.status === "insufficient_experience" ? `<div class="muted small">${esc(c.note)}</div>` : "")
+      + stat("Observed share", c.n ? fmt.pct(v.observed) : "not tested") + stat("Jewell Z", c.z.toFixed(2))
+      + stat("Portfolio μ", fmt.pct(v.mu)) + stat("Priced share", fmt.pct(v.estimate))
+      + stat("Dirichlet A", `${c.A.toFixed(1)} <span class="muted small">(${c.r} insureds)</span>`);
+    Charts.credCurve($("chart-cred-curve"), v);
+    if (v.portfolio.length) Charts.shrinkage($("chart-cred-shrink"), v, b.id);
+    $("cred-sub").textContent = "Every test case ends in a pass or exactly one failure type (a Dirichlet). Jewell credibility: one Z for all types, "
+      + `Z = n / (n + A) = ${c.n} / (${c.n} + ${c.A.toFixed(1)}).`;
   }
 
   // ---------------------------------------------------------------- what-if
@@ -229,17 +298,16 @@
     const on = [...document.querySelectorAll("#whatif-options .chip.on")].map(c => opts[+c.dataset.i]);
     const base = gross(b.calculation);
     if (!on.length) { $("whatif-result").innerHTML = `<span class="muted">Pick one or more changes.</span>`; return; }
-    const ins = JSON.parse(JSON.stringify(b.insured));
+    const ins = JSON.parse(JSON.stringify(b.calculation.insured));
     on.forEach(o => {
       if (o.kind === "red_team_remediation") {
-        ins.red_team.failures = 0;
-        if (ins.red_team.data_leak) ins.red_team.data_leak.failures = 0;
+        Object.keys(ins.red_team.failures_by_type || {}).forEach(k => { ins.red_team.failures_by_type[k] = 0; });
       } else { ins.factors = ins.factors || {}; ins.factors[o.factor] = o.to_level; }
     });
     const seq = ++whatIfSeq;
     $("whatif-result").innerHTML = `<span class="badge run">pricing</span> <span class="muted">Running the Monte Carlo engine…</span>`;
     try {
-      const r = await api("/api/price", { insured: ins, tornado: false, controls: false });
+      const r = await api("/api/price", { insured: ins, plan: ins.plan, tornado: false, controls: false });
       if (seq !== whatIfSeq) return;
       const g = gross(r.calculation), save = base - g;
       const sumSingles = on.reduce((a, o) => a + o.saving, 0);
@@ -274,7 +342,7 @@
     $("perils").innerHTML = Object.entries(calc.perils).map(([name, x]) => `
       <div class="peril"><div class="top"><span>${esc(name.replace(/_/g, " "))}</span><span class="num">${fmt.money(x.expected_loss)}</span></div>
       <div class="facts"><span>${x.expected_claims_per_year.toFixed(2)} claims / yr</span><span>modifier ×${x.modifier.toFixed(2)}</span>
-      ${x.red_team_leak_relativity != null ? `<span>leak multiplier ×${x.red_team_leak_relativity.toFixed(2)}</span>` : ""}
+      ${x.failure_type ? `<span class="tag">red-team measured</span>` : `<span class="tag">profile priced</span>`}
       ${x.rating_factors.map(f => `<span class="tag">${esc(f.factor)} ${esc(f.level)} ×${f.relativity}</span>`).join("")}</div></div>`).join("");
     const qs = ((p && p.open_questions) || []).concat(b.review_notes || []);
     $("questions").innerHTML = qs.map(q => `<li>${esc(q)}</li>`).join("") || "<li>None.</li>";
@@ -418,7 +486,7 @@
     $("cred-measure").onchange = drawCredibility;
     $("mc-layers").onchange = () => drawEngine(false);
     $("mc-lines").onchange = () => drawEngine(true);
-    $("mc-play").onclick = () => drawEngine(true);
+    $("mc-play").onclick = runSimulation;
     if ("IntersectionObserver" in window) {
       new IntersectionObserver((entries, obs) => {
         if (entries.some(e => e.isIntersecting) && !mcSeen) { mcSeen = true; drawEngine(true); obs.disconnect(); }

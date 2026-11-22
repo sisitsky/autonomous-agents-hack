@@ -18,6 +18,7 @@
 <header class="nav">
   <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>AI Underwriter</a>
   <nav>
+    <a href="#plans">Plans</a>
     <a href="#loop">Loop</a>
     <a href="#engine">Engine</a>
     <a href="#price">Price</a>
@@ -57,6 +58,13 @@
     </div>
   </section>
 
+  <section id="plans">
+    <div class="section-head"><h2>Plans</h2><p class="muted">Every plan priced for this system with the same simulation. Click a plan to see its full quote.</p></div>
+    <div class="plans" id="plan-cards"></div>
+    <p class="muted small" id="plan-note"></p>
+    <details class="explain"><summary>Which plan fits</summary><div id="explain-plans"></div></details>
+  </section>
+
   <section id="loop">
     <div class="section-head"><h2>The loop</h2><p class="muted">Every step the agents took for this quote. Click a step for detail.</p></div>
     <ol class="timeline" id="timeline"></ol>
@@ -64,7 +72,7 @@
 
   <section id="engine">
     <div class="section-head"><h2>Inside the Monte Carlo engine</h2>
-      <p class="muted">Real output from this quote's simulation: every line is one simulated policy year, the cloud is where most years land.</p></div>
+      <p class="muted">Real output from the engine: every line is one simulated policy year, the cloud is where most years land. <b>Run simulation</b> re-runs all 400,000 years on the server with a fresh random seed.</p></div>
     <div class="card wide mc-card">
       <div class="card-head">
         <div class="mc-stats" id="mc-stats"></div>
@@ -74,6 +82,7 @@
           <button type="button" class="btn" id="mc-play">▶ Run simulation</button>
         </div>
       </div>
+      <div class="mc-runs" id="mc-runs"></div>
       <div class="chart" id="chart-mc"></div>
       <div class="legend mc-legend">
         <span><i class="ramp" aria-hidden="true"></i>year's loss: below expected ← → above expected</span>
@@ -125,8 +134,8 @@
 
     <div class="card wide" id="cred-card">
       <div class="card-head">
-        <div><div class="card-title">Bühlmann credibility</div>
-          <div class="muted small" id="cred-sub">How much to trust this system's own red-team result versus the portfolio.</div></div>
+        <div><div class="card-title">Dirichlet / Jewell credibility</div>
+          <div class="muted small" id="cred-sub">Every test case ends in a pass or exactly one failure type. How much to trust this system's own results versus the portfolio, for each type.</div></div>
         <div class="select-wrap sm"><select id="cred-measure" aria-label="Measure"></select></div>
       </div>
       <div class="cred-stats" id="cred-stats"></div>
@@ -136,7 +145,8 @@
       </div>
       <details class="explain"><summary>How credibility works here</summary><div id="explain-cred"></div>
         <div class="eq" id="eq-cred"></div><div class="eq" id="eq-bs"></div><div class="eq" id="eq-cprior"></div>
-        <p class="muted small">The collective is re-estimated on every underwriting run: each new result joins the portfolio record, so every later quote uses more experience. The seed portfolio is fictional. Runs from this web page are not saved to the portfolio (read-only deployment); runs from the CLI are.</p></details>
+        <div class="eq" id="eq-dir"></div>
+        <p class="muted small">Jewell (1974): for the Dirichlet–multinomial the credibility estimate is exactly the Bayesian posterior mean, with one Z for every failure type. μ and A are re-estimated on every underwriting run from every other system tested on the same suite, so each new result updates the collective. The seed portfolio is fictional. Runs from this web page are not saved to the portfolio (read-only deployment); runs from the CLI are.</p></details>
     </div>
 
     <div class="card wide">

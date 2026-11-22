@@ -107,8 +107,28 @@ async def api_redteam(request: Request):
 async def api_price(request: Request):
     body = await request.json()
     r = _call(pricer.compute, _insured(body), with_tornado=body.get("tornado", True),
-                       with_controls=body.get("controls", True))
+                       with_controls=body.get("controls", True), plan=body.get("plan"))
     return {"calculation": r["calculation"]}
+
+
+@app.post("/api/simulate")
+async def api_simulate(request: Request):
+    """Re-run the Monte Carlo with a fresh seed (the official quote stays on seed 42)."""
+    import random
+    from engine.model import apply_plan, price
+    body = await request.json()
+    params = load_params()
+    ins = apply_plan(_insured(body), params, body.get("plan"))
+    seed = int(body.get("seed") or random.randint(1, 2**31 - 1))
+    q = _call(price, ins, params, seed=seed, illustrate=int(min(max(body.get("lines", 120), 10), 200)))
+    il = q["illustration"]
+    return {"seed": seed, "expected_loss": q["expected_loss"], "gross_premium": q["gross_premium"],
+            "rate_on_line": q["rate_on_line"], "uncertainty_load": q["uncertainty_load"],
+            "capital_load": q["capital_load"], "loss_percentiles": q["loss_percentiles"],
+            "standard_error": il["convergence"]["se"][-1],
+            "calculation_like": {"simulation_illustration": il,
+                                 "loss_distribution": {"histogram": q["trace"]["loss_histogram"]},
+                                 "meta": {"simulation": q["trace"]["simulation"]}}}
 
 
 @app.post("/api/explain")

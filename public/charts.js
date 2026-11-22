@@ -465,7 +465,7 @@
     function finish() {
       els.forEach(({ line, end }) => { line.style.strokeDasharray = ""; line.style.strokeDashoffset = ""; line.style.opacity = ""; end.style.opacity = ""; });
       cloud.style.opacity = 1; marg.style.opacity = 1;
-      counter.textContent = `${il.n_years.toLocaleString()} simulated years`;
+      counter.textContent = `${il.n_years.toLocaleString()} simulated years · expected loss ${fmt.money(il.expected_loss)}`;
       sub.textContent = `${shown.length} shown as lines · cloud from ${il.band_years.toLocaleString()} years · P5–P95 and P25–P75 bands, median dashed`;
     }
     function play() {
@@ -484,7 +484,9 @@
           line.style.transition = "stroke-dashoffset .7s ease-out"; line.style.strokeDashoffset = "0";
           setTimeout(() => { end.style.transition = "opacity .3s"; end.style.opacity = 1; }, 650);
         }
-        counter.textContent = `Simulating… ${Math.round(il.n_years * (1 - Math.pow(1 - k, 2))).toLocaleString()} years`;
+        const yrs = Math.max(50, Math.round(il.n_years * (1 - Math.pow(1 - k, 2))));
+        const cv = il.convergence; let ci = 0; while (ci < cv.n.length - 1 && cv.n[ci + 1] <= yrs) ci++;
+        counter.textContent = `Simulating… ${yrs.toLocaleString()} years · running expected loss ${fmt.money(cv.mean[ci])}`;
         sub.textContent = "each line: one policy year under one draw of the uncertain parameters";
         if (k < 1) requestAnimationFrame(tick);
         else setTimeout(finish, 750);

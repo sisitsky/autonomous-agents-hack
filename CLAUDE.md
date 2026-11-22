@@ -59,28 +59,20 @@ python -m engine.guardrails --baseline base.json --candidate bench.json \
 
 Add `--json` to `quote` and `tornado` for machine-readable output (the API and UI use this).
 
-## Engine model (summary)
+## Engine model (summary) — model 1.0, see docs/PRICING_METHOD.md
 
-- Two-layer Monte Carlo: outer layer samples parameters (uncertainty), inner layer
-  simulates years (luck). Inverse-transform sampling keeps random streams stable
-  across parameter changes (common random numbers).
-- Frequency: `chain` perils = outputs/yr × P(error) × P(harm|error) × P(claim|harm);
-  `annual_rate` perils = a direct rate. Red-team counts override P(error) as a Beta.
-  For `red_team.suite: adversarial`, P(error) is also multiplied by
-  `red_team.adversarial_to_live` (priors.yaml); `live_sample` (default) is used as is.
-  `red_team.data_leak` counts multiply the privacy rate by leak rate / typical leak
-  rate (`red_team.privacy` in priors.yaml), capped at 0.5x to 3x.
-- Bühlmann–Straub credibility (`engine/credibility.py`): for adversarial suites the Beta prior
-  is Beta(μk, (1−μ)k) estimated leave-one-out from `data/portfolio/redteam_experience.jsonl`,
-  so the posterior mean is Z·X + (1−Z)·μ with Z = n/(n+k). Every underwriting run records its
-  result there (continuously updated collective). Seed portfolio is fictional.
-- Each parameter path and each peril's simulation has its own named random stream (CRN).
-- Severity: lognormal body (uncertain median and p90) plus optional Pareto tail.
-- Rating factors multiply frequency per peril, capped by `combined_modifier_bounds`.
-- Systemic event at the insured's model provider; no diversification credit, and
-  capital scaled by provider concentration in the portfolio.
-- Premium = (expected loss + uncertainty load + capital load + fixed) / (1 − variable − profit).
-- Tornado uses point pricing (medians), so its base excludes the uncertainty load.
+- Eight AI-pitfall perils. Red-team measured: wrong_information, unauthorized_commitment,
+  data_leakage, prompt_injection (claims = outputs × θ_k × r_adv × P(harm|fail_k) × P(claim|harm_k)).
+  Profile priced: bias_discrimination, ip_infringement, harmful_content, unsafe_advice (annual rate).
+- Red-team outcomes (pass + one failure type per case) are a Dirichlet; the prior Aμ comes from
+  Jewell / Bühlmann–Straub credibility over `data/portfolio/redteam_experience.jsonl`
+  (leave-one-out, updated by every underwriting run). Posterior mean = Z·X + (1−Z)·μ, Z = n/(n+A).
+- Plans (`params/plans.yaml`): Essential / Professional / Enterprise, different covered perils,
+  limits, deductibles, minimum premiums. Every quote prices all plans.
+- Two-layer Monte Carlo with one named random stream per parameter path and per peril (CRN).
+- Uncertainty load = z75 × σ_param with process noise removed; systemic capital allocated at
+  each policy's expected share of the provider event.
+- Premium = max((EL + U + K + F) / (1 − v − π), plan minimum). Closed-form accuracy tests in tests/test_math.py.
 
 ## The three loops
 

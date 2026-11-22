@@ -424,7 +424,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         "technical_premium": technical,
         "formula_premium": formula_gross,
         "minimum_premium": minimum,
-        "minimum_applied": gross > formula_gross,
+        "minimum_applied": bool(gross > formula_gross),
         "gross_premium": gross,
         "rate_on_line": gross / agg,
         "loss_percentiles": {str(q): float(np.quantile(total, q / 100))

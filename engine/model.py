@@ -191,9 +191,68 @@ def _histogram(total: np.ndarray, agg: float, bins: int = 40) -> dict:
             "at_aggregate_limit": int((total >= agg).sum())}
 
 
+def _illustration(claims_log, systemic, total, agg, n_inner, n_lines, stream,
+                  n_band_years: int = 4000, weeks: int = 52) -> dict:
+    """Sample policy-years straight from the simulation for the web graphic.
+
+    Each simulated year's claims are given arrival times (uniform over the year,
+    as in a Poisson process, from their own random stream so pricing is
+    untouched). The paid amounts are the engine's own, so every path ends at
+    exactly that year's simulated annual loss. Returns step paths for a set of
+    years spread across parameter draws, percentile bands from a larger sample,
+    and the running Monte Carlo estimate of expected loss.
+    """
+    n_years = total.size
+    band_years = np.unique(np.linspace(0, n_years - 1, min(n_band_years, n_years)).astype(np.int64))
+    pos = {int(y): i for i, y in enumerate(band_years)}
+    events = [[] for _ in band_years]
+    for peril, yidx, paid in claims_log:
+        sel = np.isin(yidx, band_years)
+        t = stream("illustrate", peril).random(int(sel.sum()))
+        for y, a, tt in zip(yidx[sel], paid[sel], t):
+            if a > 0:
+                events[pos[int(y)]].append((float(tt), float(a), peril))
+    ts = stream("illustrate", "systemic").random(band_years.size)
+    for i, y in enumerate(band_years):
+        if systemic[y] > 0:
+            events[i].append((float(ts[i]), float(systemic[y]), "systemic"))
+
+    grid = np.linspace(0, 1, weeks + 1)
+    cum_grid = np.zeros((band_years.size, grid.size))
+    paths = []
+    line_pick = set(np.linspace(0, band_years.size - 1, min(n_lines, band_years.size)).astype(int).tolist())
+    for i, ev in enumerate(events):
+        ev.sort()
+        times = np.array([e[0] for e in ev]) if ev else np.zeros(0)
+        cum = np.minimum(np.cumsum([e[1] for e in ev]), agg) if ev else np.zeros(0)
+        idx = np.searchsorted(times, grid, side="right")
+        cum_grid[i] = np.where(idx > 0, cum[np.maximum(idx - 1, 0)] if cum.size else 0.0, 0.0)
+        if i in line_pick:
+            y = int(band_years[i])
+            perils = {}
+            for e in ev:
+                perils[e[2]] = perils.get(e[2], 0) + 1
+            paths.append({"year": y, "parameter_draw": y // n_inner, "final": float(total[y]),
+                          "claims": len(ev), "by_peril": perils,
+                          "points": [[round(t, 4), round(float(c), 2)] for t, c in zip(times, cum)]})
+    pct = (5, 25, 50, 75, 95)
+    bands = {str(q): [float(v) for v in np.percentile(cum_grid, q, axis=0)] for q in pct}
+
+    order = stream("illustrate", "order").permutation(n_years)
+    shuffled = total[order]
+    cps = np.unique(np.geomspace(50, n_years, 60).astype(np.int64))
+    csum, csq = np.cumsum(shuffled), np.cumsum(shuffled ** 2)
+    mean = csum[cps - 1] / cps
+    var = np.maximum(csq[cps - 1] / cps - mean ** 2, 0)
+    convergence = {"n": cps.tolist(), "mean": mean.tolist(), "se": (np.sqrt(var / cps)).tolist()}
+    return {"grid": grid.tolist(), "bands": bands, "paths": paths, "band_years": int(band_years.size),
+            "n_years": int(n_years), "expected_loss": float(total.mean()), "aggregate_limit": float(agg),
+            "convergence": convergence}
+
+
 def price(insured: dict, params: dict | None = None, mode: str = "full",
           overrides: dict | None = None, n_outer: int | None = None,
-          n_inner: int | None = None, seed: int | None = None) -> dict:
+          n_inner: int | None = None, seed: int | None = None, illustrate: int = 0) -> dict:
     """Price one insured.
 
     mode="full":  sample parameters (outer layer) and simulate years (inner layer).
@@ -221,6 +280,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
 
     idio = np.zeros(n_years)
     by_peril = {}
+    claims_log = []   # (peril, year index, paid) per claim, kept only for illustration
     used = {}  # trace: mean of every parameter as actually drawn (no extra randomness)
 
     def draw(path):
@@ -277,6 +337,8 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         annual = np.bincount(year_idx, weights=layer, minlength=n_years)
 
         idio += annual
+        if illustrate:
+            claims_log.append((peril, year_idx, layer))
         by_peril[peril] = {
             "expected_claims": float(lam.mean()),
             "expected_loss": float(annual.mean()),
@@ -301,6 +363,8 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     systemic = np.where(hit, loss_share[o] * agg, 0.0)
 
     total = np.minimum(idio + systemic, agg)
+    illustration = (_illustration(claims_log, systemic, total, agg, n_inner, illustrate, stream)
+                    if illustrate and n_outer > 1 else None)
     idio_c, sys_c = np.minimum(idio, agg), np.minimum(systemic, agg)
 
     pr = params["pricing"]
@@ -341,6 +405,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         "loss_percentiles": {str(q): float(np.quantile(total, q / 100))
                              for q in (50, 75, 90, 95, 99, 99.5)},
         "prob_any_loss": float((total > 0).mean()),
+        "illustration": illustration,
         "trace": {
             "loss_histogram": _histogram(total, agg),
             "simulation": {"seed": seed, "n_outer": n_outer, "n_inner": n_inner, "n_years": n_years},

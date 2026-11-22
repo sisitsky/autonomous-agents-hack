@@ -360,5 +360,179 @@
     });
   }
 
-  window.Charts = { credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
+  // ---------------------------------------------------------------- Monte Carlo paths
+  const DIV = ["#2a78d6", "#86b6ef", "#7d7c78", "#f08a7e", "#e0524b"];   // blue <-> gray <-> red
+  function hexMix(a, b, t) {
+    const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), A = p(a), B = p(b);
+    return "#" + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  }
+  function divColor(ratio) {           // final loss / expected loss -> color
+    const r = Math.log(Math.max(ratio, 1e-3)) / Math.log(4);          // ±1 at 4x or 1/4 of expected
+    const u = Math.max(-1, Math.min(1, r)) * 2 + 2, i = Math.min(3, Math.floor(u));
+    return hexMix(DIV[i], DIV[i + 1], u - i);
+  }
+  const reduceMotion = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function monteCarlo(container, calc, opts = {}) {
+    const il = calc.simulation_illustration;
+    if (!il) { container.innerHTML = `<div class="skeleton">Re-price to see the simulation.</div>`; return {}; }
+    const layers = opts.layers || "all", nLines = opts.lines || il.paths.length;
+    const W = 1080, H = 440, L = 70, R = 150, T = 24, B = 44, pw = W - L - R, ph = H - T - B;
+    const agg = il.aggregate_limit, EL = il.expected_loss;
+    const p95End = il.bands["95"][il.bands["95"].length - 1];
+    const maxFinal = Math.max(...il.paths.map(p => p.final));
+    const yTop = Math.min(agg * 1.04, Math.max(p95End * 1.25, maxFinal * 1.08, EL * 2));
+    const x = t => L + pw * t, y = v => T + ph * (1 - v / yTop);
+    const s = svg(container, W, H, "Monte Carlo simulation of policy years");
+    const g0 = el("g", {}, s);
+    for (let i = 0; i <= 4; i++) {
+      const v = yTop / 1.04 * i / 4;
+      el("line", { x1: L, x2: L + pw, y1: y(v), y2: y(v), stroke: C.grid }, g0);
+      text(g0, L - 8, y(v) + 4, fmt.short(v), { anchor: "end" });
+    }
+    "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ").forEach((m, i) =>
+      text(g0, x((i + 0.5) / 12), T + ph + 16, m, { anchor: "middle" }));
+    text(g0, L + pw / 2, H - 6, "month of the policy year · cumulative losses paid by the policy", { anchor: "middle", size: 10.5 });
+    if (agg <= yTop) {
+      el("line", { x1: L, x2: L + pw, y1: y(agg), y2: y(agg), stroke: C.red, "stroke-dasharray": "6 4", opacity: .7 }, g0);
+      text(g0, L + pw - 6, y(agg) - 6, `aggregate limit ${fmt.short(agg)}`, { fill: C.ink2, size: 10.5, anchor: "end" });
+    } else {
+      text(g0, L + pw - 6, T + 12, `aggregate limit ${fmt.short(agg)} (above chart)`, { fill: C.ink2, size: 10.5, anchor: "end" });
+    }
+
+    // probability cloud
+    const cloud = el("g", { class: "mc-cloud" }, g0);
+    const band = (lo, hi, op) => {
+      const up = il.grid.map((t, i) => `${x(t).toFixed(1)},${y(il.bands[hi][i]).toFixed(1)}`);
+      const dn = il.grid.map((t, i) => `${x(t).toFixed(1)},${y(il.bands[lo][i]).toFixed(1)}`).reverse();
+      el("polygon", { points: up.concat(dn).join(" "), fill: C.accent, opacity: op }, cloud);
+    };
+    band("5", "95", 0.13); band("25", "75", 0.22);
+    el("polyline", { points: il.grid.map((t, i) => `${x(t).toFixed(1)},${y(il.bands["50"][i]).toFixed(1)}`).join(" "),
+      fill: "none", stroke: C.ink, "stroke-width": 2, "stroke-dasharray": "6 4" }, cloud);
+
+    // paths
+    const pathsG = el("g", { class: "mc-paths" }, g0);
+    const step = Math.max(1, Math.floor(il.paths.length / nLines));
+    const shown = il.paths.filter((_, i) => i % step === 0).slice(0, nLines);
+    const els = shown.map(p => {
+      let d = `M${x(0).toFixed(1)},${y(0).toFixed(1)}`, prev = 0;
+      p.points.forEach(([t, c]) => { d += `H${x(t).toFixed(1)}V${y(c).toFixed(1)}`; prev = c; });
+      d += `H${x(1).toFixed(1)}`;
+      const col = divColor((p.final || 1) / EL);
+      const line = el("path", { d, fill: "none", stroke: col, "stroke-width": 1.4, opacity: 0.6, class: "mc-line", pathLength: 1 }, pathsG);
+      const end = el("circle", { cx: x(1), cy: y(prev), r: 2.6, fill: col, class: "mc-end" }, pathsG);
+      const hit = el("path", { d, fill: "none", stroke: "transparent", "stroke-width": 9 }, pathsG);
+      hit.classList.add("hit");
+      const per = Object.entries(p.by_peril).map(([k, v]) => `${k.replace(/_/g, " ")} ${v}`).join(", ") || "none";
+      hit.addEventListener("pointerenter", e => {
+        line.setAttribute("stroke-width", 3); line.setAttribute("opacity", 1); pathsG.classList.add("dim-lines"); line.classList.add("hl");
+        showTip(e, `<div class="tt-title">Simulated year ${p.year.toLocaleString()}</div>
+          <div class="tt-big">${fmt.money(p.final)} <span class="muted small">paid</span></div>
+          <div class="tt-row"><span>vs expected loss</span><b>${(p.final / EL).toFixed(2)}×</b></div>
+          <div class="tt-row"><span>Claims</span><b>${p.claims}</b></div>
+          <div class="tt-row"><span>By peril</span><b>${fmt.esc(per)}</b></div>
+          <div class="tt-row"><span>Parameter draw</span><b>#${p.parameter_draw.toLocaleString()}</b></div>
+          <div class="tt-src">One of ${il.n_years.toLocaleString()} simulated years. Amounts are the engine's own; claim dates are illustrative.</div>`);
+      });
+      hit.addEventListener("pointermove", moveTip);
+      hit.addEventListener("pointerleave", () => {
+        hideTip(); line.setAttribute("stroke-width", 1.4); line.setAttribute("opacity", 0.6); pathsG.classList.remove("dim-lines"); line.classList.remove("hl");
+      });
+      return { line, end };
+    });
+
+    // marginal: distribution of annual losses (whole simulation), on the right
+    const h = calc.loss_distribution.histogram, n = h.n_years;
+    const maxShare = Math.max(...h.counts) / n, mx = 110;
+    const marg = el("g", { class: "mc-marg" }, g0);
+    h.counts.forEach((c, i) => {
+      if (h.edges[i] >= yTop) return;
+      const y0 = y(Math.min(h.edges[i + 1], yTop)), y1 = y(h.edges[i]);
+      const w = mx * (c / n) / maxShare;
+      if (w > 0.3) el("rect", { x: L + pw + 12, y: y0 + 0.5, width: w, height: Math.max(y1 - y0 - 1, 0.5), fill: C.accent, opacity: 0.75, rx: 1.5 }, marg);
+    });
+    text(marg, L + pw + 12, T - 8, "annual-loss density", { size: 10.5, fill: C.ink2 });
+    el("line", { x1: L + pw + 6, x2: W - 6, y1: y(EL), y2: y(EL), stroke: C.yellow, "stroke-width": 1.5, "stroke-dasharray": "4 3" }, marg);
+    text(marg, W - 6, y(EL) - 5, `expected ${fmt.short(EL)}`, { anchor: "end", fill: C.ink, size: 10.5, weight: 600 });
+
+    // counter
+    const counter = text(g0, L + 10, T + 14, "", { fill: C.ink, size: 13, weight: 600 });
+    const sub = text(g0, L + 10, T + 30, "", { size: 11 });
+
+    cloud.style.display = layers === "paths" ? "none" : "";
+    pathsG.style.display = layers === "cloud" ? "none" : "";
+
+    function finish() {
+      els.forEach(({ line, end }) => { line.style.strokeDasharray = ""; line.style.strokeDashoffset = ""; line.style.opacity = ""; end.style.opacity = ""; });
+      cloud.style.opacity = 1; marg.style.opacity = 1;
+      counter.textContent = `${il.n_years.toLocaleString()} simulated years`;
+      sub.textContent = `${shown.length} shown as lines · cloud from ${il.band_years.toLocaleString()} years · P5–P95 and P25–P75 bands, median dashed`;
+    }
+    function play() {
+      if (reduceMotion()) return finish();
+      const t0 = performance.now(), dur = 2600;
+      cloud.style.opacity = 0; marg.style.opacity = 0;
+      cloud.style.transition = marg.style.transition = "opacity .8s ease";
+      els.forEach(({ line, end }) => { line.style.strokeDasharray = "1"; line.style.strokeDashoffset = "1"; end.style.opacity = 0; line.style.transition = "none"; });
+      const started = new Set();
+      const tick = now => {
+        const k = Math.min(1, (now - t0) / dur);
+        const due = Math.floor(k * els.length);
+        for (let i = 0; i < due; i++) if (!started.has(i)) {
+          started.add(i);
+          const { line, end } = els[i];
+          line.style.transition = "stroke-dashoffset .7s ease-out"; line.style.strokeDashoffset = "0";
+          setTimeout(() => { end.style.transition = "opacity .3s"; end.style.opacity = 1; }, 650);
+        }
+        counter.textContent = `Simulating… ${Math.round(il.n_years * (1 - Math.pow(1 - k, 2))).toLocaleString()} years`;
+        sub.textContent = "each line: one policy year under one draw of the uncertain parameters";
+        if (k < 1) requestAnimationFrame(tick);
+        else setTimeout(finish, 750);
+      };
+      requestAnimationFrame(tick);
+    }
+    finish();
+    return { play };
+  }
+
+  function convergence(container, calc) {
+    const il = calc.simulation_illustration;
+    if (!il) { container.innerHTML = ""; return; }
+    const cv = il.convergence, EL = il.expected_loss;
+    const W = 1080, H = 230, L = 70, R = 150, T = 18, B = 40, pw = W - L - R, ph = H - T - B;
+    const lo = Math.min(...cv.mean.map((m, i) => m - 2 * cv.se[i])), hi = Math.max(...cv.mean.map((m, i) => m + 2 * cv.se[i]));
+    const pad = (hi - lo) * 0.08, y0 = Math.max(0, lo - pad), y1 = hi + pad;
+    const lx = Math.log10(cv.n[0]), rx = Math.log10(cv.n[cv.n.length - 1]);
+    const x = n => L + pw * (Math.log10(n) - lx) / (rx - lx), y = v => T + ph * (1 - (v - y0) / (y1 - y0));
+    const s = svg(container, W, H, "Monte Carlo convergence of expected loss");
+    const g0 = el("g", {}, s);
+    for (let i = 0; i <= 3; i++) { const v = y0 + (y1 - y0) * i / 3; el("line", { x1: L, x2: L + pw, y1: y(v), y2: y(v), stroke: C.grid }, g0); text(g0, L - 8, y(v) + 4, fmt.short(v), { anchor: "end" }); }
+    [100, 1000, 10000, 100000].filter(n => n >= cv.n[0] && n <= cv.n[cv.n.length - 1]).concat([cv.n[cv.n.length - 1]]).forEach(n =>
+      text(g0, x(n), T + ph + 16, n >= 1000 ? (n / 1000).toLocaleString() + "k" : String(n), { anchor: "middle" }));
+    text(g0, L + pw / 2, H - 4, "simulated years (log scale, random order)", { anchor: "middle", size: 10.5 });
+    const up = cv.n.map((n, i) => `${x(n).toFixed(1)},${y(cv.mean[i] + 2 * cv.se[i]).toFixed(1)}`);
+    const dn = cv.n.map((n, i) => `${x(n).toFixed(1)},${y(Math.max(y0, cv.mean[i] - 2 * cv.se[i])).toFixed(1)}`).reverse();
+    el("polygon", { points: up.concat(dn).join(" "), fill: C.blue, opacity: 0.22 }, g0);
+    el("polyline", { points: cv.n.map((n, i) => `${x(n).toFixed(1)},${y(cv.mean[i]).toFixed(1)}`).join(" "), fill: "none", stroke: C.ink, "stroke-width": 2 }, g0);
+    el("line", { x1: L, x2: L + pw, y1: y(EL), y2: y(EL), stroke: C.yellow, "stroke-dasharray": "5 3", "stroke-width": 1.5 }, g0);
+    text(g0, L + pw + 8, y(EL) + 4, `final ${fmt.short(EL)}`, { fill: C.ink, size: 11, weight: 600 });
+    text(g0, L + pw + 8, y(EL) + 18, "±2 standard errors", { size: 10, fill: C.ink2 });
+    const guide = el("line", { y1: T, y2: T + ph, stroke: C.ink2, opacity: 0 }, g0), dot = el("circle", { r: 4, fill: C.ink, opacity: 0 }, g0);
+    const hit = el("rect", { x: L, y: T, width: pw, height: ph, fill: "transparent", class: "hit" }, g0);
+    hit.addEventListener("pointermove", e => {
+      const box = s.getBoundingClientRect(), px = (e.clientX - box.left) * W / box.width;
+      const target = Math.pow(10, lx + (px - L) / pw * (rx - lx));
+      let i = 0; cv.n.forEach((n, j) => { if (Math.abs(Math.log(n / target)) < Math.abs(Math.log(cv.n[i] / target))) i = j; });
+      guide.setAttribute("x1", x(cv.n[i])); guide.setAttribute("x2", x(cv.n[i])); guide.setAttribute("opacity", .5);
+      dot.setAttribute("cx", x(cv.n[i])); dot.setAttribute("cy", y(cv.mean[i])); dot.setAttribute("opacity", 1);
+      showTip(e, `<div class="tt-title">After ${cv.n[i].toLocaleString()} simulated years</div>
+        <div class="tt-big">${fmt.money(cv.mean[i])}</div>
+        <div class="tt-row"><span>±2 standard errors</span><b>±${fmt.money(2 * cv.se[i])}</b></div>
+        <div class="tt-row"><span>Off the final estimate by</span><b>${fmt.pct(Math.abs(cv.mean[i] / EL - 1))}</b></div>`);
+    });
+    hit.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
+  }
+
+  window.Charts = { monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
 })();

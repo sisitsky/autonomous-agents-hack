@@ -50,8 +50,8 @@ def resolve(target: str) -> tuple[dict, Path]:
 def compute(insured: dict, with_tornado: bool = True, with_controls: bool = True) -> dict:
     """Pure core (no files): price, verify reproducibility, build the archive."""
     params = load_params()
-    quote = price(insured, params)
-    again = price(insured, params)
+    quote = price(insured, params, illustrate=120)
+    again = price(insured, params, illustrate=120)
     if again["gross_premium"] != quote["gross_premium"] or again["expected_loss"] != quote["expected_loss"]:
         raise NotReproducible("Two runs with the same inputs and seed gave different premiums")
 

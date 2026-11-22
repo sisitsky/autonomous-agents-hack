@@ -59,6 +59,8 @@
     renderCompare();
     renderTimeline($("timeline"), b.events || []);
 
+    renderEngine(b);
+
     Charts.waterfall($("chart-waterfall"), calc, calc.equations);
     $("explain-buildup").innerHTML = paras(n.price_build_up);
     tex($("eq-gross"), calc.equations.find(e => e.id === "gross_premium").latex);
@@ -140,6 +142,23 @@
   }
   function drawTornado() {
     Charts.tornado($("chart-tornado"), state.bundles[state.current].calculation, +$("tornado-n").value);
+  }
+
+  // ---------------------------------------------------------------- Monte Carlo
+  let mc = null, mcSeen = false;
+  function renderEngine(b) {
+    const calc = b.calculation, sim = calc.meta.simulation, il = calc.simulation_illustration;
+    const stat = (k, v) => `<div>${k}<b>${v}</b></div>`;
+    $("mc-stats").innerHTML = stat("Parameter draws", sim.n_outer.toLocaleString()) + stat("Years per draw", sim.n_inner.toLocaleString())
+      + stat("Simulated years", sim.n_years.toLocaleString()) + stat("Seed", sim.seed)
+      + (il ? stat("Expected loss", fmt.money(il.expected_loss)) : "");
+    drawEngine(false);
+    Charts.convergence($("chart-conv"), calc);
+  }
+  function drawEngine(play) {
+    const b = state.bundles[state.current];
+    mc = Charts.monteCarlo($("chart-mc"), b.calculation, { layers: $("mc-layers").value, lines: +$("mc-lines").value });
+    if (play && mc.play) mc.play();
   }
 
   // ---------------------------------------------------------------- credibility
@@ -397,6 +416,14 @@
     $("pct-select").onchange = drawLoss;
     $("tornado-n").onchange = drawTornado;
     $("cred-measure").onchange = drawCredibility;
+    $("mc-layers").onchange = () => drawEngine(false);
+    $("mc-lines").onchange = () => drawEngine(true);
+    $("mc-play").onclick = () => drawEngine(true);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver((entries, obs) => {
+        if (entries.some(e => e.isIntersecting) && !mcSeen) { mcSeen = true; drawEngine(true); obs.disconnect(); }
+      }, { threshold: 0.35 }).observe($("chart-mc"));
+    }
     $("case-cat").onchange = drawCases;
     $("case-verdict").onchange = drawCases;
     $("chat-form").onsubmit = chat;

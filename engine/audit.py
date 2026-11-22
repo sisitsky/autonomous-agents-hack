@@ -247,5 +247,6 @@ def calculation(insured: dict, params: dict, quote: dict, tornado: dict | None =
                               "expected_loss": quote["expected_loss"], "histogram": t["loss_histogram"]},
         "tornado": tornado,
         "controls": controls,
+        "simulation_illustration": quote.get("illustration"),
         "equations": EQUATIONS,
     }

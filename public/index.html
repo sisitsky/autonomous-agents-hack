@@ -19,6 +19,7 @@
   <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>AI Underwriter</a>
   <nav>
     <a href="#loop">Loop</a>
+    <a href="#engine">Engine</a>
     <a href="#price">Price</a>
     <a href="#risk">Risk</a>
     <a href="#redteam">Red team</a>
@@ -59,6 +60,36 @@
   <section id="loop">
     <div class="section-head"><h2>The loop</h2><p class="muted">Every step the agents took for this quote. Click a step for detail.</p></div>
     <ol class="timeline" id="timeline"></ol>
+  </section>
+
+  <section id="engine">
+    <div class="section-head"><h2>Inside the Monte Carlo engine</h2>
+      <p class="muted">Real output from this quote's simulation: every line is one simulated policy year, the cloud is where most years land.</p></div>
+    <div class="card wide mc-card">
+      <div class="card-head">
+        <div class="mc-stats" id="mc-stats"></div>
+        <div class="filters">
+          <div class="select-wrap sm"><select id="mc-layers" aria-label="Layers"><option value="all">Lines + cloud</option><option value="paths">Lines only</option><option value="cloud">Cloud only</option></select></div>
+          <div class="select-wrap sm"><select id="mc-lines" aria-label="Number of lines"><option value="40">40 years</option><option value="120" selected>120 years</option></select></div>
+          <button type="button" class="btn" id="mc-play">▶ Run simulation</button>
+        </div>
+      </div>
+      <div class="chart" id="chart-mc"></div>
+      <div class="legend mc-legend">
+        <span><i class="ramp" aria-hidden="true"></i>year's loss: below expected ← → above expected</span>
+        <span><i class="sw" style="background:rgba(144,133,233,.45)"></i>P25–P75</span>
+        <span><i class="sw" style="background:rgba(144,133,233,.2)"></i>P5–P95</span>
+        <span><i class="sw" style="background:var(--yellow)"></i>expected loss</span>
+      </div>
+      <div class="card-title mt">Convergence: the estimate settles as years accumulate</div>
+      <div class="chart" id="chart-conv"></div>
+      <details class="explain"><summary>How the simulation works</summary><div>
+        <p><b>Two layers.</b> The outer layer draws the uncertain parameters (error rate, claim propensity, claim size, systemic risk…) 2,000 times. For each draw the inner layer simulates 200 policy years of luck: a Poisson number of claims per peril, each with a lognormal-plus-Pareto size, then the deductible, per-claim limit, and aggregate limit, plus a possible systemic event at the model provider.</p>
+        <p><b>The lines</b> are years picked evenly across parameter draws, so they show both kinds of uncertainty: what we don't know about the risk, and luck. Colors run from blue (a cheap year) through gray to red (several times the expected loss). Flat stretches are months with no claims; each jump is one claim paid.</p>
+        <p><b>The cloud</b> is built from 4,000 simulated years: the darker band holds the middle half, the lighter band 90%. The density on the right is the whole simulation's annual-loss distribution.</p>
+        <p><b>Convergence</b> shows why 400,000 years: the running estimate of expected loss, with its ±2 standard-error band, narrows as years are added (simulated years shown in random order).</p>
+        <p class="muted small">Claim amounts and annual totals are the engine's own, so each line ends exactly at that year's simulated loss. Claim dates are spread uniformly over the year for illustration (the engine prices annual totals). Same seed, same picture.</p></div></details>
+    </div>
   </section>
 
   <section id="price">

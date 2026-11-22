@@ -254,3 +254,12 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .stat { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
 .stat .k { color: var(--muted); font-size: 12px; }
 .stat .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+.mc-stats { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.mc-stats div { font-size: 12.5px; color: var(--muted); }
+.mc-stats b { display: block; color: var(--ink); font-size: 18px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.mc-legend { flex-wrap: wrap; }
+.ramp { display: inline-block; width: 70px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px;
+  background: linear-gradient(90deg, #2a78d6, #86b6ef, #7d7c78, #f08a7e, #e0524b); }
+.dim-lines .mc-line:not(.hl) { opacity: .12 !important; }
+.mc-line { transition: opacity .15s; }

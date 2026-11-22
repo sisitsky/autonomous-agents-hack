@@ -1,0 +1,106 @@
+{
+ "decisions": [
+  {
+   "run_id": "20261122-222415",
+   "pr": 1,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/1",
+   "outcome": "approved",
+   "parameter": "perils.unauthorized_commitment.severity.tail.prob",
+   "source": "manual",
+   "strength": "moderate",
+   "event": "A (fictional) state appellate court held a retailer liable for refund promises",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:02:53Z"
+  },
+  {
+   "run_id": "20261122-222415",
+   "pr": 1,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/1",
+   "outcome": "approved",
+   "parameter": "systemic.annual_prob",
+   "source": "mitre_atlas",
+   "strength": "weak",
+   "event": "Code to Deploy Destructive AI Agent Discovered in Amazon Q VS Code Extension",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:02:53Z"
+  },
+  {
+   "run_id": "20261122-222415",
+   "pr": 1,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/1",
+   "outcome": "approved",
+   "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+   "source": "mitre_atlas",
+   "strength": "weak",
+   "event": "Data Destruction via Indirect Prompt Injection Targeting Claude Computer-Use",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:02:53Z"
+  },
+  {
+   "run_id": "20261122-222415",
+   "pr": 1,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/1",
+   "outcome": "approved",
+   "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+   "source": "mitre_atlas",
+   "strength": "weak",
+   "event": "Data Exfiltration from Slack AI via Indirect Prompt Injection",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:02:53Z"
+  },
+  {
+   "run_id": "20261122-222415",
+   "pr": 1,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/1",
+   "outcome": "approved",
+   "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+   "source": "mitre_atlas",
+   "strength": "weak",
+   "event": "Financial Transaction Hijacking with M365 Copilot as an Insider",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:02:53Z"
+  }
+ ],
+ "by_source": {
+  "manual": {
+   "approved": 1,
+   "edited": 0,
+   "rejected": 0,
+   "n": 1,
+   "acceptance": 1.0
+  },
+  "mitre_atlas": {
+   "approved": 4,
+   "edited": 0,
+   "rejected": 0,
+   "n": 4,
+   "acceptance": 1.0
+  }
+ },
+ "by_strength": {
+  "moderate": {
+   "approved": 1,
+   "edited": 0,
+   "rejected": 0,
+   "n": 1,
+   "acceptance": 1.0
+  },
+  "weak": {
+   "approved": 4,
+   "edited": 0,
+   "rejected": 0,
+   "n": 4,
+   "acceptance": 1.0
+  }
+ },
+ "human_scale_by_parameter": {
+  "perils.unauthorized_commitment.severity.tail.prob": 1.0,
+  "systemic.annual_prob": 1.0,
+  "perils.prompt_injection.frequency.p_harm_given_failure": 1.0
+ },
+ "skip_sources": [],
+ "rules": {
+  "min_decisions": 3,
+  "skip_if_rejection_rate_at_least": 0.75
+ }
+}

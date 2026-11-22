@@ -27,7 +27,7 @@ from pathlib import Path
 
 from engine.model import load_params
 
-from . import calibrator, monitor, validator
+from . import calibrator, experience, feedback, monitor, suite_builder, validator
 from .config import ROOT, llm_available
 
 REPO = os.environ.get("GITHUB_REPOSITORY", "sisitsky/autonomous-agents-hack")
@@ -82,7 +82,8 @@ def select_items(limit: int = calibrator.MAX_ITEMS_PER_RUN) -> list[dict]:
     return items[:limit]
 
 
-def pr_body(run_id: str, changes: list[dict], v: dict, scaled: float | None) -> str:
+def pr_body(run_id: str, changes: list[dict], v: dict, scaled: float | None, record: dict | None = None) -> str:
+    record = record or {}
     L = [f"## Calibration run `{run_id}`", "",
          "Proposed by the Loop 2 agents. **Merging this PR is the human approval.** "
          "Illustrative pricing, not an offer of insurance.", ""]
@@ -105,6 +106,25 @@ def pr_body(run_id: str, changes: list[dict], v: dict, scaled: float | None) -> 
           "### Portfolio accumulation by model provider", "",
           "| Provider | Policies | Aggregate limits | Expected loss (before → after) | Systemic capital (before → after) |",
           "|---|---|---|---|---|"]
+    if record.get("new_tests"):
+        L += ["", "### New red-team tests from evidence", "",
+              "Added to `agents/test_suites/customer_service.yaml`; every future red-team run will include them.", "",
+              "| Id | Category | Customer message | Inspired by | Demo ShopBot |", "|---|---|---|---|---|"]
+        for t in record["new_tests"]:
+            a = t["added_from_evidence"]
+            src = f"[{a['source']}]({a['url']})" if a.get("url") else a["source"]
+            L.append(f"| {t['id']} | {t['category']} | {t['input'][:120]} | {src}: {a['title'][:60]} | {t['demo_check']['pattern_verdict']} |")
+    rep = record.get("experience")
+    if rep:
+        L += ["", f"### Claims experience: actual vs expected{' (SIMULATED book)' if rep['simulated'] else ''}", "",
+              f"{rep['policy_years']:,} policy-years, {rep['claims']} claims. Multiplier m = (K + A) / (K + E), K = {rep['K']:.0f}; "
+              "proposed only when the 90% interval excludes 1.", "",
+              "| Peril | Actual | Expected | A/E | m (90%) | Proposed |", "|---|---|---|---|---|---|"]
+        for r in rep["perils"]:
+            L.append(f"| {r['peril']} | {r['actual_claims']} | {r['expected_claims']:.1f} | {r['ae_ratio']:.2f} | "
+                     f"{r['multiplier']:.3f} ({r['multiplier_90'][0]:.2f}–{r['multiplier_90'][1]:.2f}) | {'yes' if r['propose'] else 'no'} |")
+    if record.get("learning_notes"):
+        L += ["", "### Learned from past reviews", ""] + [f"- {n}" for n in record["learning_notes"]]
     before = {r["provider"]: r for r in v["accumulation"]["before"]["by_provider"]}
     for r in v["accumulation"]["after"]["by_provider"]:
         b = before.get(r["provider"], r)
@@ -122,6 +142,9 @@ def open_pr(run_id: str, cand_dir: Path, body: str, draft: bool) -> dict:
         _git("worktree", "add", "-b", branch, str(wt), "origin/main")
         shutil.copy(cand_dir / "priors.yaml", wt / "params" / "priors.yaml")
         _git("add", "params/priors.yaml", cwd=wt)
+        if (cand_dir / "customer_service.yaml").exists():
+            shutil.copy(cand_dir / "customer_service.yaml", wt / "agents" / "test_suites" / "customer_service.yaml")
+            _git("add", "agents/test_suites/customer_service.yaml", cwd=wt)
         _git("-c", "user.name=ai-underwriter-loop2", "-c", "user.email=loop2@users.noreply.github.com",
              "commit", "-m", f"Calibration {run_id}: evidence-based parameter update\n\nProposed by the Loop 2 agents; "
              "see the PR for evidence, Bayesian updates, and the guardrail report.", cwd=wt)
@@ -162,6 +185,10 @@ def export(record: dict, sources: dict | None) -> None:
         "runs": [{k: r.get(k) for k in ("run_id", "run_at", "status", "items_reviewed", "relevant", "pr", "scaled",
                                         "guardrails_passed")} for r in reversed(hist)][:50],
         "latest_validation": next((r.get("validation") for r in reversed(hist) if r.get("validation")), None),
+        "new_tests": [dict(t, run_id=r["run_id"], pr=r.get("pr"), run_at=r["run_at"]) for r in reversed(hist) for t in r.get("new_tests", [])][:50],
+        "experience": record.get("experience") or next((r.get("experience") for r in reversed(hist) if r.get("experience")), None),
+        "feedback": feedback.load(),
+        "learning_notes": next((r.get("learning_notes") for r in reversed(hist) if r.get("learning_notes")), []),
     }
     PUBLIC.write_text(json.dumps(public, default=float))
 
@@ -174,31 +201,64 @@ def run(do_monitor: bool = True, do_pr: bool = True, days: int = 30, echo: bool 
         say("1. Monitor")
         sources = monitor.run(days, echo=echo)["sources"]
     items = select_items()
-    record = {"run_id": run_id, "run_at": _now(), "items_reviewed": len(items), "changes": []}
-    if not items:
+    record = {"run_id": run_id, "run_at": _now(), "items_reviewed": len(items), "changes": [], "new_tests": []}
+    # Learn from past human decisions on GitHub (merged, edited, rejected).
+    try:
+        fb = feedback.refresh()
+    except Exception as e:  # noqa: BLE001 - offline: use the last saved feedback
+        say(f"   feedback refresh failed ({e}); using saved feedback")
+        fb = feedback.load()
+    # Actual vs expected claims experience (deterministic).
+    params = load_params()
+    done = calibrator.load_processed()
+    rep = experience.report(params)
+    exp_items, exp_dec = experience.evidence_items(rep) if rep else ([], [])
+    exp_items = [i for i in exp_items if i["id"] not in done]
+    exp_dec = [d for d in exp_dec if d["item_id"] in {i["id"] for i in exp_items}]
+    record["experience"] = rep
+    if not items and not exp_items:
         record["status"] = "no_new_evidence"
         export(record, sources); say("No new evidence."); return record
-    if not llm_available():
+    if items and not llm_available():
         record["status"] = "skipped_no_api_key"
         export(record, sources); say("Calibration skipped: no ANTHROPIC_API_KEY."); return record
 
-    say(f"2. Calibrate: {len(items)} evidence items")
-    params = load_params()
-    prop = calibrator.propose(items, params)
+    say(f"2. Calibrate: {len(items)} evidence items, {len(exp_items)} claims-experience signals")
+    llm_dec = calibrator.triage(items, params, feedback.prompt_examples(fb)) if items else []
+    all_items = items + exp_items
+    decisions, learn_notes = feedback.apply_policy(llm_dec + exp_dec, {i["id"]: i for i in all_items}, fb)
+    record["learning_notes"] = learn_notes
+    for n in learn_notes:
+        say(f"   learned: {n}")
+    prop = calibrator.propose(all_items, params, decisions)
     record["relevant"] = sum(1 for d in prop["decisions"] if d["relevant"])
     changes = prop["changes"]
     for c in changes:
         say(f"   {c['parameter']}: {c['old']['mode']:.4g} → {c['new']['mode']:.4g} ({c['mode_change_pct']:+.1%}) "
             f"[{c['strength']}] {c['event'][:70]}")
-    if not changes:
-        calibrator.mark_processed([i["id"] for i in items])
+
+    # New red-team tests from evidence (improves how Loop 1 measures risk).
+    new_tests, rejected_tests = [], []
+    try:
+        cands = suite_builder.candidates(items, decisions)
+        if cands:
+            new_tests, rejected_tests = suite_builder.validate(suite_builder.draft(cands), cands, run_id)
+    except Exception as e:  # noqa: BLE001
+        say(f"   test drafting failed: {e}")
+    record["new_tests"], record["rejected_tests"] = new_tests, rejected_tests
+    for t in new_tests:
+        say(f"   new test {t['id']} [{t['category']}] from {t['added_from_evidence']['source']}: {t['input'][:70]}")
+    if not changes and not new_tests:
+        calibrator.mark_processed([i["id"] for i in all_items])
         record["status"] = "no_change"
-        export(record, sources); say("No parameter changes warranted."); return record
+        export(record, sources); say("No parameter changes or new tests warranted."); return record
 
     say("3. Validate")
     tmp = Path(tempfile.mkdtemp(prefix="cand-"))
     scaled = None
     calibrator.write_priors(changes, tmp, run_id)
+    if new_tests:
+        suite_builder.write_suite(new_tests, tmp / "customer_service.yaml")
     v = validator.validate(tmp)
     for f in (0.5, 0.25):
         if v["passed"]:
@@ -213,7 +273,7 @@ def run(do_monitor: bool = True, do_pr: bool = True, days: int = 30, echo: bool 
 
     record.update(changes=changes, scaled=scaled, guardrails_passed=v["passed"],
                   validation={k: v[k] for k in ("passed", "problems", "benchmark", "limits", "accumulation")})
-    body = pr_body(run_id, changes, v, scaled)
+    body = pr_body(run_id, changes, v, scaled, record)
     (ROOT / "pr_body.md").write_text(body)
     if do_pr and os.environ.get("CI") and _token():
         try:
@@ -237,7 +297,7 @@ def run(do_monitor: bool = True, do_pr: bool = True, days: int = 30, echo: bool 
             say(f"   PR not opened: {e}")
     else:
         record["status"] = "proposed_dry_run"
-    calibrator.mark_processed([i["id"] for i in items])
+    calibrator.mark_processed([i["id"] for i in all_items])
     export(record, sources)
     shutil.rmtree(tmp, ignore_errors=True)
     return record

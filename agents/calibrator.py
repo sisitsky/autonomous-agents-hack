@@ -86,7 +86,7 @@ def load_processed() -> set[str]:
     return set(json.loads(PROCESSED.read_text())) if PROCESSED.exists() else set()
 
 
-def triage(items: list[dict], params: dict) -> list[dict]:
+def triage(items: list[dict], params: dict, feedback_text: str = "") -> list[dict]:
     elig = eligible_parameters(params)
     catalog = "\n".join(f"- {p}: mode {s['mode']} (range {s['min']}–{s['max']}). {s.get('source', '')[:140]}"
                         for p, s in elig.items())
@@ -98,6 +98,7 @@ def triage(items: list[dict], params: dict) -> list[dict]:
     batches = [[it] for it in solo] + [rest[i:i + 20] for i in range(0, len(rest), 20)]
     for batch in batches:
         user = (f"<perils>\n{perils}\n</perils>\n<allowed_parameters>\n{catalog}\n</allowed_parameters>\n"
+                f"<reviewer_history>\n{feedback_text}\n</reviewer_history>\n"
                 "<evidence>\n" + json.dumps([{k: it.get(k) for k in ("id", "source", "type", "title", "date", "summary")}
                                              for it in batch], ensure_ascii=False) + "\n</evidence>\n"
                 "Return one decision per evidence item, in the same order, using its id as item_id.")

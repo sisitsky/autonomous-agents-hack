@@ -692,5 +692,37 @@
     area.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); });
   }
 
-  window.Charts = { simplex, credCloud, monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
+  // ---------------------------------------------------------------- actual vs expected
+  function aeChart(container, rep) {
+    const rows = rep.perils;
+    const W = 1080, row = 36, L = 230, R = 210, T = 26, H = T + row * rows.length + 34, pw = W - L - R;
+    const hi = Math.max(2, ...rows.map(r => Math.max(r.ae_ratio || 0, r.multiplier_90[1])));
+    const x = v => L + pw * v / hi;
+    const s = svg(container, W, H, "Actual vs expected claims by peril");
+    const g0 = el("g", {}, s);
+    for (let v = 0; v <= hi + 1e-9; v += 0.5) {
+      el("line", { x1: x(v), x2: x(v), y1: T - 6, y2: T + row * rows.length, stroke: v === 1 ? C.ink2 : C.grid, "stroke-width": v === 1 ? 1.5 : 1 }, g0);
+      text(g0, x(v), T + row * rows.length + 16, v.toFixed(1) + (v === 1 ? " (as expected)" : ""), { anchor: "middle" });
+    }
+    text(g0, L, 14, "A/E (dot) · credibility-weighted multiplier with 90% interval (bar)", { size: 11, fill: C.ink2 });
+    rows.forEach((r, i) => {
+      const yy = T + i * row + row / 2, col = r.propose ? (r.multiplier > 1 ? C.red : C.blue) : "#6f6e69";
+      text(g0, L - 12, yy + 4, r.peril.replace(/_/g, " "), { anchor: "end", fill: C.ink2, size: 12.5 });
+      const band = el("line", { x1: x(r.multiplier_90[0]), x2: x(r.multiplier_90[1]), y1: yy, y2: yy, stroke: col, "stroke-width": 8, "stroke-linecap": "round", opacity: 0.55, class: "mark" }, g0);
+      const m = el("line", { x1: x(r.multiplier), x2: x(r.multiplier), y1: yy - 9, y2: yy + 9, stroke: C.ink, "stroke-width": 2, class: "mark" }, g0);
+      const d = r.ae_ratio != null ? el("circle", { cx: x(r.ae_ratio), cy: yy, r: 5, fill: C.yellow, stroke: C.card, "stroke-width": 2, class: "mark" }, g0) : null;
+      text(g0, W - R + 12, yy + 4, `${r.actual_claims} vs ${r.expected_claims.toFixed(1)}${r.propose ? " → proposed" : ""}`, { fill: r.propose ? C.ink : C.muted, size: 11.5, weight: r.propose ? 600 : 400 });
+      const hit = el("rect", { x: 0, y: yy - row / 2, width: W, height: row, fill: "transparent" }, g0);
+      hover(hit, `<div class="tt-title">${fmt.esc(r.peril.replace(/_/g, " "))}</div>
+        <div class="tt-row"><span>Actual claims</span><b>${r.actual_claims}</b></div>
+        <div class="tt-row"><span>Expected claims</span><b>${r.expected_claims.toFixed(1)}</b></div>
+        <div class="tt-row"><span>A/E</span><b>${r.ae_ratio != null ? r.ae_ratio.toFixed(2) : "n/a"}</b></div>
+        <div class="tt-row"><span>Credibility Z = E / (E + K)</span><b>${r.credibility_z.toFixed(2)}</b></div>
+        <div class="tt-row"><span>Multiplier m (90%)</span><b>${r.multiplier.toFixed(3)} (${r.multiplier_90[0].toFixed(2)}–${r.multiplier_90[1].toFixed(2)})</b></div>
+        <div class="tt-eq">m = (K + A) / (K + E), K = ${rep.K}</div>
+        <div class="tt-src">${r.propose ? `Credible drift: proposed a ${r.strength} update to ${fmt.esc(r.parameter)}.` : "Interval includes 1.0: no change proposed."}</div>`, g0, [band, m].concat(d ? [d] : []));
+    });
+  }
+
+  window.Charts = { aeChart, simplex, credCloud, monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
 })();

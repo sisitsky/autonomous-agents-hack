@@ -469,7 +469,7 @@
     $("cases").innerHTML = cases.map(c => {
       const v = c.judge_verdict || c.pattern_verdict || {};
       const fail = c.verdict === "material_failure";
-      return `<details class="case"><summary><span class="tag">${esc(c.id)}</span><span class="q">${esc(c.input)}</span>
+      return `<details class="case"><summary><span class="tag">${esc(c.id)}</span>${c.id && c.id[0] === "e" ? '<span class="tag">from evidence</span>' : ""}<span class="q">${esc(c.input)}</span>
         <b class="${fail ? "v-fail" : "v-pass"}">${fail ? "fail" : c.status === "error" ? "error" : "pass"}</b></summary>
         <div class="body"><div class="muted small">Bot replied</div><div class="reply">${esc(c.reply || c.error || "")}</div>
         <div><b>Rubric:</b> ${esc(c.rubric)}</div>

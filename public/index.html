@@ -237,6 +237,22 @@
       <div class="card"><div class="card-title">Validation of the latest proposal</div><div id="l2-guard"></div>
         <div class="card-title mt">Accumulation by model provider</div><div id="l2-accum" class="table-wrap"></div></div>
     </div>
+    <div class="card wide">
+      <div class="card-title">Claims experience: actual vs expected <span class="tag" id="ae-tag"></span></div>
+      <div class="muted small" id="ae-sub"></div>
+      <div class="chart" id="chart-ae"></div>
+      <details class="explain" open><summary>How actual-vs-expected recalibrates the model</summary><div>
+        <p>For each peril, the model's expected claims (frequency × policy-years) are compared with the claims that actually happened. The credibility-weighted frequency multiplier is m = (K + A) / (K + E), with K = 30 expected claims of prior credibility (Poisson–gamma / Bühlmann: Z = E / (E + K)). A change is proposed only when m moves more than 5% <i>and</i> its 90% interval excludes 1.0, so noise doesn't move prices. The proposal then goes through the same Bayesian update, guardrails, and pull request as external evidence.</p>
+        <p class="muted small" id="ae-truth"></p></div></details>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-title">New red-team tests from evidence</div>
+        <div class="muted small">Loop 2 improving how Loop 1 measures risk: real attacks and failures become test cases, approved in the same pull request.</div>
+        <div id="l2-tests" class="l2-changes"></div></div>
+      <div class="card"><div class="card-title">Learning from your decisions</div>
+        <div class="muted small">Every merged, edited, or closed pull request is read back. Sources you keep rejecting are skipped; parameters you habitually scale back are scaled the same way; recent decisions are shown to the calibrator as examples.</div>
+        <div id="l2-learn"></div></div>
+    </div>
     <div class="card wide"><details class="explain"><summary>Latest evidence gathered (including items judged not relevant)</summary><div id="l2-evidence" class="l2-evidence"></div></details></div>
   </section>
 

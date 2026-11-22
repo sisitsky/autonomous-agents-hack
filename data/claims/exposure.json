@@ -1,0 +1,18 @@
+{
+  "policy_years": {
+    "shopbot": 120,
+    "hirescreen": 120,
+    "copydesk": 120,
+    "northwind": 120,
+    "northwind_claude": 120
+  },
+  "simulated": true,
+  "true_world": {
+    "unauthorized_commitment": 1.6,
+    "data_leakage": 0.8,
+    "prompt_injection": 1.25,
+    "wrong_information": 1.0
+  },
+  "copies": 60,
+  "years": 2
+}

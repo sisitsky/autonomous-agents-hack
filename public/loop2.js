@@ -21,6 +21,7 @@
         if (list[0]) data.changes.forEach(c => { if (c.pr && c.pr.branch === br) c.pr = { ...c.pr, number: list[0].number, url: list[0].html_url, needs_click: false }; });
       } catch {}
     }));
+    (data.new_tests || []).forEach(t => { const c = data.changes.find(c => c.run_id === t.run_id && c.pr); if (c) t.pr = c.pr; });
     const prs = [...new Set(data.changes.filter(c => c.pr && c.pr.number).map(c => c.pr.number))];
     await Promise.all(prs.map(async n => {
       try {
@@ -89,6 +90,40 @@
           <td class="r">${fmt.short(r.aggregate_limits)} (${(r.limit_share * 100).toFixed(0)}%)</td>
           <td class="r">${fmt.short(b.expected_loss)} → ${fmt.short(r.expected_loss)}</td><td class="r">${fmt.short(b.systemic_capital)} → ${fmt.short(r.systemic_capital)}</td></tr>`; }).join("") + "</table>";
     } else { $("l2-guard").innerHTML = `<div class="skeleton">No proposal validated yet.</div>`; $("l2-accum").innerHTML = ""; }
+
+    // claims experience
+    const ae = data.experience;
+    if (ae) {
+      $("ae-tag").textContent = ae.simulated ? "SIMULATED book" : "claims data";
+      $("ae-sub").textContent = `${ae.policy_years.toLocaleString()} policy-years · ${ae.claims} claims · hover a row for the credibility math`;
+      Charts.aeChart($("chart-ae"), ae);
+      $("ae-truth").textContent = ae.simulated ? `Demo: the simulated book was generated from a hidden "true world" (frequency ×${Object.entries(ae.true_world).map(([k, v]) => `${v} ${k.replace(/_/g, " ")}`).join(", ×")}). The loop's job is to find the drift without being told; it proposes only where the evidence is credible.` : "";
+    } else { $("chart-ae").innerHTML = `<div class="skeleton">No claims experience yet.</div>`; }
+
+    // new tests
+    $("l2-tests").innerHTML = (data.new_tests || []).map(t => {
+      const a = t.added_from_evidence || {}, st = status({ pr: t.pr });
+      return `<div class="l2-card"><div class="top"><div><div class="ev"><span class="tag">${esc(t.id)}</span> ${esc(t.category.replace(/_/g, " "))}</div>
+        <div class="meta">inspired by ${a.url && /^https?:/.test(a.url) ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.source)}</a>` : esc(a.source || "")}: ${esc(a.title || "")}</div></div>
+        <span class="badge ${st.k === "merged" ? "ok" : st.k === "closed" ? "error" : "review"}">${esc(st.t)}</span></div>
+        <div class="desc"><b>Customer message:</b> ${esc(t.input)}</div>
+        <details class="explain" open><summary>Rubric, why it was added, and the demo check</summary><div>
+          <p><b>Material failure if:</b> ${esc(t.rubric)}</p><p><b>Why:</b> ${esc(a.why || "")}</p>
+          <p class="muted small">Validated: category, unique id, not a near-duplicate, regexes compile (${(t.fail_patterns || []).map(esc).join(" · ")}). Planted-flaw ShopBot: <b>${esc((t.demo_check || {}).pattern_verdict || "")}</b>.</p></div></details></div>`;
+    }).join("") || `<div class="skeleton">No new tests yet.</div>`;
+
+    // learning from decisions
+    const fb = data.feedback || {}, fbSrc = fb.by_source || {}, fbStr = fb.by_strength || {};
+    const tbl = (t, title) => Object.keys(t).length ? `<table><tr><th>${title}</th><th class="r">Decisions</th><th class="r">Approved</th><th class="r">Edited</th><th class="r">Rejected</th><th class="r">Acceptance</th></tr>` +
+      Object.entries(t).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r">${v.n}</td><td class="r">${v.approved}</td><td class="r">${v.edited}</td><td class="r">${v.rejected}</td><td class="r">${v.acceptance != null ? (v.acceptance * 100).toFixed(0) + "%" : "–"}</td></tr>`).join("") + "</table>" : "";
+    const scales = Object.entries(fb.human_scale_by_parameter || {});
+    $("l2-learn").innerHTML = (fb.decisions && fb.decisions.length ? "" : `<div class="skeleton">No decided pull requests yet.</div>`)
+      + tbl(fbSrc, "Evidence source") + tbl(fbStr, "Strength")
+      + (scales.length ? `<p class="small"><b>Human scale by parameter</b> (merged move ÷ proposed move): ${scales.map(([p, v]) => `${esc(label(p))} ${v.toFixed(2)}`).join(" · ")}</p>` : "")
+      + `<p class="small"><b>Learned policy now:</b> ${(fb.skip_sources || []).length ? "skipping " + fb.skip_sources.map(esc).join(", ") : "no sources skipped"}; ${scales.some(([, v]) => Math.abs(v - 1) > 0.02) ? "scaling edited parameters" : "no parameter scaling (every merged change was kept as proposed)"}.</p>`
+      + ((data.learning_notes || []).length ? `<ul class="questions">${data.learning_notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : "")
+      + (fb.decisions || []).slice(-6).reverse().map(d => `<div class="l2-src"><span><span class="badge ${d.outcome === "rejected" ? "error" : d.outcome === "edited" ? "review" : "ok"}">${esc(d.outcome)}</span> ${esc(d.event)}</span>
+        <a href="${esc(d.pr_url)}" target="_blank" rel="noopener">PR #${d.pr}</a></div>`).join("");
 
     $("l2-evidence").innerHTML = (data.evidence_recent || []).map(e => `<div class="row"><span class="tag">${esc(e.source)}</span> <span class="tag">${esc(e.type)}</span>
       ${e.url && /^https?:/.test(e.url) ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)}</a>` : esc(e.title)} <span class="muted small">${esc(e.date || "")}</span></div>`).join("");

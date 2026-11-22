@@ -5,6 +5,23 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _load_dotenv(path: Path = ROOT / ".env") -> None:
+    """Load KEY=VALUE lines from the repo's .env (gitignored) without overriding
+    variables already set in the environment. Never prints values."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.removeprefix("export ").strip()
+        os.environ.setdefault(key, value.strip().strip("'\""))
+
+
+_load_dotenv()
 RUNS_DIR = ROOT / "agents" / "runs"
 SUITES_DIR = ROOT / "agents" / "test_suites"
 

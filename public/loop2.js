@@ -12,6 +12,15 @@
     }
     if (!data) { $("l2-changes").innerHTML = `<div class="skeleton">Loop 2 data not available yet.</div>`; return; }
     render();
+    // Branches pushed without an API token: find the PR a human opened from them.
+    const branches = [...new Set(data.changes.filter(c => c.pr && c.pr.needs_click).map(c => c.pr.branch))];
+    await Promise.all(branches.map(async br => {
+      try {
+        const r = await fetch(`https://api.github.com/repos/${data.repo}/pulls?state=all&head=${data.repo.split("/")[0]}:${encodeURIComponent(br)}`);
+        const list = r.ok ? await r.json() : [];
+        if (list[0]) data.changes.forEach(c => { if (c.pr && c.pr.branch === br) c.pr = { ...c.pr, number: list[0].number, url: list[0].html_url, needs_click: false }; });
+      } catch {}
+    }));
     const prs = [...new Set(data.changes.filter(c => c.pr && c.pr.number).map(c => c.pr.number))];
     await Promise.all(prs.map(async n => {
       try {

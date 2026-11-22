@@ -333,15 +333,27 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .brand-tld { color: var(--accent); }
 
 .hero { position: relative; }
-.dice { position: absolute; right: 0; top: 64px; display: flex; gap: 18px; cursor: pointer; z-index: 2;
-  filter: drop-shadow(0 18px 40px rgba(144,133,233,.25)); }
-.die { width: 112px; height: 112px; transition: transform .7s cubic-bezier(.2,.9,.25,1.2); }
-.die rect.face { fill: url(#dieGrad); stroke: rgba(255,255,255,.18); stroke-width: 1.5; }
-.die circle { fill: #0b0b0d; transition: opacity .2s; }
-#die-a { transform: rotate(-12deg); } #die-b { transform: rotate(9deg) translateY(18px); }
-.dice.rolling #die-a { animation: rollA .7s cubic-bezier(.2,.9,.25,1.1); }
-.dice.rolling #die-b { animation: rollB .75s cubic-bezier(.2,.9,.25,1.1); }
-@keyframes rollA { 0% { transform: rotate(-12deg) } 35% { transform: rotate(160deg) translateY(-26px) scale(1.06) } 70% { transform: rotate(320deg) } 100% { transform: rotate(348deg) } }
-@keyframes rollB { 0% { transform: rotate(9deg) translateY(18px) } 40% { transform: rotate(-190deg) translateY(-14px) scale(1.06) } 75% { transform: rotate(-330deg) translateY(12px) } 100% { transform: rotate(-351deg) translateY(18px) } }
-@media (max-width: 980px) { .dice { position: static; justify-content: flex-end; margin-bottom: -40px; } .die { width: 76px; height: 76px; } }
-@media (prefers-reduced-motion: reduce) { .dice.rolling .die { animation: none; } }
+.dice { position: absolute; right: 18px; top: 70px; display: flex; gap: 34px; cursor: pointer; z-index: 2; }
+.scene { --s: 96px; width: var(--s); height: var(--s); perspective: 560px; position: relative; }
+.scene::after { content: ""; position: absolute; left: 8%; right: 8%; bottom: -26%; height: 22%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(130,115,240,.45), transparent); filter: blur(6px); z-index: -1; }
+.scene.b { margin-top: 28px; }
+.cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  transition: transform 1.05s cubic-bezier(.22,.9,.24,1.08); }
+.cube .f { position: absolute; inset: 0; border-radius: 18%; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 15%; box-sizing: border-box; backface-visibility: hidden;
+  background: radial-gradient(120% 120% at 25% 20%, #ffffff 0%, #e4e0ff 45%, #a89ff2 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.55), inset -6px -8px 16px rgba(70,55,170,.35), inset 4px 5px 10px rgba(255,255,255,.7); }
+.cube .f.front  { transform: translateZ(calc(var(--s) / 2)); }
+.cube .f.back   { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
+.cube .f.right  { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); filter: brightness(.86); }
+.cube .f.left   { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); filter: brightness(.86); }
+.cube .f.top    { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); filter: brightness(1.05); }
+.cube .f.bottom { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); filter: brightness(.7); }
+.cube .p { width: 62%; height: 62%; margin: auto; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3a3550 0%, #0b0a12 70%); box-shadow: inset 0 2px 3px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.5); }
+.cube .p.c1 { grid-area: 1 / 1; } .cube .p.c2 { grid-area: 1 / 2; } .cube .p.c3 { grid-area: 1 / 3; }
+.cube .p.c4 { grid-area: 2 / 1; } .cube .p.c5 { grid-area: 2 / 2; } .cube .p.c6 { grid-area: 2 / 3; }
+.cube .p.c7 { grid-area: 3 / 1; } .cube .p.c8 { grid-area: 3 / 2; } .cube .p.c9 { grid-area: 3 / 3; }
+@media (max-width: 980px) { .dice { position: static; justify-content: flex-end; margin: 0 8px -30px 0; gap: 22px; } .scene { --s: 64px; } .scene.b { margin-top: 16px; } }
+@media (prefers-reduced-motion: reduce) { .cube { transition: none; } }

@@ -679,31 +679,35 @@
   }
 
   // ---------------------------------------------------------------- dice (alea iacta est)
-  const PIPS = { 1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[28, 28], [50, 50], [72, 72]],
-    4: [[28, 28], [72, 28], [28, 72], [72, 72]], 5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]],
-    6: [[28, 26], [72, 26], [28, 50], [72, 50], [28, 74], [72, 74]] };
-  function drawDie(svgEl, n, withDefs) {
-    svgEl.innerHTML = (withDefs ? `<defs><linearGradient id="dieGrad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#f4f2ff"/><stop offset=".55" stop-color="#c9c2ff"/><stop offset="1" stop-color="#8f84ea"/></linearGradient></defs>` : "")
-      + `<rect class="face" x="6" y="6" width="88" height="88" rx="20"/>` + PIPS[n].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5"/>`).join("");
-    svgEl.dataset.n = n;
+  // Two CSS 3D cubes. Opposite faces sum to 7; hovering tumbles each die and
+  // lands it on a random face (extra full turns, then the face's orientation).
+  const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
+  const FACES = { front: 1, back: 6, right: 2, left: 5, top: 3, bottom: 4 };
+  const SHOW = { 1: "rotateX(0deg) rotateY(0deg)", 2: "rotateY(-90deg)", 3: "rotateX(-90deg)", 4: "rotateX(90deg)",
+                 5: "rotateY(90deg)", 6: "rotateY(180deg)" };
+  const TILT = { "die-a": "rotateX(-24deg) rotateY(32deg) rotateZ(-6deg)", "die-b": "rotateX(-20deg) rotateY(-28deg) rotateZ(5deg)" };
+  const spins = { "die-a": [0, 0], "die-b": [0, 0] };
+  function buildDie(el) {
+    el.innerHTML = Object.entries(FACES).map(([cls, n]) =>
+      `<div class="f ${cls}">${PIPS[n].map(c => `<span class="p c${c}"></span>`).join("")}</div>`).join("");
   }
+  function setDie(id, n, spin) {
+    const sp = spins[id];
+    if (spin) { sp[0] += 360 * (1 + Math.floor(Math.random() * 2)); sp[1] += 360 * (1 + Math.floor(Math.random() * 2)) * (id === "die-a" ? 1 : -1); }
+    $(id).style.transform = `${TILT[id]} rotateX(${sp[0]}deg) rotateY(${sp[1]}deg) ${SHOW[n]}`;
+    $(id).dataset.n = n;
+  }
+  let rolling = false;
   function rollDice() {
-    const d = $("dice"); if (!d || d.classList.contains("rolling")) return;
-    d.classList.add("rolling");
-    let ticks = 0;
-    const t = setInterval(() => {
-      drawDie($("die-a"), 1 + Math.floor(Math.random() * 6), true);
-      drawDie($("die-b"), 1 + Math.floor(Math.random() * 6), false);
-      if (++ticks >= 6) { clearInterval(t); }
-    }, 95);
-    setTimeout(() => {
-      d.classList.remove("rolling");
-      d.title = `Alea iacta est: ${$("die-a").dataset.n} + ${$("die-b").dataset.n} = ${+$("die-a").dataset.n + +$("die-b").dataset.n}. Hover to roll again.`;
-    }, 780);
+    if (rolling) return;
+    rolling = true;
+    const a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
+    setDie("die-a", a, true); setDie("die-b", b, true);
+    setTimeout(() => { rolling = false; $("dice").title = `Alea iacta est: ${a} + ${b} = ${a + b}. Hover to roll again.`; }, 1100);
   }
   if ($("dice")) {
-    drawDie($("die-a"), 5, true); drawDie($("die-b"), 3, false);
+    buildDie($("die-a")); buildDie($("die-b"));
+    setDie("die-a", 5, false); setDie("die-b", 3, false);
     $("dice").addEventListener("pointerenter", rollDice);
     $("dice").addEventListener("click", rollDice);
   }

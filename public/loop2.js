@@ -7,9 +7,12 @@
   let data = null; const prState = {};
 
   async function load() {
-    for (const url of [RAW + "?t=" + Date.now(), "/data/loop2.json"]) {
-      try { const r = await fetch(url, { cache: "no-store" }); if (r.ok) { data = await r.json(); data._from = url; break; } } catch {}
-    }
+    // GitHub's raw CDN can serve a stale copy for a few minutes; load both the live
+    // copy and the one deployed with the site, and keep whichever is newer.
+    const got = await Promise.all([RAW + "?t=" + Date.now(), "/data/loop2.json?t=" + Date.now()].map(async url => {
+      try { const r = await fetch(url, { cache: "no-store" }); return r.ok ? { ...(await r.json()), _from: url } : null; } catch { return null; }
+    }));
+    data = got.filter(Boolean).sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)))[0] || null;
     if (!data) { $("l2-changes").innerHTML = `<div class="skeleton">Loop 2 data not available yet.</div>`; return; }
     render();
     // Branches pushed without an API token: find the PR a human opened from them.

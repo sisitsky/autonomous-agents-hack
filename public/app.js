@@ -678,5 +678,35 @@
     renderTimeline($("live-timeline"), []);
   }
 
+  // ---------------------------------------------------------------- dice (alea iacta est)
+  const PIPS = { 1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[28, 28], [50, 50], [72, 72]],
+    4: [[28, 28], [72, 28], [28, 72], [72, 72]], 5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]],
+    6: [[28, 26], [72, 26], [28, 50], [72, 50], [28, 74], [72, 74]] };
+  function drawDie(svgEl, n, withDefs) {
+    svgEl.innerHTML = (withDefs ? `<defs><linearGradient id="dieGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#f4f2ff"/><stop offset=".55" stop-color="#c9c2ff"/><stop offset="1" stop-color="#8f84ea"/></linearGradient></defs>` : "")
+      + `<rect class="face" x="6" y="6" width="88" height="88" rx="20"/>` + PIPS[n].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5"/>`).join("");
+    svgEl.dataset.n = n;
+  }
+  function rollDice() {
+    const d = $("dice"); if (!d || d.classList.contains("rolling")) return;
+    d.classList.add("rolling");
+    let ticks = 0;
+    const t = setInterval(() => {
+      drawDie($("die-a"), 1 + Math.floor(Math.random() * 6), true);
+      drawDie($("die-b"), 1 + Math.floor(Math.random() * 6), false);
+      if (++ticks >= 6) { clearInterval(t); }
+    }, 95);
+    setTimeout(() => {
+      d.classList.remove("rolling");
+      d.title = `Alea iacta est: ${$("die-a").dataset.n} + ${$("die-b").dataset.n} = ${+$("die-a").dataset.n + +$("die-b").dataset.n}. Hover to roll again.`;
+    }, 780);
+  }
+  if ($("dice")) {
+    drawDie($("die-a"), 5, true); drawDie($("die-b"), 3, false);
+    $("dice").addEventListener("pointerenter", rollDice);
+    $("dice").addEventListener("click", rollDice);
+  }
+
   init().catch(err => { document.querySelector(".hero").insertAdjacentHTML("beforeend", `<p class="error">Could not load quotes: ${esc(err.message)}</p>`); });
 })();

@@ -29,11 +29,19 @@
     const live = document.getElementById("live-code"); if (live && has && !live.value) live.value = getCode();
   }
   window.uwAccess = { getCode, setCode };
-  async function api(path, body) {
-    if (body && !body.access_code && getCode()) body = { ...body, access_code: getCode() };
-    if (body && body.access_code && body.access_code !== getCode()) setCode(body.access_code);
+  const looksLikeCode = t => /^uw-[0-9a-f]{6,}$/i.test((t || "").trim());
+  async function api(path, body, retried) {
+    body = { ...(body || {}) };
+    if (!body.access_code) body.access_code = getCode() || undefined;
+    else if (body.access_code !== getCode()) setCode(body.access_code);
     const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     let data; try { data = await r.json(); } catch { data = {}; }
+    if (r.status === 401 && !retried) {
+      // Ask once, remember it in this browser, and retry the same step.
+      const c = prompt("This step calls Claude. Enter the access code once; this browser will remember it:", "");
+      if (c && c.trim()) { setCode(c.trim()); return api(path, { ...body, access_code: c.trim() }, true); }
+    }
+    if (r.status === 401) setCode("");
     if (!r.ok) throw new Error(data.detail || `${path} failed (${r.status})`);
     return data;
   }
@@ -384,6 +392,11 @@
     const input = $("uw-input"), msg = input.value.trim();
     if (!msg) return;
     const b = state.bundles[state.current];
+    if (looksLikeCode(msg)) {
+      setCode(msg); input.value = "";
+      b.uwLog = (b.uwLog || []).concat({ html: `<div class="msg bot">Access code saved in this browser. Now answer a question and I'll update the risk profile and re-price.</div>` });
+      $("uw-log").innerHTML = b.uwLog.map(m => m.html).join(""); return;
+    }
     b.uwLog = b.uwLog || []; b.uwHistory = b.uwHistory || []; b.uwAnswered = b.uwAnswered || [];
     b.uwLog.push({ html: `<div class="msg me">${esc(msg)}</div>` });
     b.uwLog.push({ html: `<div class="msg bot" id="uw-pending">Updating the risk profile…</div>` });
@@ -393,7 +406,7 @@
       const qs = ((b.profile && b.profile.open_questions) || []).concat(b.uwFollowUps || []);
       const r = await api("/api/underwriter/chat", { insured: b.calculation.insured_full || b.insured, profile: b.profile,
         open_questions: qs, history: b.uwHistory, message: msg, plan: b.calculation.insured.plan,
-        access_code: $("live-code").value });
+        access_code: $("live-code").value || getCode() });
       b.uwHistory.push({ role: "underwriter", content: msg }, { role: "assistant", content: r.reply });
       r.answered.forEach(i => { if (!b.uwAnswered.includes(i)) b.uwAnswered.push(i); });
       b.uwFollowUps = (b.uwFollowUps || []).concat(r.follow_up_questions || []);
@@ -465,6 +478,7 @@
     e.preventDefault();
     const input = $("chat-input"), msg = input.value.trim();
     if (!msg) return;
+    if (looksLikeCode(msg)) { setCode(msg); input.value = ""; $("chat-log").insertAdjacentHTML("beforeend", `<div class="msg bot">Access code saved in this browser.</div>`); return; }
     input.value = "";
     const log = $("chat-log");
     if (log.querySelector(".muted")) log.innerHTML = "";
@@ -473,7 +487,7 @@
     pending.className = "msg bot"; pending.textContent = "…"; log.appendChild(pending);
     log.scrollTop = log.scrollHeight;
     try {
-      const r = await api("/api/chat", { message: msg, bot: $("chat-bot").value, access_code: $("live-code").value });
+      const r = await api("/api/chat", { message: msg, bot: $("chat-bot").value, access_code: $("live-code").value || getCode() });
       pending.textContent = r.reply;
     } catch (err) { pending.textContent = err.message; pending.classList.add("error"); }
     log.scrollTop = log.scrollHeight;

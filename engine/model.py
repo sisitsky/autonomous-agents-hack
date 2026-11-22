@@ -165,6 +165,16 @@ def _tvar(x: np.ndarray, level: float) -> float:
     return float(tail.mean()) if tail.size else float(cutoff)
 
 
+def _histogram(total: np.ndarray, agg: float, bins: int = 40) -> dict:
+    """Annual-loss histogram for charts: share of loss-free years, then equal-width
+    bins of positive losses up to the aggregate limit. No random numbers used."""
+    pos = total[total > 0]
+    counts, edges = np.histogram(pos, bins=bins, range=(0.0, float(agg)))
+    return {"n_years": int(total.size), "zero_years": int(total.size - pos.size),
+            "edges": [float(e) for e in edges], "counts": [int(c) for c in counts],
+            "at_aggregate_limit": int((total >= agg).sum())}
+
+
 def price(insured: dict, params: dict | None = None, mode: str = "full",
           overrides: dict | None = None, n_outer: int | None = None,
           n_inner: int | None = None, seed: int | None = None) -> dict:
@@ -307,6 +317,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
                              for q in (50, 75, 90, 95, 99, 99.5)},
         "prob_any_loss": float((total > 0).mean()),
         "trace": {
+            "loss_histogram": _histogram(total, agg),
             "simulation": {"seed": seed, "n_outer": n_outer, "n_inner": n_inner, "n_years": n_years},
             "policy": {"deductible": ded, "limit_per_claim": per_claim, "aggregate_limit": agg},
             "systemic_parameters": {k: v for k, v in used.items() if k.startswith("systemic.")},

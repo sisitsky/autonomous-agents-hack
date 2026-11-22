@@ -107,7 +107,7 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
 4. Red-team target (done: `agents/target_bot/shopbot.py`).
 5. Underwriting agents: intake (done, `README_INTAKE_AGENT.md`), redteam (done,
    `README_REDTEAM_AGENT.md`), pricer (done, deterministic, `README_PRICING_AGENT.md`;
-   method and equations in `docs/PRICING_METHOD.md`), explainer (to do).
+   method and equations in `docs/PRICING_METHOD.md`), explainer (done, `README_EXPLAINER_AGENT.md`).
 
 6. Calibration loop: `.github/workflows/calibrate.yml` plus the `calibrator` subagent.
 7. Egbe: connect the MCP server (`claude mcp add ...` with the endpoint from Egbe's docs), run the growth loop.

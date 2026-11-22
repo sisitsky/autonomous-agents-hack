@@ -64,6 +64,7 @@ def run(target: str, with_tornado: bool = True, with_controls: bool = True,
 
     out = Path(out_dir) if out_dir else run_dir / "pricing"
     out.mkdir(parents=True, exist_ok=True)
+    archive_previous(out)
     (out / "calculation.json").write_text(json.dumps(calc, indent=2, default=float))
     (out / "calculation.md").write_text(render_markdown(calc))
     headline = {k: quote[k] for k in ("insured_id", "gross_premium", "technical_premium", "expected_loss",
@@ -72,6 +73,23 @@ def run(target: str, with_tornado: bool = True, with_controls: bool = True,
     headline["meta"] = {k: calc["meta"][k] for k in ("priced_at", "git_commit", "params_versions")}
     (out / "quote.json").write_text(json.dumps(headline, indent=2))
     return {"quote": quote, "calculation": calc, "out_dir": str(out)}
+
+
+def archive_previous(out: Path) -> None:
+    """Keep earlier quotes: move the last calculation into history/ before overwriting,
+    so the explainer can say what changed between quotes."""
+    prev = out / "calculation.json"
+    if not prev.exists():
+        return
+    stamp = json.loads(prev.read_text())["meta"]["priced_at"].replace(":", "").replace("+0000", "Z")
+    hist = out / "history"
+    hist.mkdir(exist_ok=True)
+    prev.replace(hist / f"calculation-{stamp}.json")
+
+
+def previous_calculation(out: Path) -> dict | None:
+    hist = sorted((out / "history").glob("calculation-*.json")) if (out / "history").exists() else []
+    return json.loads(hist[-1].read_text()) if hist else None
 
 
 # ---------------------------------------------------------------- markdown

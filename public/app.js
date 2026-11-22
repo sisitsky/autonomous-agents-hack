@@ -61,7 +61,14 @@
     const calc = b.calculation, rep = b.report || {}, n = rep.narrative || {}, facts = rep.facts || {};
     renderPlans(state.bundles[state.current], calc);
     const g = gross(calc);
-    $("status-text").textContent = `${calc.plan ? calc.plan.name + " plan · " : ""}Indicative · pending underwriter review`;
+    const uw = calc.underwriting || { decision: "quote", reasons: [] };
+    const label = { quote: "Indicative · pending underwriter review", refer: "Referred to underwriter · remediation advised",
+                    indicative_untested: "Indicative · untested, priced on portfolio average" }[uw.decision] || "Indicative";
+    $("status-text").textContent = `${calc.plan ? calc.plan.name + " plan · " : ""}${label}`;
+    document.querySelector(".premium-card .status").classList.toggle("refer", uw.decision === "refer");
+    let note = document.getElementById("uw-note");
+    if (!note) { note = document.createElement("div"); note.id = "uw-note"; note.className = "uw-note"; $("premium-sub").after(note); }
+    note.textContent = uw.reasons.join(" ");
     animateNumber($("premium"), g);
     $("premium-sub").innerHTML = `per year · rate on line <b>${fmt.pct(calc.premium_build_up.find(s => s.id === "rate_on_line").value)}</b>
       · ${fmt.short(calc.policy.limit_per_claim)} per claim / ${fmt.short(calc.policy.aggregate_limit)} aggregate · ${fmt.short(calc.policy.deductible)} deductible`;
@@ -267,6 +274,12 @@
       + stat("Observed share", c.n ? fmt.pct(v.observed) : "not tested") + stat("Jewell Z", c.z.toFixed(2))
       + stat("Portfolio μ", fmt.pct(v.mu)) + stat("Priced share", fmt.pct(v.estimate))
       + stat("Dirichlet A", `${c.A.toFixed(1)} <span class="muted small">(${c.r} insureds)</span>`);
+    // Beta marginals of the prior Dirichlet(Aμ) and posterior Dirichlet(Aμ + counts).
+    const m = $("cred-measure").value || "all", A = c.A, a0 = c.alpha0;
+    const pm = m === "all" ? 1 - c.mu.pass : c.mu[m];
+    const pa = m === "all" ? a0 - c.alpha.pass : c.alpha[m];
+    Charts.credCloud($("chart-cred-cloud"), { prior: [A * pm, A * (1 - pm)], post: [pa, a0 - pa], observed: v.observed, n: c.n, z: c.z,
+      label: m === "all" ? "all failure types" : m.replace(/_/g, " ") });
     Charts.credCurve($("chart-cred-curve"), v);
     if (v.portfolio.length) Charts.shrinkage($("chart-cred-shrink"), v, b.id);
     $("cred-sub").textContent = "Every test case ends in a pass or exactly one failure type (a Dirichlet). Jewell credibility: one Z for all types, "
@@ -431,6 +444,7 @@
     const names = ["01_application.md", "02_architecture.md", "03_customer_policy.md"];
     uploads = await Promise.all(names.map(async n => ({ name: n, text: await (await fetch("/data/submissions/" + n)).text() })));
     $("file-list").textContent = "Loaded: " + names.join(" · ");
+    $("live-bot").value = "deterministic"; $("endpoint-fields").hidden = true;
   }
 
   async function runLive(e) {
@@ -454,19 +468,33 @@
     try {
       state.live += 1;
       const id = "live_" + state.live;
-      const intake = await timed("intake", () => api("/api/intake", { documents: uploads, description: desc || null, insured_id: id, access_code: code }),
+      const vol = +$("live-volume").value || null, plan = $("live-plan").value || null;
+      const ep = { endpoint: $("ep-url").value.trim(), message_field: $("ep-msg").value.trim() || "message",
+                   reply_path: $("ep-reply").value.trim() || "reply", auth_header: $("ep-auth").value.trim() || null,
+                   authorized: $("ep-ok").checked };
+      if (bot === "endpoint" && (!ep.endpoint || !ep.authorized)) throw new Error("Enter the endpoint URL and confirm you are authorized to test it.");
+      const intake = await timed("intake", () => api("/api/intake", { documents: uploads, description: desc || null, insured_id: id,
+        outputs_per_year: vol, plan, endpoint: bot === "endpoint" ? ep.endpoint : null, access_code: code }),
         r => `${r.profile.company_name} / ${r.profile.system_name}: ${r.profile.use_case.category.replace(/_/g, " ")}, ${Object.keys(r.insured.perils).length} perils, ${r.open_questions.length} open questions`);
-      const rt = await timed("redteam", () => api("/api/redteam", { insured: intake.insured, profile: intake.profile, bot, access_code: code }),
-        r => `${r.summary.failures} of ${r.summary.tested} material failures on the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`);
-      const pr = await timed("pricing", () => api("/api/price", { insured: rt.insured }),
-        r => `Gross premium ${fmt.money(gross(r.calculation))}; reproducibility check passed`);
+      let rt = null;
+      if (bot === "none") {
+        push({ step: "redteam", status: "skipped", summary: "No red-team test: the four tested risks are priced on the portfolio average (Jewell prior) with its full uncertainty." });
+      } else {
+        const target = bot === "endpoint" ? ep.endpoint : `the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`;
+        rt = await timed("redteam", () => api("/api/redteam", { insured: intake.insured, profile: intake.profile, bot, ...ep, access_code: code }),
+          r => `${r.summary.failures} of ${r.summary.tested} material failures on ${target}` + (r.summary.errors ? ` (${r.summary.errors} cases errored)` : ""));
+      }
+      const insured = rt ? rt.insured : intake.insured;
+      const pr = await timed("pricing", () => api("/api/price", { insured }),
+        r => `${r.calculation.plan.name} plan ${fmt.money(gross(r.calculation))}; all plans: ` +
+             Object.values(r.calculation.plans).map(p => `${p.name} ${p.gross_premium ? fmt.money(p.gross_premium) : "n/a"}`).join(", "));
       const ex = await timed("explainer", () => api("/api/explain", {
         calculation: pr.calculation, profile: intake.profile, review_notes: intake.review_notes,
-        redteam: { summary: rt.summary, cases: rt.cases }, access_code: code }),
+        redteam: rt ? { summary: rt.summary, cases: rt.cases } : null, access_code: code }),
         r => `Report written (${r.check.source} narrative, numbers verified${r.check.fallback_sections.length ? "; template fallback for " + r.check.fallback_sections.join(", ") : ""})`);
       push({ step: "review", status: "review", summary: `Indicative quote ready. Awaiting underwriter review of ${intake.open_questions.length} open questions. Not bound.` });
-      const bundle = { id, profile: intake.profile, insured: rt.insured, review_notes: intake.review_notes,
-        redteam: { summary: rt.summary, cases: rt.cases }, calculation: pr.calculation, report: ex, events: events.slice() };
+      const bundle = { id, profile: intake.profile, insured, review_notes: intake.review_notes,
+        redteam: rt ? { summary: rt.summary, cases: rt.cases } : null, calculation: pr.calculation, report: ex, events: events.slice() };
       state.bundles[id] = bundle;
       const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       state.runs.push({ id, file: null, label: `Live run ${state.live} (${t}): ${intake.profile.system_name}`, blurb: "Run live in this browser session." });
@@ -498,6 +526,7 @@
     $("live-form").onsubmit = runLive;
     $("live-files").onchange = e => readFiles(e.target.files);
     $("load-sample").onclick = loadSample;
+    $("live-bot").onchange = e => { $("endpoint-fields").hidden = e.target.value !== "endpoint"; };
     renderTimeline($("live-timeline"), []);
   }
 

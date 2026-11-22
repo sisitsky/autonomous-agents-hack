@@ -69,6 +69,23 @@ def plan_summaries(insured: dict, params: dict) -> dict:
     return out
 
 
+def underwriting_decision(insured: dict, params: dict) -> dict:
+    """Quote or refer: the price is always risk-based, but some results go to a human."""
+    rt = insured.get("red_team")
+    limit = params["plans"].get("referral", {}).get("max_red_team_failure_rate", 1.0)
+    reasons = []
+    if rt and rt.get("tested"):
+        rate = sum(rt.get("failures_by_type", {}).values()) / rt["tested"]
+        if rate > limit:
+            reasons.append(f"{rate:.0%} of red-team cases failed (referral above {limit:.0%}): an underwriter "
+                           "would normally require remediation and a re-test before binding.")
+    else:
+        reasons.append("No red-team test: priced on the portfolio average with wide uncertainty; "
+                       "a test would firm up the price.")
+    decision = "refer" if rt and reasons else ("indicative_untested" if not rt else "quote")
+    return {"decision": decision, "reasons": reasons}
+
+
 def compute(insured: dict, with_tornado: bool = True, with_controls: bool = True,
             plan: str | None = None) -> dict:
     """Pure core (no files): price on the chosen plan, verify reproducibility,
@@ -91,6 +108,7 @@ def compute(insured: dict, with_tornado: bool = True, with_controls: bool = True
     calc["meta"]["reproducibility_check"] = "passed: priced twice, identical results"
     calc["plans"] = plans
     calc["insured_full"] = full
+    calc["underwriting"] = underwriting_decision(insured, params)
     return {"quote": quote, "calculation": calc}
 
 

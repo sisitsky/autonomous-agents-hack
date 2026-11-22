@@ -39,7 +39,7 @@ LABELS = {"severity.body.median": "claim size (median)", "severity.body.p90": "c
           "frequency.p_fail": "red-team failure share", "frequency.p_harm_given_failure": "P(harm | failure)",
           "frequency.p_claim_given_harm": "P(claim | harm)", "frequency.adversarial_to_live": "adversarial-to-live ratio",
           "frequency.rate": "claim rate", "annual_prob": "event probability",
-          "share_affected": "share of insureds hit", "loss_share_of_limit": "loss per hit (share of limit)"}
+          "share_affected": "share of insureds hit", "burst_multiple": "claim burst (× normal annual loss)"}
 
 
 def _short(path: str) -> str:

@@ -354,18 +354,23 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             by_peril[peril]["failure_type"] = freq["failure_type"]
 
     # Systemic: correlated event at the insured's model provider.
+    # A provider-wide failure produces a burst of ordinary claims: the loss per
+    # affected policy is a multiple of its own normal expected annual loss (for
+    # that parameter draw), capped at the aggregate limit.
     ev_p = draw("systemic.annual_prob")
     share = draw("systemic.share_affected")
-    loss_share = draw("systemic.loss_share_of_limit")
+    burst = draw("systemic.burst_multiple")
     o = np.repeat(np.arange(n_outer), n_inner)
+    normal_el = idio.reshape(n_outer, n_inner).mean(axis=1)
+    loss_hit = np.minimum(burst * normal_el, agg)
     rng = stream("simulate", "systemic")
     event = rng.random(n_years) < ev_p[o]                  # provider-wide event this year
     hit = event & (rng.random(n_years) < share[o])          # ...and it reaches this policy
-    systemic = np.where(hit, loss_share[o] * agg, 0.0)
+    systemic = np.where(hit, loss_hit[o], 0.0)
     # For capital, allocate the provider-level event to each policy at its expected
     # share (share x loss per hit): the hit/miss lottery across the provider's book
     # diversifies; the event itself does not.
-    systemic_alloc = np.where(event, share[o] * loss_share[o] * agg, 0.0)
+    systemic_alloc = np.where(event, share[o] * loss_hit[o], 0.0)
 
     total = np.minimum(idio + systemic, agg)
     illustration = (_illustration(claims_log, systemic, total, agg, n_inner, illustrate, stream)

@@ -34,7 +34,7 @@
     "frequency.p_fail": "red-team failure share", "frequency.p_harm_given_failure": "P(harm | failure)",
     "frequency.p_claim_given_harm": "P(claim | harm)", "frequency.adversarial_to_live": "adversarial-to-live ratio",
     "frequency.rate": "claim rate", "annual_prob": "event probability",
-    "share_affected": "share of insureds hit", "loss_share_of_limit": "loss per hit (share of limit)",
+    "share_affected": "share of insureds hit", "burst_multiple": "claim burst (× normal annual loss)",
   };
   function label(path) {
     const p = path.split(".");
@@ -535,5 +535,74 @@
     hit.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
   }
 
-  window.Charts = { monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
+  // ---------------------------------------------------------------- credibility cloud (Beta densities)
+  function lgamma(x) {               // Lanczos approximation
+    const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+      -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
+    x -= 1; let a = c[0]; const t = x + g + 0.5;
+    for (let i = 1; i < 9; i++) a += c[i] / (x + i);
+    return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+  }
+  function betaPdf(x, a, b) {
+    if (x <= 0 || x >= 1) return 0;
+    return Math.exp((a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x) + lgamma(a + b) - lgamma(a) - lgamma(b));
+  }
+  function betaQuantile(p, a, b) {   // numeric inverse of the CDF on a grid
+    const n = 2000; let acc = 0; const dx = 1 / n;
+    for (let i = 1; i < n; i++) { acc += betaPdf(i * dx, a, b) * dx; if (acc >= p) return i * dx; }
+    return 1;
+  }
+  function credCloud(container, cv) {
+    // cv: {prior: [a, b], post: [a, b], observed, n, z, label}
+    const W = 1080, H = 280, L = 60, R = 20, T = 20, B = 42, pw = W - L - R, ph = H - T - B;
+    const curves = [{ k: "Portfolio prior (Jewell)", ab: cv.prior, col: C.yellow, op: 0.16 },
+                    { k: "Posterior: what is priced", ab: cv.post, col: C.accent, op: 0.32 }];
+    const q = ab => [betaQuantile(0.001, ...ab), betaQuantile(0.999, ...ab)];
+    let xmax = Math.max(...curves.map(c => q(c.ab)[1]), cv.observed || 0) * 1.1;
+    xmax = Math.min(1, Math.max(xmax, 0.05));
+    const N = 240, xs = Array.from({ length: N + 1 }, (_, i) => xmax * i / N);
+    const dens = curves.map(c => xs.map(x => betaPdf(x, ...c.ab)));
+    const ymax = Math.max(...dens.flat().filter(Number.isFinite)) * 1.12 || 1;
+    const x = v => L + pw * v / xmax, y = v => T + ph * (1 - Math.min(v, ymax) / ymax);
+    const s = svg(container, W, H, "Credibility probability cloud");
+    const g0 = el("g", {}, s);
+    for (let i = 0; i <= 5; i++) {
+      const v = xmax * i / 5;
+      el("line", { x1: x(v), x2: x(v), y1: T, y2: T + ph, stroke: C.grid }, g0);
+      text(g0, x(v), T + ph + 16, fmt.pct(v, v < 0.1 ? 1 : 0), { anchor: "middle" });
+    }
+    text(g0, L + pw / 2, H - 6, `share of red-team cases: ${cv.label}`, { anchor: "middle", size: 10.5 });
+    curves.forEach((c, ci) => {
+      const lo = betaQuantile(0.05, ...c.ab), hi = betaQuantile(0.95, ...c.ab);
+      const pts = xs.map((v, i) => `${x(v).toFixed(1)},${y(dens[ci][i]).toFixed(1)}`);
+      el("polygon", { points: `${x(0)},${y(0)} ${pts.join(" ")} ${x(xmax)},${y(0)}`, fill: c.col, opacity: c.op }, g0);
+      // 90% interval band under the curve
+      const band = xs.map((v, i) => [v, dens[ci][i]]).filter(([v]) => v >= lo && v <= hi);
+      if (band.length) el("polygon", { points: `${x(lo)},${y(0)} ${band.map(([v, d]) => `${x(v).toFixed(1)},${y(d).toFixed(1)}`).join(" ")} ${x(hi)},${y(0)}`,
+        fill: c.col, opacity: c.op * 0.9 }, g0);
+      el("polyline", { points: pts.join(" "), fill: "none", stroke: c.col, "stroke-width": 2 }, g0);
+      const mean = c.ab[0] / (c.ab[0] + c.ab[1]);
+      el("line", { x1: x(mean), x2: x(mean), y1: T, y2: T + ph, stroke: c.col, "stroke-dasharray": "4 3", "stroke-width": 1.5 }, g0);
+      text(g0, x(mean) + 5, T + 12 + ci * 15, `${c.k}: mean ${fmt.pct(mean)}, 90% ${fmt.pct(lo)}–${fmt.pct(hi)}`, { fill: C.ink, size: 11, weight: 600 });
+    });
+    if (cv.n) {
+      el("line", { x1: x(cv.observed), x2: x(cv.observed), y1: T, y2: T + ph, stroke: C.ink, "stroke-width": 2 }, g0);
+      el("circle", { cx: x(cv.observed), cy: T + ph, r: 5, fill: C.ink }, g0);
+      text(g0, x(cv.observed) + 5, T + ph - 8, `observed ${fmt.pct(cv.observed)} (${cv.n} cases)`, { fill: C.ink, size: 11 });
+    }
+    el("line", { x1: L, x2: L + pw, y1: T + ph, y2: T + ph, stroke: C.axis }, g0);
+    const guide = el("line", { y1: T, y2: T + ph, stroke: C.ink2, opacity: 0 }, g0);
+    const hit = el("rect", { x: L, y: T, width: pw, height: ph, fill: "transparent", class: "hit" }, g0);
+    hit.addEventListener("pointermove", e => {
+      const box = s.getBoundingClientRect(), v = Math.max(0, Math.min(xmax, ((e.clientX - box.left) * W / box.width - L) / pw * xmax));
+      guide.setAttribute("x1", x(v)); guide.setAttribute("x2", x(v)); guide.setAttribute("opacity", 0.5);
+      showTip(e, `<div class="tt-title">Failure share ${fmt.pct(v)}</div>` + curves.map(c =>
+        `<div class="tt-row"><span>${c.k}</span><b>density ${betaPdf(v, ...c.ab).toFixed(1)}</b></div>`).join("")
+        + `<div class="tt-src">Posterior = Beta(α, α₀ − α) marginal of the Dirichlet; Z = ${cv.z.toFixed(2)} pulls it from the prior toward the observed rate.</div>`);
+    });
+    hit.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); });
+  }
+
+  window.Charts = { credCloud, monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
 })();

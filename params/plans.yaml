@@ -4,7 +4,14 @@
 # Minimum premiums follow market practice (e.g. published AI-liability tiers start
 # around $15k/yr; broker benchmarks put small AI startups at $2.5k-$10k for $1M).
 
-version: 1.0.0
+version: 1.1.0
+
+# Underwriting referral: quotes are risk-based, but a system failing more than this
+# share of red-team cases is referred to a human underwriter, who would normally
+# require remediation and a re-test before binding (market practice: surcharge caps
+# around +100% at published AI-liability carriers; beyond that, refer or decline).
+referral:
+  max_red_team_failure_rate: 0.35
 
 default_plan: professional
 
@@ -28,5 +35,5 @@ plans:
     blurb: Every AI pitfall, higher limits, for high-volume or high-stakes systems.
     covers: [wrong_information, unauthorized_commitment, data_leakage, prompt_injection,
              ip_infringement, bias_discrimination, harmful_content, unsafe_advice]
-    policy: {limit_per_claim: 2500000, aggregate_limit: 5000000, deductible: 25000}
-    minimum_premium: 25000
+    policy: {limit_per_claim: 2500000, aggregate_limit: 5000000, deductible: 10000}
+    minimum_premium: 20000

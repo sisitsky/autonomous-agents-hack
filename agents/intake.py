@@ -46,7 +46,8 @@ USE_CASES = {
 }
 
 # Policy terms used when the submission doesn't request specific limits.
-DEFAULT_POLICY = {"limit_per_claim": 1_000_000, "aggregate_limit": 2_000_000, "deductible": 10_000}
+# Outputs per year assumed when the documents don't say (flagged for review).
+DEFAULT_OUTPUTS_PER_YEAR = 250_000
 
 SYSTEM = """You are the intake analyst for an AI-liability underwriting engine.
 You read a company's description and documents about one AI system and fill in a
@@ -326,9 +327,10 @@ def to_insured(profile: dict, params: dict, insured_id: str | None = None,
         if freq["mode"] in ("chain", "red_team"):
             n = int(profile["exposure"]["outputs_per_year"] or 0)
             if n <= 0:
-                notes.append(f"Peril `{name}` needs {freq['exposure_field']}, which the submission does not state. "
-                             "Peril left out until the insured provides volume.")
-                continue
+                n = DEFAULT_OUTPUTS_PER_YEAR
+                if not any("volume not stated" in x for x in notes):
+                    notes.append(f"Output volume not stated in the submission; priced at a default of {n:,} outputs "
+                                 "per year. Confirm the real volume: frequency scales with it.")
             perils[name] = {freq["exposure_field"]: n}
         else:
             perils[name] = {}
@@ -392,7 +394,8 @@ def blocks_from_uploads(docs: list[dict], description: str | None = None) -> lis
     return blocks
 
 
-def analyze(docs: list[dict], description: str | None = None, insured_id: str | None = None) -> dict:
+def analyze(docs: list[dict], description: str | None = None, insured_id: str | None = None,
+            outputs_per_year: int | None = None, plan: str | None = None, endpoint: str | None = None) -> dict:
     """Pure core (no files) for the web app: uploads -> profile, insured, review notes."""
     if not llm_available():
         raise SystemExit("Intake needs the Claude API: set ANTHROPIC_API_KEY.")
@@ -400,7 +403,15 @@ def analyze(docs: list[dict], description: str | None = None, insured_id: str | 
     system = SYSTEM + "\n" + _instructions(params)
     profile = llm.structured(system, blocks_from_uploads(docs, description), profile_schema(params),
                              model=MODEL_FAST, max_tokens=16000, effort="medium")
+    if outputs_per_year:
+        profile["exposure"] = {"outputs_per_year": int(outputs_per_year),
+                               "evidence": "Provided by the submitter on the web form."}
+    if endpoint:
+        profile["test_endpoint"] = endpoint
     insured, notes = to_insured(profile, params, insured_id, load_aliases())
+    if plan and plan in params["plans"]["plans"]:
+        insured["plan"] = plan
+        insured["policy"] = dict(params["plans"]["plans"][plan]["policy"])
     return {"profile": profile, "insured": insured, "review_notes": notes,
             "open_questions": profile["open_questions"]}
 

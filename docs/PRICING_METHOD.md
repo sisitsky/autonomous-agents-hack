@@ -52,7 +52,7 @@ factors, so risks are priced differently by what can go wrong and how much it co
 |---|---|---|---|---|
 | Essential | Wrong information, unauthorized commitment | $250k / $500k | $5k | $2.5k |
 | Professional | + data leakage, prompt injection, IP | $1M / $2M | $10k | $7.5k |
-| Enterprise | All eight perils | $2.5M / $5M | $25k | $25k |
+| Enterprise | All eight perils | $2.5M / $5M | $10k | $20k |
 
 Every quote prices all three plans with the same seed. A plan prices only the
 perils it covers *and* the insured is exposed to.
@@ -66,8 +66,28 @@ Professional plan. Market reference points (November 2026, indicative):
 - Published AI-liability tiers start around $15k a year.
 - Insurance Insider reports about $25k per $1M of coverage for smaller insureds, and up to $100k per $1M for large ones.
 
-Northwind example, Professional plan: about $20k for a bot that passes all 40
-tests, about $66k for the planted-flaw bot that fails 24 of 40.
+**Model 1.1 recalibration (2026-11-22).** Prices were checked against the market
+reference points above, and four assumptions changed:
+- Unauthorized-commitment claims are rarer, because honoring a promise is the
+  insured's own cost, not a covered claim.
+- The uncertainty load is charged at P65 rather than P75; capital already covers
+  the 1-in-200 tail.
+- The cost of capital is 6%, the Solvency II risk-margin rate.
+- A systemic event is a burst of ordinary claims (1.2–5× normal annual loss)
+  rather than a fixed share of the limit, so systemic capital scales with risk.
+
+Results for Northwind:
+
+| Plan | Passes all 40 tests | Fails 24 of 40 | Untested (portfolio average) |
+|---|---|---|---|
+| Essential | ≈ $5.6k | ≈ $19.6k | ≈ $10.4k |
+| Professional | ≈ $11.3k | ≈ $49.8k | ≈ $29.4k |
+| Enterprise | $20k (minimum) | ≈ $56k | ≈ $32.6k |
+
+**Referral.** Quotes stay risk-based, but a system failing more than 35% of red-team
+cases is referred to a human underwriter. Published AI-liability carriers cap
+surcharges around +100%; beyond that an underwriter would require remediation and
+a re-test before binding.
 
 ## Equations
 
@@ -136,7 +156,8 @@ With probability q, the claim instead comes from a Pareto tail, `X = T × U^(−
 at the plan's aggregate limit A.
 
 **`systemic`**: a provider-wide event (probability p_s) that hits this insured with
-probability s and costs ℓ × A.
+probability s. It costs b × its normal expected annual loss (a burst of ordinary
+claims), capped at A.
 
 The Monte Carlo has two layers: n_outer = 2,000 parameter draws × n_inner = 200
 simulated years each, 400,000 years in total, seed 42. Every parameter path and
@@ -154,7 +175,7 @@ uncertain.
 
 **`expected_loss`**: `EL = mean of min(idiosyncratic + systemic, A)` over all simulated years.
 
-**`uncertainty_load`**: `U = z₀.₇₅ × σ_param`, where
+**`uncertainty_load`**: `U = z₀.₆₅ × σ_param`, where
 `σ²_param = Var(EL_j) − E[s²_j] / n_inner`. Each parameter draw's average loss mixes
 parameter uncertainty with luck. The luck part (within-draw variance divided by
 years per draw) is removed, so the load charges only for not knowing the parameters.
@@ -164,12 +185,12 @@ years per draw) is removed, so the load charges only for not knowing the paramet
     C = (TVaR₉₉.₅(idio) − mean) / √n_pool + c × (TVaR₉₉.₅(event share) − mean)
 
 Independent losses diversify across a pool of 400 policies. The provider event is
-allocated to each policy at its expected share (s × ℓ × A), because which policies
-it reaches diversifies but the event itself does not.
+allocated to each policy at its expected share (s × burst loss), because which
+policies it reaches diversifies but the event itself does not.
 
 **`concentration`**: `c = provider share / average provider share`.
 
-**`capital_load`**: `K = 10% × C`.
+**`capital_load`**: `K = 6% × C` (the Solvency II risk-margin cost-of-capital rate).
 
 **`gross_premium`**: `G = max((EL + U + K + F) / (1 − v − π), plan minimum)`, with fixed
 expense F = $2,500, variable expenses v = 25% and profit π = 5%.

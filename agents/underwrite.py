@@ -170,8 +170,12 @@ def run(paths: list[str] | None = None, insured_id: str | None = None, insured_f
         # ---- human on the loop
         notes = explainer.intake_notes(run_dir)
         n_open = len(notes["open_questions"])
-        log.add("review", "review", f"Indicative quote ready. Awaiting underwriter review"
-                + (f" of {n_open} open questions" if n_open else "") + ". Not bound.")
+        uw = calc.get("underwriting") or {"decision": "quote", "reasons": []}
+        head = {"refer": "Referred to a human underwriter", "indicative_untested": "Indicative quote (untested)"}.get(
+            uw["decision"], "Indicative quote ready")
+        log.add("review", "review", f"{head}. Awaiting underwriter review"
+                + (f" of {n_open} open questions" if n_open else "") + ". Not bound. " + " ".join(uw["reasons"]),
+                decision=uw["decision"])
 
         result = {"id": run_dir.name, "status": "indicative_pending_review", "run_dir": str(run_dir),
                   "gross_premium": q["gross_premium"], "report": str(Path(ex["out_dir"]) / "report.html"),

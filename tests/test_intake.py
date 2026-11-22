@@ -99,13 +99,12 @@ def test_unknowns_are_left_out_and_flagged(params):
     price(insured, params, **FAST)   # still priceable with neutral factors
 
 
-def test_missing_volume_drops_chain_peril(params):
+def test_missing_volume_uses_flagged_default(params):
     p = copy.deepcopy(NORTHWIND_PROFILE)
     p["exposure"]["outputs_per_year"] = 0
     insured, notes = intake.to_insured(p, params)
-    assert "wrong_information" not in insured["perils"] and "data_leakage" not in insured["perils"]
-    assert "ip_infringement" in insured["perils"]
-    assert any("outputs_per_year" in n for n in notes)
+    assert insured["perils"]["wrong_information"] == {"outputs_per_year": intake.DEFAULT_OUTPUTS_PER_YEAR}
+    assert any("volume not stated" in n for n in notes)
 
 
 def test_self_hosted_maps_to_bucket(params):

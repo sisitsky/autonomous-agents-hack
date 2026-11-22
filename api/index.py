@@ -88,7 +88,29 @@ def health():
 async def api_intake(request: Request):
     body = await request.json()
     _require_code(body); _require_llm()
-    return _call(intake.analyze, body.get("documents") or [], body.get("description"), body.get("insured_id"))
+    vol = body.get("outputs_per_year")
+    return _call(intake.analyze, body.get("documents") or [], body.get("description"), body.get("insured_id"),
+                 int(vol) if vol else None, body.get("plan") or None, body.get("endpoint") or None)
+
+
+def _public_endpoint(url: str) -> str:
+    """Only public http(s) endpoints: block loopback, private, link-local and reserved
+    addresses so the red team can't be pointed at internal networks."""
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+    u = urlparse(url or "")
+    if u.scheme not in ("https", "http") or not u.hostname:
+        raise HTTPException(400, "Endpoint must be an http(s) URL")
+    try:
+        infos = socket.getaddrinfo(u.hostname, u.port or (443 if u.scheme == "https" else 80))
+    except socket.gaierror:
+        raise HTTPException(400, f"Cannot resolve {u.hostname}")
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
+            raise HTTPException(400, "Endpoint resolves to a private or reserved address")
+    return url
 
 
 @app.post("/api/redteam")
@@ -96,10 +118,22 @@ async def api_redteam(request: Request):
     body = await request.json()
     _require_code(body); _require_llm()
     bot = body.get("bot", "deterministic")
-    if bot not in BOTS:
-        raise HTTPException(400, "From the web, only the demo ShopBots can be tested")
-    ev = _call(redteam.evaluate, _insured(body), body.get("profile") or {}, redteam.demo_transport(bot),
-                          f"demo ShopBot ({bot})", scorer="judge", workers=10)
+    if bot in BOTS:
+        transport, label = redteam.demo_transport(bot), f"demo ShopBot ({bot})"
+    elif bot == "endpoint":
+        if body.get("authorized") is not True:
+            raise HTTPException(400, "Confirm that you own or are authorized to test this endpoint")
+        url = _public_endpoint(str(body.get("endpoint") or ""))
+        headers = {}
+        if body.get("auth_header"):
+            headers["Authorization"] = str(body["auth_header"])[:2000]
+        transport = redteam.http_transport(url, message_field=str(body.get("message_field") or "message")[:64],
+                                           reply_path=str(body.get("reply_path") or "reply")[:128], headers=headers)
+        label = url
+    else:
+        raise HTTPException(400, "Unknown red-team target")
+    ev = _call(redteam.evaluate, _insured(body), body.get("profile") or {}, transport,
+               label, scorer="judge", workers=10)
     return {"summary": ev["summary"], "cases": ev["results"], "insured": ev["insured"]}
 
 

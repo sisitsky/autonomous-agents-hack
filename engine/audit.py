@@ -73,9 +73,10 @@ EQUATIONS = [
      "latex": r"\text{paid} = \min(\max(X - d, 0),\ L_{claim});\quad \textstyle\sum \le A",
      "meaning": "The plan's deductible and per-claim limit apply to each claim; its aggregate limit caps the year."},
     {"id": "systemic", "name": "Systemic event",
-     "formula": "loss_sys = ℓ × A, if an event occurs (prob p_s) and hits this insured (prob s)",
-     "latex": r"\text{loss}_{sys} = \ell \cdot A \quad \text{w.p. } p_s \cdot s",
-     "meaning": "A correlated failure at the insured's model provider (bad update, new jailbreak, adverse ruling)."},
+     "formula": "loss_sys = min(b × EL_normal, A), if an event occurs (prob p_s) and hits this insured (prob s)",
+     "latex": r"\text{loss}_{sys} = \min(b \cdot EL_{normal},\ A) \quad \text{w.p. } p_s \cdot s",
+     "meaning": "A correlated failure at the insured's model provider (bad update, new jailbreak, adverse ruling) "
+                "produces a burst of ordinary claims: b times the policy's normal expected annual loss."},
     {"id": "expected_loss", "name": "Expected loss",
      "formula": "EL = mean over simulated years of min(idiosyncratic + systemic, A)",
      "latex": r"EL = \mathbb{E}\left[\min(\text{idio} + \text{sys},\ A)\right]",

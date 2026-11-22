@@ -380,8 +380,9 @@ def _all_text(n: dict) -> dict[str, str]:
     return out
 
 
-def check_narrative(n: dict, facts: dict) -> dict[str, list[str]]:
-    allowed = allowed_numbers(facts)
+def check_narrative(n: dict, facts: dict, notes: dict | None = None) -> dict[str, list[str]]:
+    """Numbers may come from the fact sheet or the intake notes (both shown to Claude)."""
+    allowed = allowed_numbers({"facts": facts, "notes": notes or {}})
     return {k: bad for k, text in _all_text(n).items() if (bad := unverified(text, allowed))}
 
 
@@ -398,7 +399,7 @@ def write_narrative(facts: dict, notes: dict, use_llm: bool) -> tuple[dict, dict
     if not use_llm:
         return fallback, {"source": "template", "unverified": {}, "fallback_sections": []}
     n = _llm_narrative(facts, notes)
-    bad = check_narrative(n, facts)
+    bad = check_narrative(n, facts, notes)
     retried = False
     if bad:
         retried = True
@@ -406,7 +407,7 @@ def write_narrative(facts: dict, notes: dict, use_llm: bool) -> tuple[dict, dict
               + "; ".join(f"{k}: {', '.join(v)}" for k, v in bad.items())
               + ". Rewrite using only fact-sheet numbers, copied exactly, or describe them in words.")
         n = _llm_narrative(facts, notes, fb)
-        bad = check_narrative(n, facts)
+        bad = check_narrative(n, facts, notes)
     for k in bad:   # last resort: deterministic text for any section still failing
         n[k] = fallback[k]
     valid_ids = {c["control_id"] for c in facts["controls"]}

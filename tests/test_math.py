@@ -75,9 +75,10 @@ def test_uncertainty_load_reflects_parameter_uncertainty_not_luck():
     p2 = copy.deepcopy(p)
     p2["priors"]["perils"]["unsafe_advice"]["frequency"]["rate"] = {"dist": "uniform", "min": 0.5, "max": 1.5}
     unc = price(_insured(0, 1e9, 1e9), p2)
-    # Rate ~ U(0.5, 1.5): EL_j = rate_j × E[X], so σ_param = E[X] / √12 and U = 0.674 σ_param.
+    # Rate ~ U(0.5, 1.5): EL_j = rate_j × E[X], so σ_param = E[X] / √12 and U = z_p σ_param.
     ex = math.exp(sum(D.lognormal_params(10_000.0, 50_000.0)[i] * c for i, c in ((0, 1),)) +
                   D.lognormal_params(10_000.0, 50_000.0)[1] ** 2 / 2)
-    expected_u = stats.norm.ppf(0.75) * ex / math.sqrt(12)
+    pctl = p["pricing"]["uncertainty_load"]["percentile"] / 100
+    expected_u = stats.norm.ppf(pctl) * ex / math.sqrt(12)
     assert unc["uncertainty_load"] == pytest.approx(expected_u, rel=0.15)
     assert unc["uncertainty_load"] > 5 * fixed["uncertainty_load"]

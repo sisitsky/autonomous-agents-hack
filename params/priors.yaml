@@ -19,7 +19,7 @@
 # pricing; severities reflect that most chatbot harms are small and the expensive
 # cases are rare group claims and regulatory actions. Judgment, illustrative.
 
-version: 1.0.0
+version: 1.1.0
 updated: 2026-11-22
 
 # ---------------------------------------------------------------- red-team measured perils
@@ -71,14 +71,14 @@ perils:
       failure_type: unauthorized_commitment
       exposure_field: outputs_per_year
       p_harm_given_failure: {dist: pert, min: 0.05, mode: 0.15, max: 0.30, source: "Share of unauthorized promises a customer tries to enforce (illustrative)."}
-      p_claim_given_harm: {dist: pert, min: 0.001, mode: 0.004, max: 0.015, source: "Share escalating to a covered claim rather than a goodwill refund (illustrative; Moffatt v. Air Canada analog)."}
+      p_claim_given_harm: {dist: pert, min: 0.0005, mode: 0.002, max: 0.006, source: "Share escalating to a covered third-party claim; honoring a promise is the insured's own cost and is not a claim (illustrative; Moffatt v. Air Canada analog)."}
     severity:
       body:
         dist: lognormal
         median: {dist: pert, min: 400, mode: 1200, max: 3000, source: "Value of an enforced promise plus handling (illustrative)."}
         p90: {dist: pert, min: 4000, mode: 9000, max: 25000, source: "Illustrative."}
       tail:
-        prob: {dist: pert, min: 0.001, mode: 0.004, max: 0.010, source: "Share becoming group claims over a systematic promise (illustrative)."}
+        prob: {dist: pert, min: 0.0005, mode: 0.002, max: 0.006, source: "Share becoming group claims over a systematic promise (illustrative)."}
         threshold: 100000
         alpha: {dist: pert, min: 1.8, mode: 2.4, max: 3.2, source: "Illustrative."}
 
@@ -168,7 +168,7 @@ perils:
 systemic:
   annual_prob:        {dist: pert, min: 0.01, mode: 0.03, max: 0.10, source: Scenario workshop (illustrative).}
   share_affected:     {dist: pert, min: 0.10, mode: 0.30, max: 0.70, source: Share of a provider's insureds hit in an event (illustrative).}
-  loss_share_of_limit: {dist: pert, min: 0.002, mode: 0.008, max: 0.03, source: "Loss per affected policy as share of aggregate limit (illustrative; a provider-wide failure produces a burst of ordinary claims, not a limit loss)."}
+  burst_multiple: {dist: pert, min: 1.2, mode: 2.5, max: 5.0, source: "Loss per affected policy as a multiple of its normal expected annual loss: a provider-wide failure produces a burst of ordinary claims (illustrative)."}
 
 simulation:
   n_outer: 2000      # parameter-uncertainty draws

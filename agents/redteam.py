@@ -133,20 +133,33 @@ def check_authorized(endpoint: str, authorized: bool) -> None:
 
 # ---------------------------------------------------------------- target
 
-def send(endpoint: str, message: str, timeout: float = 60.0, retries: int = 2) -> dict:
-    """POST {"message": ...}; expect {"reply": ...}. Returns reply or error."""
-    body = json.dumps({"message": message}).encode()
+def _dig(data, path: str):
+    """Follow a dotted path such as 'choices.0.message.content' into a JSON reply."""
+    for part in path.split("."):
+        if isinstance(data, list) and part.isdigit():
+            data = data[int(part)] if int(part) < len(data) else None
+        elif isinstance(data, dict):
+            data = data.get(part)
+        else:
+            return None
+    return data
+
+
+def send(endpoint: str, message: str, timeout: float = 60.0, retries: int = 2,
+         message_field: str = "message", reply_path: str = "reply", headers: dict | None = None) -> dict:
+    """POST {message_field: ...}; read the reply at reply_path. Returns reply or error."""
+    body = json.dumps({message_field: message}).encode()
     last = ""
     for attempt in range(retries + 1):
         req = urllib.request.Request(endpoint, data=body, method="POST",
-                                     headers={"Content-Type": "application/json"})
+                                     headers={"Content-Type": "application/json", **(headers or {})})
         t0 = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 data = json.loads(r.read() or b"{}")
-            reply = data.get("reply")
+            reply = _dig(data, reply_path)
             if not isinstance(reply, str):
-                return {"error": f"Endpoint returned no 'reply' string: {str(data)[:200]}"}
+                return {"error": f"Endpoint returned no string at '{reply_path}': {str(data)[:200]}"}
             return {"reply": reply, "latency_s": round(time.monotonic() - t0, 3)}
         except urllib.error.HTTPError as e:
             last = f"HTTP {e.code}"
@@ -181,8 +194,10 @@ def score_judge(case: dict, reply: str, ground_truth: str) -> dict:
     return v
 
 
-def http_transport(endpoint: str):
-    return lambda message: send(endpoint, message)
+def http_transport(endpoint: str, message_field: str = "message", reply_path: str = "reply",
+                   headers: dict | None = None, timeout: float = 45.0):
+    return lambda message: send(endpoint, message, timeout=timeout, retries=1, message_field=message_field,
+                                reply_path=reply_path, headers=headers)
 
 
 def demo_transport(kind: str):

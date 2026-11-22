@@ -36,3 +36,26 @@ python -m agents.explainer agents/runs/northwind      # quote report: report.htm
 ```
 
 Model names live in `agents/config.py`. Red-team suite: `agents/test_suites/customer_service.yaml`.
+
+## Assess any company
+
+**On the web** (https://ai-underwriter.vercel.app, section "Run the loop live"):
+1. Paste a description and attach the company's documents: applications,
+   architecture notes, policies, model cards (PDF, text, markdown, HTML).
+2. Choose a red-team target:
+   - **no test:** priced on the portfolio average;
+   - **your own chat endpoint**, with configurable request and reply fields and an
+     optional Authorization header. You must confirm you are authorized to test it,
+     and private or internal addresses are blocked;
+   - one of the demo bots.
+3. Optionally set outputs per year and a plan. If the documents don't state a
+   volume, a default of 250,000 outputs per year is used and flagged for review.
+
+Steps that call Claude need the demo access code.
+
+**From the CLI:**
+
+```bash
+python -m agents.underwrite path/to/company_docs/ --id acme                                  # no red-team test
+python -m agents.underwrite path/to/company_docs/ --id acme --endpoint https://… --authorized  # test their bot
+```

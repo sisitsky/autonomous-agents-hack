@@ -282,3 +282,12 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .mc-run b { color: var(--ink); }
 .mc-run.latest { border-color: var(--accent); }
 .banner { font-size: 13px; color: var(--ink-2); border: 1px dashed var(--line-2); border-radius: 10px; padding: 8px 12px; margin-top: 12px; }
+
+.endpoint-fields { display: grid; gap: 8px; margin: 4px 0 12px; }
+.endpoint-fields[hidden] { display: none; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--ink-2); }
+.check input { width: auto; margin-top: 3px; }
+.status.refer .dot { background: var(--red); box-shadow: 0 0 10px var(--red); }
+.uw-note { font-size: 13px; color: var(--warn); margin-top: 8px; }

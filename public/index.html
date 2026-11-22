@@ -139,6 +139,8 @@
         <div class="select-wrap sm"><select id="cred-measure" aria-label="Measure"></select></div>
       </div>
       <div class="cred-stats" id="cred-stats"></div>
+      <div class="muted small mt">Probability cloud: portfolio prior → this system's tests → posterior that is priced (shaded: 90% interval)</div>
+      <div class="chart" id="chart-cred-cloud"></div>
       <div class="grid-2 tight">
         <div><div class="muted small">Credibility Z rises with the number of cases tested</div><div class="chart" id="chart-cred-curve"></div></div>
         <div><div class="muted small">Each system's rate is pulled toward the portfolio mean</div><div class="chart" id="chart-cred-shrink"></div></div>
@@ -200,7 +202,7 @@
   </section>
 
   <section id="live">
-    <div class="section-head"><h2>Run the loop live</h2><p class="muted">Submit an AI system. The agents run every step in front of you, about a minute end to end.</p></div>
+    <div class="section-head"><h2>Run the loop live</h2><p class="muted">Submit any company's AI system: paste a description and attach its documents (applications, architecture notes, policies, model cards). The agents run every step in front of you, about a minute end to end.</p></div>
     <div class="card wide live-card">
       <form id="live-form">
         <div class="grid-2">
@@ -208,15 +210,30 @@
             <label class="lbl" for="live-desc">Describe the AI system</label>
             <textarea id="live-desc" rows="6" placeholder="What it does, who uses it, volume, model provider, human review, data it sees, jurisdictions, coverage wanted…"></textarea>
             <div class="row">
-              <label class="btn ghost file"><input type="file" id="live-files" multiple accept=".md,.txt,.pdf,.json,.yaml,.yml,.csv,.html">Attach documents</label>
+              <label class="btn ghost file"><input type="file" id="live-files" multiple accept=".md,.txt,.pdf,.json,.yaml,.yml,.csv,.html,.htm">Attach documents (PDF, text, markdown)</label>
               <button type="button" class="btn ghost" id="load-sample">Use the Northwind sample</button>
             </div>
             <div id="file-list" class="muted small"></div>
           </div>
           <div>
             <label class="lbl" for="live-bot">Red-team target</label>
-            <div class="select-wrap"><select id="live-bot"><option value="deterministic">Demo ShopBot: planted flaws</option><option value="llm">Demo ShopBot: Claude-powered</option></select></div>
-            <p class="muted small">From the web, only our own demo bots can be tested. Testing a real endpoint needs the owner's authorization (CLI <code>--authorized</code>).</p>
+            <div class="select-wrap"><select id="live-bot">
+              <option value="none">No test: price on the portfolio average</option>
+              <option value="endpoint">My AI system's chat endpoint</option>
+              <option value="deterministic">Demo ShopBot: planted flaws</option>
+              <option value="llm">Demo ShopBot: Claude-powered</option></select></div>
+            <div id="endpoint-fields" class="endpoint-fields" hidden>
+              <input id="ep-url" placeholder="https://your-bot.example.com/chat">
+              <div class="row2"><input id="ep-msg" placeholder="request field (message)"><input id="ep-reply" placeholder="reply path (reply or choices.0.message.content)"></div>
+              <input id="ep-auth" type="password" placeholder="Authorization header (optional, e.g. Bearer …)">
+              <label class="check"><input type="checkbox" id="ep-ok"> I own this system or am authorized to test it. The red team sends 40 adversarial messages.</label>
+            </div>
+            <div class="row2">
+              <div><label class="lbl" for="live-volume">Outputs per year</label><input id="live-volume" type="number" min="0" step="1000" placeholder="from documents"></div>
+              <div><label class="lbl" for="live-plan">Plan</label><div class="select-wrap"><select id="live-plan">
+                <option value="">Auto (fits requested limits)</option><option value="essential">Essential</option>
+                <option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div></div>
+            </div>
             <label class="lbl" for="live-code">Access code</label>
             <input id="live-code" type="password" placeholder="Needed for steps that call Claude">
             <button class="btn primary big" id="live-run">Run underwriting</button>

@@ -1,16 +1,16 @@
 # Loads and expenses. ILLUSTRATIVE. Changes go through a pull request only.
 
-version: 0.1.0
+version: 0.2.0
 
 uncertainty_load:
-  # Charge the gap between this percentile of the expected-loss distribution
-  # (across parameter draws) and its mean.
-  percentile: 75
+  # Charge z_p x sigma_param (parameter uncertainty, process noise removed).
+  # P65: a moderate risk margin; capital separately covers the 1-in-200 tail.
+  percentile: 65
 
 capital:
   tail_metric: tvar       # tvar or var
   level: 0.995            # 1-in-200
-  cost_of_capital: 0.10
+  cost_of_capital: 0.06   # Solvency II risk-margin cost-of-capital rate
   # Independent (idiosyncratic) risks diversify in a pool: each policy's share of
   # capital is roughly its standalone tail capital / sqrt(number of policies).
   # Systemic losses get no diversification credit.

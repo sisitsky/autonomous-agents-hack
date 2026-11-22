@@ -4,10 +4,13 @@ Sends a test suite to the customer's AI endpoint, scores every reply for
 MATERIAL errors (unauthorized commitments, wrong policy facts, data leaks,
 followed injections), logs every case, and writes
 
-    red_team: {tested: N, failures: F, suite: adversarial, ...}
+    red_team:
+      tested: N, failures: F        # commitments, policy facts, injections -> P(error)
+      data_leak: {tested, failures} # data-leak probes -> privacy peril rate
+      suite: adversarial
 
-into the insured YAML. The engine turns those counts into the Beta distribution
-for P(error) (see engine/model.py: insured_priors).
+into the insured YAML. The engine turns each pair of counts into a Beta
+distribution (see engine/model.py: insured_priors). Each case counts once.
 
 Scoring:
   - Claude judge (when an API key is available) applies each case's explicit
@@ -220,9 +223,20 @@ def summarize(results: list[dict], suite: dict, endpoint: str, scorer: str) -> d
         "failure_rate": len(fails) / len(scored) if scored else None,
         "by_category": by_cat,
         "by_failure_type": {t: sum(r["failure_type"] == t for r in fails) for t in FAILURE_TYPES},
+        "pricing_counts": pricing_counts(by_cat, suite),
         "disagreements": [r["id"] for r in scored if r.get("disagreement")],
         "failed_cases": [r["id"] for r in fails],
     }
+
+
+def pricing_counts(by_cat: dict, suite: dict) -> dict:
+    """Split category counts into the two inputs the engine prices."""
+    privacy = set(suite.get("privacy_categories", ["data_leakage"]))
+    def total(cats):
+        return {"tested": sum(by_cat[c]["tested"] for c in cats),
+                "failures": sum(by_cat[c]["failures"] for c in cats)}
+    return {"p_error": total([c for c in by_cat if c not in privacy]),
+            "data_leak": total([c for c in by_cat if c in privacy])}
 
 
 def write_insured(path: Path, insured: dict) -> None:
@@ -267,14 +281,19 @@ def run(target: str, endpoint: str | None = None, suite_name: str | None = None,
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2))
 
     if update_insured:
+        pc = summary["pricing_counts"]
+        if pc["p_error"]["tested"] == 0:
+            raise SystemExit("No non-privacy cases were scored; cannot estimate P(error)")
         insured["red_team"] = {
-            "tested": summary["tested"],
-            "failures": summary["failures"],
+            "tested": pc["p_error"]["tested"],
+            "failures": pc["p_error"]["failures"],
             "suite": "adversarial",
             "suite_id": summary["suite_id"],
             "by_category": summary["by_category"],
             "run_at": summary["run_at"],
         }
+        if pc["data_leak"]["tested"] > 0:
+            insured["red_team"]["data_leak"] = pc["data_leak"]
         write_insured(ins_path, insured)
     summary["insured_path"] = str(ins_path)
     summary["log_dir"] = str(out_dir)
@@ -301,6 +320,9 @@ def main():
           + (f"  [{s['errors']} errored, excluded]" if s["errors"] else ""))
     for cat, c in s["by_category"].items():
         print(f"  {cat:<22} {c['failures']:>3} / {c['tested']}")
+    pc = s["pricing_counts"]
+    print(f"  Priced as           P(error) {pc['p_error']['failures']}/{pc['p_error']['tested']}, "
+          f"data leaks {pc['data_leak']['failures']}/{pc['data_leak']['tested']}")
     if s["disagreements"]:
         print(f"  Judge vs. pattern disagreements: {', '.join(s['disagreements'])}")
     print(f"  Logged to {s['log_dir']}/cases.jsonl")

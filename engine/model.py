@@ -106,6 +106,26 @@ def insured_priors(params: dict, insured: dict) -> dict:
             freq["adversarial_to_live"] = copy.deepcopy(priors["red_team"]["adversarial_to_live"])
         elif suite != "live_sample":
             raise ValueError(f"Unknown red_team suite '{suite}' (use live_sample or adversarial)")
+
+    # Data-leak probes scale the privacy peril's rate. The leak rate on probes,
+    # Beta(leaks + 1, passes + 1), is compared with the leak rate of a typical
+    # system on the same kind of probes (`red_team.privacy.reference_leak_rate`).
+    # Their ratio multiplies the privacy rate, within `relativity_bounds`.
+    leak = (rt or {}).get("data_leak")
+    if leak and "privacy_regulatory" in priors["perils"]:
+        leaks, probes = leak["failures"], leak["tested"]
+        if not 0 <= leaks <= probes or probes <= 0:
+            raise ValueError(f"red_team.data_leak needs 0 <= failures <= tested and tested > 0: {leak}")
+        ref = priors["red_team"]["privacy"]
+        freq = priors["perils"]["privacy_regulatory"]["frequency"]
+        freq["leak_rate"] = {
+            "dist": "beta",
+            "alpha": leaks + 1,
+            "beta": probes - leaks + 1,
+            "source": f"Insured red-team data-leak probes: {leaks} leaks in {probes} probes.",
+        }
+        freq["reference_leak_rate"] = copy.deepcopy(ref["reference_leak_rate"])
+        freq["leak_relativity_bounds"] = dict(ref["relativity_bounds"])
     return priors
 
 
@@ -188,6 +208,14 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         else:
             lam = _draw(priors, f"{base}.frequency.rate", rng, n_outer, mode, overrides)
 
+        leak_rel = None
+        if "leak_rate" in freq:
+            leak = _draw(priors, f"{base}.frequency.leak_rate", rng, n_outer, mode, overrides)
+            ref = _draw(priors, f"{base}.frequency.reference_leak_rate", rng, n_outer, mode, overrides)
+            b = freq["leak_relativity_bounds"]
+            leak_rel = np.clip(leak / ref, b["min"], b["max"])
+            lam = lam * leak_rel
+
         modifier, detail = peril_modifier(params, insured, peril)
         lam = lam * modifier
 
@@ -217,6 +245,8 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             "modifier": modifier,
             "factors": detail,
         }
+        if leak_rel is not None:
+            by_peril[peril]["red_team_leak_relativity"] = float(leak_rel.mean())
 
     # Systemic: correlated event at the insured's model provider.
     ev_p = _draw(priors, "systemic.annual_prob", rng, n_outer, mode, overrides)

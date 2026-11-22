@@ -68,6 +68,8 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
   `annual_rate` perils = a direct rate. Red-team counts override P(error) as a Beta.
   For `red_team.suite: adversarial`, P(error) is also multiplied by
   `red_team.adversarial_to_live` (priors.yaml); `live_sample` (default) is used as is.
+  `red_team.data_leak` counts multiply the privacy rate by leak rate / typical leak
+  rate (`red_team.privacy` in priors.yaml), capped at 0.5x to 3x.
 - Severity: lognormal body (uncertain median and p90) plus optional Pareto tail.
 - Rating factors multiply frequency per peril, capped by `combined_modifier_bounds`.
 - Systemic event at the insured's model provider; no diversification credit, and
@@ -107,7 +109,7 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
    `README_REDTEAM_AGENT.md`), pricer and explainer (to do).
 
 Note: on 2026-11-22 the project owner authorized direct edits to `params/` on main for
-the red-team adjustment (priors 0.2.0). Agent-proposed parameter changes still go through PRs.
+the red-team adjustments (priors 0.2.0 and 0.3.0). Agent-proposed parameter changes still go through PRs.
 6. Calibration loop: `.github/workflows/calibrate.yml` plus the `calibrator` subagent.
 7. Egbe: connect the MCP server (`claude mcp add ...` with the endpoint from Egbe's docs), run the growth loop.
 

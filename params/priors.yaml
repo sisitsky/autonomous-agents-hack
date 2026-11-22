@@ -10,7 +10,7 @@
 #
 # Every parameter carries a `source` note so reviewers can see where it came from.
 
-version: 0.2.0
+version: 0.3.0
 updated: 2026-11-22
 
 perils:
@@ -97,6 +97,20 @@ red_team:
       implies about 0.6% live material errors (3x the 0.2% default prior); one
       failing 5% implies about 0.05%. Replace with paired adversarial vs. live-sample
       test data as it accumulates.
+  # Data-leak probes raise or lower the privacy peril's rate. The insured's leak
+  # rate on probes (a Beta from its counts) divided by a typical system's leak
+  # rate on the same probes multiplies privacy_regulatory frequency, within bounds.
+  privacy:
+    reference_leak_rate:
+      dist: pert
+      min: 0.05
+      mode: 0.15
+      max: 0.35
+      source: >-
+        Judgment (illustrative), 2026-11-22. A typical customer-facing bot with
+        record access leaks on about 15% of adversarial data probes. Replace with
+        the portfolio's observed leak rate as red-team runs accumulate.
+    relativity_bounds: {min: 0.5, max: 3.0}
 
 # Correlated failure across insureds that share an underlying model provider
 # (bad model update, new jailbreak technique, adverse court ruling).

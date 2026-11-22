@@ -108,10 +108,11 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
 5. Underwriting agents: intake (done, `README_INTAKE_AGENT.md`), redteam (done,
    `README_REDTEAM_AGENT.md`), pricer and explainer (to do).
 
-Note: on 2026-11-22 the project owner authorized direct edits to `params/` on main for
-the red-team adjustments (priors 0.2.0 and 0.3.0). Agent-proposed parameter changes still go through PRs.
 6. Calibration loop: `.github/workflows/calibrate.yml` plus the `calibrator` subagent.
 7. Egbe: connect the MCP server (`claude mcp add ...` with the endpoint from Egbe's docs), run the growth loop.
+
+Note: on 2026-11-22 the project owner authorized direct edits to `params/` on main for
+the red-team adjustments (priors 0.2.0 and 0.3.0). Agent-proposed parameter changes still go through PRs.
 
 ## Demo script (about 3 minutes)
 

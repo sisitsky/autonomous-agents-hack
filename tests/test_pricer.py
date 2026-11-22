@@ -132,9 +132,9 @@ def test_trace_does_not_change_prices(params):
     # tracing and credibility (adversarial suites only) must not move them.
     from engine.cli import benchmark
     b = benchmark()["insureds"]
-    assert round(b["shopbot"]["gross_premium"]) == 14713
-    assert round(b["hirescreen"]["gross_premium"]) == 21727
-    assert round(b["copydesk"]["gross_premium"]) == 7601
+    assert round(b["shopbot"]["gross_premium"]) == 14590
+    assert round(b["hirescreen"]["gross_premium"]) == 21985
+    assert round(b["copydesk"]["gross_premium"]) == 7708
 
 
 def test_every_plan_priced_and_ordered(archived):

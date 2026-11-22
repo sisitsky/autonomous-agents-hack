@@ -1,0 +1,101 @@
+{
+  "run_at": "2026-11-22T22:19:07+00:00",
+  "window_days": 30,
+  "sources": {
+    "federal_register": {
+      "name": "Federal Register",
+      "category": "regulation",
+      "status": "ok",
+      "fetched": 20,
+      "new": 0,
+      "seconds": 0.4
+    },
+    "regulations_gov": {
+      "name": "Regulations.gov",
+      "category": "regulation",
+      "status": "ok",
+      "fetched": 20,
+      "new": 0,
+      "seconds": 0.5
+    },
+    "congress_gov": {
+      "name": "Congress.gov",
+      "category": "regulation",
+      "status": "ok",
+      "fetched": 3,
+      "new": 0,
+      "seconds": 0.3
+    },
+    "sec_press": {
+      "name": "SEC press releases",
+      "category": "enforcement",
+      "status": "ok",
+      "fetched": 1,
+      "new": 0,
+      "seconds": 0.1
+    },
+    "cfpb": {
+      "name": "CFPB newsroom",
+      "category": "enforcement",
+      "status": "ok",
+      "fetched": 0,
+      "new": 0,
+      "seconds": 0.1
+    },
+    "cisa_kev": {
+      "name": "CISA Known Exploited Vulnerabilities",
+      "category": "security",
+      "status": "ok",
+      "fetched": 36,
+      "new": 0,
+      "seconds": 0.5
+    },
+    "github_advisories": {
+      "name": "GitHub Security Advisories",
+      "category": "security",
+      "status": "ok",
+      "fetched": 10,
+      "new": 0,
+      "seconds": 3.0
+    },
+    "mitre_atlas": {
+      "name": "MITRE ATLAS case studies",
+      "category": "incident",
+      "status": "ok",
+      "fetched": 25,
+      "new": 0,
+      "seconds": 0.5
+    },
+    "arxiv": {
+      "name": "arXiv",
+      "category": "research",
+      "status": "ok",
+      "fetched": 15,
+      "new": 0,
+      "seconds": 0.1
+    },
+    "edgar": {
+      "name": "SEC EDGAR full-text search",
+      "category": "disclosure",
+      "status": "ok",
+      "fetched": 16,
+      "new": 0,
+      "seconds": 1.0
+    },
+    "manual": {
+      "name": "Manual evidence (data/incidents/)",
+      "category": "incident",
+      "status": "ok",
+      "fetched": 1,
+      "new": 0,
+      "seconds": 0.0
+    }
+  },
+  "new_items": [],
+  "totals": {
+    "sources_ok": 11,
+    "sources": 11,
+    "new": 0,
+    "store": 208
+  }
+}

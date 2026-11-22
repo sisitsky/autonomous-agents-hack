@@ -24,6 +24,7 @@
     <a href="#price">Price</a>
     <a href="#risk">Risk</a>
     <a href="#redteam">Red team</a>
+    <a href="#loop2">Loop 2</a>
     <a href="#live" class="cta">Run live</a>
   </nav>
 </header>
@@ -201,6 +202,26 @@
     </div>
   </section>
 
+  <section id="loop2">
+    <div class="section-head"><h2>Loop 2: the model learns from the world</h2>
+      <p class="muted">Every hour a monitor agent scans public sources for AI incidents, court decisions, enforcement actions, regulation and security signals.
+        A calibration agent turns relevant evidence into a Bayesian update of a pricing parameter; a validation agent re-prices the benchmark book and checks the guardrails;
+        the change lands as a GitHub pull request. Merging it is the human decision.</p></div>
+    <div class="l2-stats" id="l2-stats"></div>
+    <div class="card wide">
+      <div class="card-head"><div><div class="card-title">Changes to the model from new evidence</div>
+        <div class="muted small">Each card: the event, its source, and what it changed. Pricing only moves once a human merges the pull request.</div></div>
+        <div class="select-wrap sm"><select id="l2-filter" aria-label="Filter"><option value="">All changes</option><option value="open">Awaiting approval</option><option value="merged">Merged</option></select></div></div>
+      <div id="l2-changes" class="l2-changes"></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-title">Sources scanned</div><div class="muted small" id="l2-scan"></div><div id="l2-sources" class="l2-sources"></div></div>
+      <div class="card"><div class="card-title">Validation of the latest proposal</div><div id="l2-guard"></div>
+        <div class="card-title mt">Accumulation by model provider</div><div id="l2-accum" class="table-wrap"></div></div>
+    </div>
+    <div class="card wide"><details class="explain"><summary>Latest evidence gathered (including items judged not relevant)</summary><div id="l2-evidence" class="l2-evidence"></div></details></div>
+  </section>
+
   <section id="live">
     <div class="section-head"><h2>Run the loop live</h2><p class="muted">Submit any company's AI system: paste a description and attach its documents (applications, architecture notes, policies, model cards). The agents run every step in front of you, about a minute end to end.</p></div>
     <div class="card wide live-card">
@@ -261,5 +282,6 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script src="/charts.js"></script>
 <script src="/app.js"></script>
+<script src="/loop2.js"></script>
 </body>
 </html>

@@ -176,6 +176,39 @@ def _draw(priors, path, rng, n, mode, overrides, joint=None):
     return D.sample(spec, rng, n)
 
 
+def _poisson_ppf(u: np.ndarray, lam: np.ndarray) -> np.ndarray:
+    """Inverse Poisson CDF by vectorized cumulative search (fast for small λ)."""
+    lam = np.asarray(lam, dtype=float)
+    big = lam > 50
+    p = np.exp(-np.where(big, 0.0, lam))
+    cdf = p.copy()
+    k = np.zeros(lam.shape, dtype=np.int64)
+    active = (u > cdf) & ~big
+    i = 0
+    while active.any() and i < 500:
+        i += 1
+        k += active
+        p = p * lam / i
+        cdf = cdf + p
+        active = active & (u > cdf)
+    if big.any():
+        k[big] = stats.poisson.ppf(u[big], lam[big]).astype(np.int64)
+    return k
+
+
+def _hash_uniform(i: np.ndarray, j, key: int) -> np.ndarray:
+    """Counter-based uniforms in (0, 1): SplitMix64 of (i, j, key). The same
+    (year, claim slot) always gets the same number, whatever else changes."""
+    with np.errstate(over="ignore"):
+        z = (np.asarray(i, dtype=np.uint64) * np.uint64(0x9E3779B97F4A7C15)
+             + np.asarray(j, dtype=np.uint64) * np.uint64(0xD1B54A32D192ED03)
+             + np.uint64(key & 0xFFFFFFFF) * np.uint64(0x94D049BB133111EB))
+        z = (z ^ (z >> np.uint64(30))) * np.uint64(0xBF58476D1CE4E5B9)
+        z = (z ^ (z >> np.uint64(27))) * np.uint64(0x94D049BB133111EB)
+        z = z ^ (z >> np.uint64(31))
+    return ((z >> np.uint64(11)).astype(np.float64) + 0.5) / float(2 ** 53)
+
+
 def _tvar(x: np.ndarray, level: float) -> float:
     cutoff = np.quantile(x, level)
     tail = x[x >= cutoff]
@@ -327,14 +360,22 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             t_prob = draw(f"{base}.severity.tail.prob")
             t_alpha = draw(f"{base}.severity.tail.alpha")
 
-        rng = stream("simulate", peril)
-        counts = rng.poisson(np.repeat(lam, n_inner))          # claims per simulated year
+        # Common random numbers at the claim level: each year's count is the
+        # inverse-Poisson of a fixed uniform (so a higher rate never gives fewer
+        # claims), and each claim slot (year, j) gets its own fixed uniforms from a
+        # counter-based hash. Changing one parameter then only moves the claims it
+        # should; nothing else in the simulation shifts.
+        key = zlib.crc32(f"{seed}:{peril}".encode())
+        u_count = _hash_uniform(np.arange(n_years), 0, key)
+        counts = _poisson_ppf(u_count, np.repeat(lam, n_inner))
         year_idx = np.repeat(np.arange(n_years), counts)        # which year each claim is in
+        slot = np.arange(year_idx.size) - np.repeat(np.cumsum(counts) - counts, counts)  # j within the year
         outer_idx = year_idx // n_inner                         # which parameter draw
-        x = rng.lognormal(mu[outer_idx], sigma[outer_idx])
+        z = stats.norm.ppf(_hash_uniform(year_idx, slot + 1, key))
+        x = np.exp(mu[outer_idx] + sigma[outer_idx] * z)
         if tail:
-            is_tail = rng.random(x.size) < t_prob[outer_idx]
-            u = rng.random(int(is_tail.sum()))
+            is_tail = _hash_uniform(year_idx, slot + 1, key ^ 0x5bd1e995) < t_prob[outer_idx]
+            u = _hash_uniform(year_idx[is_tail], slot[is_tail] + 1, key ^ 0x27d4eb2d)
             x[is_tail] = tail["threshold"] * u ** (-1.0 / t_alpha[outer_idx][is_tail])
         layer = np.clip(x - ded, 0, per_claim)
         annual = np.bincount(year_idx, weights=layer, minlength=n_years)

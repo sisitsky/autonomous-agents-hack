@@ -176,10 +176,30 @@ def score_judge(case: dict, reply: str, ground_truth: str) -> dict:
     return v
 
 
-def run_case(case: dict, endpoint: str, scorer: str, ground_truth: str) -> dict:
+def http_transport(endpoint: str):
+    return lambda message: send(endpoint, message)
+
+
+def demo_transport(kind: str):
+    """Call one of our own demo ShopBots in-process (used by the web app, which
+    may only test bots we own). kind: 'deterministic' or 'llm'."""
+    import time as _t
+    from .target_bot import shopbot
+    fn = {"deterministic": shopbot.deterministic_reply, "llm": shopbot.llm_reply}[kind]
+
+    def call(message):
+        t0 = _t.monotonic()
+        try:
+            return {"reply": fn(message), "latency_s": round(_t.monotonic() - t0, 3)}
+        except Exception as e:  # the bot failing is logged, not fatal
+            return {"error": str(e)}
+    return call
+
+
+def run_case(case: dict, transport, scorer: str, ground_truth: str) -> dict:
     out = {"id": case["id"], "category": case["category"], "input": case["input"],
            "rubric": case["rubric"]}
-    resp = send(endpoint, case["input"])
+    resp = transport(case["input"])
     if "error" in resp:
         out.update(status="error", error=resp["error"])
         return out
@@ -245,6 +265,44 @@ def write_insured(path: Path, insured: dict) -> None:
     path.write_text(header + yaml.safe_dump(insured, sort_keys=False))
 
 
+def with_red_team(insured: dict, summary: dict) -> dict:
+    """Copy of the insured with the red-team counts the engine prices."""
+    pc = summary["pricing_counts"]
+    if pc["p_error"]["tested"] == 0:
+        raise SystemExit("No non-privacy cases were scored; cannot estimate P(error)")
+    out = dict(insured)
+    out["red_team"] = {
+        "tested": pc["p_error"]["tested"],
+        "failures": pc["p_error"]["failures"],
+        "suite": "adversarial",
+        "suite_id": summary["suite_id"],
+        "by_category": summary["by_category"],
+        "run_at": summary["run_at"],
+    }
+    if pc["data_leak"]["tested"] > 0:
+        out["red_team"]["data_leak"] = pc["data_leak"]
+    return out
+
+
+def evaluate(insured: dict, profile: dict, transport, target_label: str,
+             suite_name: str | None = None, scorer: str = "auto", workers: int = 8) -> dict:
+    """Pure core (no files): run the suite through `transport` and score it.
+    Returns {"results", "summary", "insured"} with red-team counts applied."""
+    use_case = (profile or {}).get("use_case", {}).get("category")
+    suite = load_suite(suite_name or SUITE_FOR_USE_CASE.get(use_case, "customer_service"))
+    ground_truth = suite.get("ground_truth", "")
+    if scorer == "auto":
+        scorer = "judge" if llm_available() else "patterns"
+    if scorer == "judge" and not llm_available():
+        raise SystemExit("Judge scoring needs ANTHROPIC_API_KEY; use --scorer patterns")
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        results = list(pool.map(lambda c: run_case(c, transport, scorer, ground_truth), suite["cases"]))
+    summary = summarize(results, suite, target_label, scorer)
+    if summary["tested"] == 0:
+        raise SystemExit(f"No case could be scored; first error: {results[0].get('error')}")
+    return {"results": results, "summary": summary, "insured": with_red_team(insured, summary)}
+
+
 def run(target: str, endpoint: str | None = None, suite_name: str | None = None,
         scorer: str = "auto", authorized: bool = False, workers: int = 8,
         update_insured: bool = True) -> dict:
@@ -257,21 +315,8 @@ def run(target: str, endpoint: str | None = None, suite_name: str | None = None,
         raise SystemExit("No endpoint: pass --endpoint or include an authorized test endpoint at intake")
     check_authorized(endpoint, authorized)
 
-    use_case = profile.get("use_case", {}).get("category")
-    suite = load_suite(suite_name or SUITE_FOR_USE_CASE.get(use_case, "customer_service"))
-    ground_truth = suite.get("ground_truth", "")
-
-    if scorer == "auto":
-        scorer = "judge" if llm_available() else "patterns"
-    if scorer == "judge" and not llm_available():
-        raise SystemExit("Judge scoring needs ANTHROPIC_API_KEY; use --scorer patterns")
-
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        results = list(pool.map(lambda c: run_case(c, endpoint, scorer, ground_truth), suite["cases"]))
-
-    summary = summarize(results, suite, endpoint, scorer)
-    if summary["tested"] == 0:
-        raise SystemExit(f"No case could be scored; first error: {results[0].get('error')}")
+    ev = evaluate(insured, profile, http_transport(endpoint), endpoint, suite_name, scorer, workers)
+    results, summary = ev["results"], ev["summary"]
 
     out_dir = ins_path.parent / "redteam"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -281,20 +326,7 @@ def run(target: str, endpoint: str | None = None, suite_name: str | None = None,
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2))
 
     if update_insured:
-        pc = summary["pricing_counts"]
-        if pc["p_error"]["tested"] == 0:
-            raise SystemExit("No non-privacy cases were scored; cannot estimate P(error)")
-        insured["red_team"] = {
-            "tested": pc["p_error"]["tested"],
-            "failures": pc["p_error"]["failures"],
-            "suite": "adversarial",
-            "suite_id": summary["suite_id"],
-            "by_category": summary["by_category"],
-            "run_at": summary["run_at"],
-        }
-        if pc["data_leak"]["tested"] > 0:
-            insured["red_team"]["data_leak"] = pc["data_leak"]
-        write_insured(ins_path, insured)
+        write_insured(ins_path, ev["insured"])
     summary["insured_path"] = str(ins_path)
     summary["log_dir"] = str(out_dir)
     return summary

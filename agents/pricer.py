@@ -47,11 +47,9 @@ def resolve(target: str) -> tuple[dict, Path]:
     return insured, RUNS_DIR / insured["id"]
 
 
-def run(target: str, with_tornado: bool = True, with_controls: bool = True,
-        out_dir: str | None = None) -> dict:
-    insured, run_dir = resolve(target)
+def compute(insured: dict, with_tornado: bool = True, with_controls: bool = True) -> dict:
+    """Pure core (no files): price, verify reproducibility, build the archive."""
     params = load_params()
-
     quote = price(insured, params)
     again = price(insured, params)
     if again["gross_premium"] != quote["gross_premium"] or again["expected_loss"] != quote["expected_loss"]:
@@ -61,6 +59,14 @@ def run(target: str, with_tornado: bool = True, with_controls: bool = True,
     ctl = control_options(insured, params, base=quote) if with_controls else None
     calc = calculation(insured, params, quote, tor, ctl)
     calc["meta"]["reproducibility_check"] = "passed: priced twice, identical results"
+    return {"quote": quote, "calculation": calc}
+
+
+def run(target: str, with_tornado: bool = True, with_controls: bool = True,
+        out_dir: str | None = None) -> dict:
+    insured, run_dir = resolve(target)
+    r = compute(insured, with_tornado, with_controls)
+    quote, calc = r["quote"], r["calculation"]
 
     out = Path(out_dir) if out_dir else run_dir / "pricing"
     out.mkdir(parents=True, exist_ok=True)

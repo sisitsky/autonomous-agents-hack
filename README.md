@@ -14,6 +14,12 @@ All parameters are illustrative. This is not an offer of insurance.
 
 ## Loop 1: underwriting
 
+One command runs all four steps and logs each one (`agents/runs/<id>/events.jsonl`):
+
+```bash
+python -m agents.underwrite agents/submissions/northwind --id northwind --demo-bot deterministic --export public/data/runs
+```
+
 Details: [README_INTAKE_AGENT.md](README_INTAKE_AGENT.md), [README_REDTEAM_AGENT.md](README_REDTEAM_AGENT.md), [README_PRICING_AGENT.md](README_PRICING_AGENT.md), [README_EXPLAINER_AGENT.md](README_EXPLAINER_AGENT.md). Pricing method: [docs/PRICING_METHOD.md](docs/PRICING_METHOD.md).
 
 ```bash

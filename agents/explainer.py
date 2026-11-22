@@ -75,23 +75,28 @@ def _git_params_log(old: str | None, new: str | None) -> list[str]:
     return r.stdout.strip().splitlines() if r.returncode == 0 else []
 
 
-def _red_team_facts(run_dir: Path, insured: dict) -> dict | None:
+def load_red_team(run_dir: Path) -> tuple[dict | None, list[dict] | None]:
+    s_path, c_path = run_dir / "redteam" / "summary.json", run_dir / "redteam" / "cases.jsonl"
+    summary = json.loads(s_path.read_text()) if s_path.exists() else None
+    results = [json.loads(l) for l in c_path.read_text().splitlines()] if c_path.exists() else None
+    return summary, results
+
+
+def _red_team_facts(insured: dict, summary: dict | None, results: list[dict] | None) -> dict | None:
     rt = insured.get("red_team")
     if not rt:
         return None
     out = {"priced_counts": {"p_error": f"{rt['failures']} of {rt['tested']}"}}
     if rt.get("data_leak"):
         out["priced_counts"]["data_leak"] = f"{rt['data_leak']['failures']} of {rt['data_leak']['tested']}"
-    s_path, c_path = run_dir / "redteam" / "summary.json", run_dir / "redteam" / "cases.jsonl"
-    if s_path.exists():
-        s = json.loads(s_path.read_text())
+    if summary:
+        s = summary
         out["total"] = f"{s['failures']} of {s['tested']}"
         out["scorer"] = s["scorer"]
         out["by_category"] = {k: f"{v['failures']} of {v['tested']}" for k, v in s["by_category"].items()}
-    if c_path.exists():
+    if results:
         examples = []
-        for line in c_path.read_text().splitlines():
-            r = json.loads(line)
+        for r in results:
             if r.get("verdict") != "material_failure":
                 continue
             v = r.get("judge_verdict") or r.get("pattern_verdict") or {}
@@ -106,7 +111,8 @@ def _red_team_facts(run_dir: Path, insured: dict) -> dict | None:
     return out
 
 
-def fact_sheet(calc: dict, run_dir: Path, previous: dict | None = None) -> dict:
+def fact_sheet(calc: dict, rt_summary: dict | None = None, rt_results: list[dict] | None = None,
+               previous: dict | None = None) -> dict:
     ins, pol = calc["insured"], calc["policy"]
     s = {x["id"]: x for x in calc["premium_build_up"]}
     ld = calc["loss_distribution"]
@@ -148,7 +154,7 @@ def fact_sheet(calc: dict, run_dir: Path, previous: dict | None = None) -> dict:
             "percentiles": {f"P{k}": _m(v) for k, v in ld["percentiles"].items()},
             "simulated_years": f"{calc['meta']['simulation']['n_years']:,}",
         },
-        "tornado": None, "controls": [], "red_team": _red_team_facts(run_dir, ins),
+        "tornado": None, "controls": [], "red_team": _red_team_facts(ins, rt_summary, rt_results),
         "changes_since_last_quote": None,
     }
     if calc.get("tornado"):
@@ -181,15 +187,15 @@ def fact_sheet(calc: dict, run_dir: Path, previous: dict | None = None) -> dict:
     return facts
 
 
+def notes_from(insured_text: str | None, profile: dict | None) -> dict:
+    notes = [l[len("# review: "):] for l in (insured_text or "").splitlines() if l.startswith("# review: ")]
+    return {"review_notes": notes, "open_questions": (profile or {}).get("open_questions", [])}
+
+
 def intake_notes(run_dir: Path) -> dict:
-    notes, questions = [], []
-    ins = run_dir / "insured.yaml"
-    if ins.exists():
-        notes = [l[len("# review: "):] for l in ins.read_text().splitlines() if l.startswith("# review: ")]
-    prof = run_dir / "profile.json"
-    if prof.exists():
-        questions = json.loads(prof.read_text()).get("open_questions", [])
-    return {"review_notes": notes, "open_questions": questions}
+    ins, prof = run_dir / "insured.yaml", run_dir / "profile.json"
+    return notes_from(ins.read_text() if ins.exists() else None,
+                      json.loads(prof.read_text()) if prof.exists() else None)
 
 
 # ---------------------------------------------------------------- number check
@@ -484,6 +490,17 @@ def render_md(facts: dict, n: dict, notes: dict, check: dict) -> str:
 
 # ---------------------------------------------------------------- run
 
+def compose(calc: dict, notes: dict, rt_summary: dict | None = None, rt_results: list[dict] | None = None,
+            previous: dict | None = None, offline: bool = False) -> dict:
+    """Pure core (no files): fact sheet, checked narrative, charts, rendered report."""
+    facts = fact_sheet(calc, rt_summary, rt_results, previous)
+    n, check = write_narrative(facts, notes, use_llm=llm_available() and not offline)
+    svgs = {"loss_distribution": charts.loss_distribution_svg(calc), "tornado": charts.tornado_svg(calc),
+            "controls": charts.controls_svg(calc)}
+    return {"facts": facts, "narrative": n, "check": check, "notes": notes, "svgs": svgs,
+            "html": render_html(calc, facts, n, notes, check, svgs)}
+
+
 def run(target: str, offline: bool = False, reprice: bool = False) -> dict:
     run_dir = Path(target)
     if run_dir.is_file():
@@ -493,18 +510,14 @@ def run(target: str, offline: bool = False, reprice: bool = False) -> dict:
         pricer.run(str(run_dir))
     calc = json.loads(calc_path.read_text())
     previous = pricer.previous_calculation(run_dir / "pricing")
-
-    facts = fact_sheet(calc, run_dir, previous)
-    notes = intake_notes(run_dir)
-    n, check = write_narrative(facts, notes, use_llm=llm_available() and not offline)
-
-    svgs = {"loss_distribution": charts.loss_distribution_svg(calc), "tornado": charts.tornado_svg(calc),
-            "controls": charts.controls_svg(calc)}
+    rt_summary, rt_results = load_red_team(run_dir)
+    r = compose(calc, intake_notes(run_dir), rt_summary, rt_results, previous, offline)
+    facts, n, check, notes, svgs = r["facts"], r["narrative"], r["check"], r["notes"], r["svgs"]
     out = run_dir / "report"
     out.mkdir(exist_ok=True)
     for name, svg in svgs.items():
         (out / f"{name}.svg").write_text(svg)
-    (out / "report.html").write_text(render_html(calc, facts, n, notes, check, svgs))
+    (out / "report.html").write_text(r["html"])
     (out / "report.md").write_text(render_md(facts, n, notes, check))
     (out / "narrative.json").write_text(json.dumps({"narrative": n, "check": check, "facts": facts},
                                                    indent=2, ensure_ascii=False))

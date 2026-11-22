@@ -107,6 +107,9 @@ def _sha256(path: Path) -> str:
 
 
 def _git_commit() -> str | None:
+    import os
+    if os.environ.get("VERCEL_GIT_COMMIT_SHA"):       # deployed: no .git directory
+        return os.environ["VERCEL_GIT_COMMIT_SHA"]
     try:
         out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
                              text=True, timeout=5)

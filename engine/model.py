@@ -191,6 +191,12 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
 
     idio = np.zeros(n_years)
     by_peril = {}
+    used = {}  # trace: mean of every parameter as actually drawn (no extra randomness)
+
+    def draw(path):
+        v = _draw(priors, path, rng, n_outer, mode, overrides)
+        used[path] = float(v.mean())
+        return v
 
     for peril, exposure in insured["perils"].items():
         base = f"perils.{peril}"
@@ -204,14 +210,15 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             if "adversarial_to_live" in freq:
                 chain.append("adversarial_to_live")
             for p in chain:
-                lam = lam * _draw(priors, f"{base}.frequency.{p}", rng, n_outer, mode, overrides)
+                lam = lam * draw(f"{base}.frequency.{p}")
         else:
-            lam = _draw(priors, f"{base}.frequency.rate", rng, n_outer, mode, overrides)
+            lam = draw(f"{base}.frequency.rate")
 
+        base_claims = float(np.mean(lam))
         leak_rel = None
         if "leak_rate" in freq:
-            leak = _draw(priors, f"{base}.frequency.leak_rate", rng, n_outer, mode, overrides)
-            ref = _draw(priors, f"{base}.frequency.reference_leak_rate", rng, n_outer, mode, overrides)
+            leak = draw(f"{base}.frequency.leak_rate")
+            ref = draw(f"{base}.frequency.reference_leak_rate")
             b = freq["leak_relativity_bounds"]
             leak_rel = np.clip(leak / ref, b["min"], b["max"])
             lam = lam * leak_rel
@@ -219,13 +226,13 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         modifier, detail = peril_modifier(params, insured, peril)
         lam = lam * modifier
 
-        median = _draw(priors, f"{base}.severity.body.median", rng, n_outer, mode, overrides)
-        p90 = _draw(priors, f"{base}.severity.body.p90", rng, n_outer, mode, overrides)
+        median = draw(f"{base}.severity.body.median")
+        p90 = draw(f"{base}.severity.body.p90")
         mu, sigma = D.lognormal_params(median, p90)
         tail = spec["severity"].get("tail")
         if tail:
-            t_prob = _draw(priors, f"{base}.severity.tail.prob", rng, n_outer, mode, overrides)
-            t_alpha = _draw(priors, f"{base}.severity.tail.alpha", rng, n_outer, mode, overrides)
+            t_prob = draw(f"{base}.severity.tail.prob")
+            t_alpha = draw(f"{base}.severity.tail.alpha")
 
         counts = rng.poisson(np.repeat(lam, n_inner))          # claims per simulated year
         year_idx = np.repeat(np.arange(n_years), counts)        # which year each claim is in
@@ -244,14 +251,16 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             "expected_loss": float(annual.mean()),
             "modifier": modifier,
             "factors": detail,
+            "base_claims_per_year": base_claims,        # before red-team leak and rating factors
+            "parameters": {k: v for k, v in used.items() if k.startswith(base + ".")},
         }
         if leak_rel is not None:
             by_peril[peril]["red_team_leak_relativity"] = float(leak_rel.mean())
 
     # Systemic: correlated event at the insured's model provider.
-    ev_p = _draw(priors, "systemic.annual_prob", rng, n_outer, mode, overrides)
-    share = _draw(priors, "systemic.share_affected", rng, n_outer, mode, overrides)
-    loss_share = _draw(priors, "systemic.loss_share_of_limit", rng, n_outer, mode, overrides)
+    ev_p = draw("systemic.annual_prob")
+    share = draw("systemic.share_affected")
+    loss_share = draw("systemic.loss_share_of_limit")
     o = np.repeat(np.arange(n_outer), n_inner)
     hit = (rng.random(n_years) < ev_p[o]) & (rng.random(n_years) < share[o])
     systemic = np.where(hit, loss_share[o] * agg, 0.0)
@@ -263,15 +272,16 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     expected_loss = float(total.mean())
 
     per_outer = total.reshape(n_outer, n_inner).mean(axis=1)
-    unc_load = 0.0 if n_outer == 1 else max(
-        0.0, float(np.percentile(per_outer, pr["uncertainty_load"]["percentile"])) - expected_loss)
+    el_pct = float(np.percentile(per_outer, pr["uncertainty_load"]["percentile"]))
+    unc_load = 0.0 if n_outer == 1 else max(0.0, el_pct - expected_loss)
 
     cap = pr["capital"]
     tail_fn = _tvar if cap["tail_metric"] == "tvar" else (lambda x, q: float(np.quantile(x, q)))
     conc = cap["provider_concentration"]
     conc_mult = conc.get(insured.get("provider"), np.mean(list(conc.values()))) / np.mean(list(conc.values()))
-    idio_capital = (1 / np.sqrt(cap["portfolio_size"])) * max(0.0, tail_fn(idio_c, cap["level"]) - idio_c.mean())
-    sys_capital = conc_mult * max(0.0, tail_fn(sys_c, cap["level"]) - sys_c.mean())
+    idio_tail, sys_tail = tail_fn(idio_c, cap["level"]), tail_fn(sys_c, cap["level"])
+    idio_capital = (1 / np.sqrt(cap["portfolio_size"])) * max(0.0, idio_tail - idio_c.mean())
+    sys_capital = conc_mult * max(0.0, sys_tail - sys_c.mean())
     capital = idio_capital + sys_capital
     capital_load = cap["cost_of_capital"] * capital
 
@@ -296,4 +306,20 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         "loss_percentiles": {str(q): float(np.quantile(total, q / 100))
                              for q in (50, 75, 90, 95, 99, 99.5)},
         "prob_any_loss": float((total > 0).mean()),
+        "trace": {
+            "simulation": {"seed": seed, "n_outer": n_outer, "n_inner": n_inner, "n_years": n_years},
+            "policy": {"deductible": ded, "limit_per_claim": per_claim, "aggregate_limit": agg},
+            "systemic_parameters": {k: v for k, v in used.items() if k.startswith("systemic.")},
+            "expected_idiosyncratic_loss": float(idio_c.mean()),
+            "uncertainty": {"percentile": pr["uncertainty_load"]["percentile"],
+                            "expected_loss_at_percentile": el_pct if n_outer > 1 else expected_loss},
+            "capital": {"tail_metric": cap["tail_metric"], "level": cap["level"],
+                        "portfolio_size": cap["portfolio_size"], "cost_of_capital": cap["cost_of_capital"],
+                        "idiosyncratic_tail": idio_tail, "idiosyncratic_mean": float(idio_c.mean()),
+                        "systemic_tail": sys_tail, "systemic_mean": float(sys_c.mean()),
+                        "provider": insured.get("provider"),
+                        "provider_share": conc.get(insured.get("provider")),
+                        "average_provider_share": float(np.mean(list(conc.values())))},
+            "expenses": dict(ex),
+        },
     }

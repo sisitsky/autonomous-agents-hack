@@ -4,7 +4,7 @@
 # red-team test counts (p_error), and counting it twice would double-charge.
 # Changes to this file go through a pull request only.
 
-version: 0.1.0
+version: 0.2.0
 
 factors:
   use_case_criticality:
@@ -13,16 +13,19 @@ factors:
     source: Consequence of a wrong output (internal drafting vs. credit, hiring, medical).
 
   autonomy:
+    controllable: true   # the insured can change this; quote reports show the saving
     applies_to: [misinformation, discrimination]
     levels: {advisory_human_signoff: 0.7, human_review_sampled: 0.85, autonomous: 1.0, autonomous_actions: 1.5}
     source: Human review catches errors before they reach customers.
 
   governance:
+    controllable: true   # the insured can change this; quote reports show the saving
     applies_to: [misinformation, privacy_regulatory, discrimination, ip_infringement]
     levels: {strong: 0.85, adequate: 1.0, weak: 1.2}
     source: Monitoring, logging, incident response, NIST AI RMF / ISO 42001 alignment.
 
   data_sensitivity:
+    controllable: true   # the insured can change this; quote reports show the saving
     applies_to: [privacy_regulatory]
     levels: {none: 0.3, personal: 1.0, financial_or_health: 1.6}
     source: Sensitive data in prompts, context, or outputs.
@@ -38,6 +41,7 @@ factors:
     source: Public outputs create third-party exposure.
 
   vendor_indemnity:
+    controllable: true   # the insured can change this; quote reports show the saving
     applies_to: [ip_infringement]
     levels: {none: 1.0, provider_ip_indemnity: 0.6}
     source: Model provider contractually indemnifies IP claims.

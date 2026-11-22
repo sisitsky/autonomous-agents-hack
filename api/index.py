@@ -31,6 +31,16 @@ from agents.target_bot import shopbot  # noqa: E402
 from engine.model import load_params  # noqa: E402
 
 app = FastAPI(title="AI Underwriter API", docs_url="/api/docs", openapi_url="/api/openapi.json")
+
+
+@app.middleware("http")
+async def _restore_path(request: Request, call_next):
+    """vercel.json rewrites /api/<x> to /api/index?__path=<x>; restore /api/<x> for routing."""
+    if request.url.path == "/api/index":
+        sub = request.query_params.get("__path")
+        if sub is not None:
+            request.scope["path"] = "/api/" + sub.lstrip("/")
+    return await call_next(request)
 BOTS = {"deterministic", "llm"}
 
 
@@ -126,3 +136,4 @@ async def api_chat(request: Request):
         _require_code(body); _require_llm()
         return {"reply": shopbot.llm_reply(msg)}
     return {"reply": shopbot.deterministic_reply(msg)}
+

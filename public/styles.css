@@ -340,7 +340,7 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .scene.b { margin-top: 28px; }
 .cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
   transition: transform 1.05s cubic-bezier(.22,.9,.24,1.08); }
-.cube .f { position: absolute; inset: 0; border-radius: 18%; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+.cube .f { position: absolute; inset: 0; border-radius: 0; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   padding: 15%; box-sizing: border-box; backface-visibility: hidden;
   background: radial-gradient(120% 120% at 25% 20%, #ffffff 0%, #e4e0ff 45%, #a89ff2 100%);
   box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.55), inset -6px -8px 16px rgba(70,55,170,.35), inset 4px 5px 10px rgba(255,255,255,.7); }

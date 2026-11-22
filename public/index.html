@@ -143,6 +143,14 @@
       <div class="cred-stats" id="cred-stats"></div>
       <div class="muted small mt">Probability cloud: portfolio prior → this system's tests → posterior that is priced (shaded: 90% interval)</div>
       <div class="chart" id="chart-cred-cloud"></div>
+      <div class="card-head mt">
+        <div class="muted small">Joint view (Dirichlet simplex): two failure shares at once, with everything else as the remainder</div>
+        <div class="filters">
+          <div class="select-wrap sm"><select id="simplex-a" aria-label="Horizontal share"></select></div>
+          <div class="select-wrap sm"><select id="simplex-b" aria-label="Vertical share"></select></div>
+        </div>
+      </div>
+      <div class="chart simplex-chart" id="chart-simplex"></div>
       <div class="grid-2 tight">
         <div><div class="muted small">Credibility Z rises with the number of cases tested</div><div class="chart" id="chart-cred-curve"></div></div>
         <div><div class="muted small">Each system's rate is pulled toward the portfolio mean</div><div class="chart" id="chart-cred-shrink"></div></div>

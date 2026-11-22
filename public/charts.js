@@ -604,5 +604,93 @@
     hit.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); });
   }
 
-  window.Charts = { credCloud, monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
+  // ---------------------------------------------------------------- Dirichlet simplex (two shares + rest)
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function gauss(rnd) { let u = 0, v = 0; while (u === 0) u = rnd(); while (v === 0) v = rnd();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function gammaSample(a, rnd) {           // Marsaglia–Tsang
+    if (a < 1) return gammaSample(a + 1, rnd) * Math.pow(rnd(), 1 / a);
+    const d = a - 1 / 3, c = 1 / Math.sqrt(9 * d);
+    for (;;) { let x, v; do { x = gauss(rnd); v = 1 + c * x; } while (v <= 0);
+      v = v * v * v; const u = rnd();
+      if (u < 1 - 0.0331 * x ** 4 || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v; }
+  }
+  function dirichletDraws(alpha, n, seed) {
+    const rnd = mulberry32(seed), out = [];
+    for (let i = 0; i < n; i++) { const g = alpha.map(a => gammaSample(Math.max(a, 1e-3), rnd)); const t = g.reduce((x, y) => x + y, 0); out.push(g.map(v => v / t)); }
+    return out;
+  }
+  function corr(pts) {
+    const n = pts.length, mx = pts.reduce((a, p) => a + p[0], 0) / n, my = pts.reduce((a, p) => a + p[1], 0) / n;
+    let sxy = 0, sxx = 0, syy = 0; pts.forEach(p => { sxy += (p[0] - mx) * (p[1] - my); sxx += (p[0] - mx) ** 2; syy += (p[1] - my) ** 2; });
+    return sxy / Math.sqrt(sxx * syy);
+  }
+  function simplex(container, sp) {
+    // sp: {prior: [aA, aB, aRest], post: [...], observed: [xA, xB] | null, labels: [A, B], n, z}
+    // By the aggregation property, (θ_A, θ_B, everything else) is exactly Dirichlet(α_A, α_B, α_rest).
+    const N = 700, prior = dirichletDraws(sp.prior, N, 11), post = dirichletDraws(sp.post, N, 29);
+    const pts = prior.concat(post).map(p => [p[0], p[1]]);
+    const obs = sp.observed;
+    let mx = Math.max(...pts.map(p => p[0]), obs ? obs[0] : 0), my = Math.max(...pts.map(p => p[1]), obs ? obs[1] : 0);
+    const m = Math.min(1, Math.max(mx, my) * 1.08);
+    const W = 560, H = 440, L = 56, R = 18, T = 18, B = 46, pw = Math.min(W - L - R, H - T - B), ph = pw;
+    const x = v => L + pw * v / m, y = v => T + ph * (1 - v / m);
+    const s = svg(container, W, H, "Dirichlet simplex: two failure shares and the rest");
+    const g0 = el("g", {}, s);
+    for (let i = 0; i <= 4; i++) {
+      const v = m * i / 4;
+      el("line", { x1: x(v), x2: x(v), y1: T, y2: T + ph, stroke: C.grid }, g0);
+      el("line", { x1: L, x2: L + pw, y1: y(v), y2: y(v), stroke: C.grid }, g0);
+      text(g0, x(v), T + ph + 16, fmt.pct(v, v < 0.1 ? 1 : 0), { anchor: "middle" });
+      text(g0, L - 8, y(v) + 4, fmt.pct(v, v < 0.1 ? 1 : 0), { anchor: "end" });
+    }
+    // feasible region edge: share A + share B ≤ 1 (the rest takes the remainder)
+    if (m > 0.5) el("line", { x1: x(Math.min(1, m)), y1: y(Math.max(0, 1 - m)), x2: x(Math.max(0, 1 - m)), y2: y(Math.min(1, m)), stroke: C.muted, "stroke-dasharray": "4 3" }, g0);
+    text(g0, L + pw / 2, H - 8, `share of cases: ${sp.labels[0]} →`, { anchor: "middle", size: 10.5 });
+    const yl = text(g0, 14, T + ph / 2, `share: ${sp.labels[1]} →`, { anchor: "middle", size: 10.5 });
+    yl.setAttribute("transform", `rotate(-90 14 ${T + ph / 2})`);
+    const dots = (arr, col, op) => arr.forEach(p => el("circle", { cx: x(p[0]).toFixed(1), cy: y(p[1]).toFixed(1), r: 1.8, fill: col, opacity: op }, g0));
+    dots(prior, C.yellow, 0.28); dots(post, C.accent, 0.42);
+    const mean = a => [a[0] / a.reduce((u, v) => u + v, 0), a[1] / a.reduce((u, v) => u + v, 0)];
+    const pm = mean(sp.prior), qm = mean(sp.post);
+    const arrow = (a, b, col) => el("line", { x1: x(a[0]), y1: y(a[1]), x2: x(b[0]), y2: y(b[1]), stroke: col, "stroke-width": 1.6, "stroke-dasharray": "5 3" }, g0);
+    if (obs) { arrow(pm, qm, C.ink2); arrow(qm, obs, C.muted); }
+    const marks = [{ p: pm, col: C.yellow, k: "Portfolio prior mean" }, { p: qm, col: C.accent, k: "Posterior mean (priced)" }]
+      .concat(obs ? [{ p: obs, col: C.ink, k: `Observed (${sp.n} cases)` }] : []);
+    const rp = corr(prior), rq = corr(post);
+    marks.forEach(mk => {
+      const c = el("circle", { cx: x(mk.p[0]), cy: y(mk.p[1]), r: 6.5, fill: mk.col, stroke: C.card, "stroke-width": 2 }, g0);
+      const hit = el("circle", { cx: x(mk.p[0]), cy: y(mk.p[1]), r: 13, fill: "transparent" }, g0);
+      hover(hit, `<div class="tt-title">${fmt.esc(mk.k)}</div>
+        <div class="tt-row"><span>${fmt.esc(sp.labels[0])}</span><b>${fmt.pct(mk.p[0])}</b></div>
+        <div class="tt-row"><span>${fmt.esc(sp.labels[1])}</span><b>${fmt.pct(mk.p[1])}</b></div>
+        <div class="tt-row"><span>everything else (incl. pass)</span><b>${fmt.pct(1 - mk.p[0] - mk.p[1])}</b></div>
+        <div class="tt-src">Posterior = Z × observed + (1 − Z) × prior, Z = ${sp.z.toFixed(2)}</div>`, g0, [c]);
+    });
+    // legend
+    const lg = [[C.yellow, `prior cloud (corr ${rp.toFixed(2)})`], [C.accent, `posterior cloud (corr ${rq.toFixed(2)})`], [C.ink, "observed"]];
+    lg.forEach(([col, t], i) => { el("circle", { cx: L + pw + 22, cy: T + 14 + i * 18, r: 5, fill: col }, g0);
+      text(g0, L + pw + 32, T + 18 + i * 18, t, { fill: C.ink2, size: 11 }); });
+    ["Each dot: one joint draw of the", "outcome shares. Shares sum to 1,", "so failure types trade off: the",
+     "correlation is negative, and the", "larger the shares, the stronger.", "Arrows: prior → posterior → observed",
+     `(Z = ${sp.z.toFixed(2)} of the way).`].forEach((t, i) => text(g0, L + pw + 22, T + 84 + i * 14, t, { size: 10.5 }));
+    const guide = el("g", { opacity: 0 }, g0);
+    const gx = el("line", { y1: T, y2: T + ph, stroke: C.ink2 }, guide), gy = el("line", { x1: L, x2: L + pw, stroke: C.ink2 }, guide);
+    const area = el("rect", { x: L, y: T, width: pw, height: ph, fill: "transparent", class: "hit" }, g0);
+    s.insertBefore(area, s.firstChild.nextSibling);
+    area.addEventListener("pointermove", e => {
+      const box = s.getBoundingClientRect(), px = (e.clientX - box.left) * W / box.width, py = (e.clientY - box.top) * H / box.height;
+      const a = Math.max(0, (px - L) / pw * m), b = Math.max(0, (1 - (py - T) / ph) * m);
+      gx.setAttribute("x1", x(a)); gx.setAttribute("x2", x(a)); gy.setAttribute("y1", y(b)); gy.setAttribute("y2", y(b)); guide.setAttribute("opacity", 0.35);
+      const near = arr => arr.filter(p => Math.abs(p[0] - a) < m * 0.03 && Math.abs(p[1] - b) < m * 0.03).length / arr.length;
+      showTip(e, `<div class="tt-title">${fmt.esc(sp.labels[0])} ${fmt.pct(a)} · ${fmt.esc(sp.labels[1])} ${fmt.pct(b)}</div>
+        <div class="tt-row"><span>everything else</span><b>${a + b <= 1 ? fmt.pct(1 - a - b) : "impossible (sum > 100%)"}</b></div>
+        <div class="tt-row"><span>prior draws nearby</span><b>${fmt.pct(near(prior), 1)}</b></div>
+        <div class="tt-row"><span>posterior draws nearby</span><b>${fmt.pct(near(post), 1)}</b></div>`);
+    });
+    area.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); });
+  }
+
+  window.Charts = { simplex, credCloud, monteCarlo, convergence, credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
 })();

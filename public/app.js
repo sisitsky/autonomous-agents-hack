@@ -270,6 +270,24 @@
     return { n: c.n, z: c.z, k: c.A, mu: val(c.mu), observed: c.n ? val(c.observed) : 0, estimate: val(c.estimate),
              portfolio: c.portfolio.map(g => ({ insured_id: g.insured_id, n: g.n, z: g.z, observed: val(g.observed), estimate: val(g.estimate) })) };
   }
+  function drawSimplex() {
+    const b = shown(), c = b.calculation.red_team_credibility;
+    if (!c) return;
+    const types = Object.keys(c.mu).filter(k => k !== "pass");
+    const sa = $("simplex-a"), sb = $("simplex-b");
+    if (!sa.options.length) {
+      const opts = types.map(k => `<option value="${k}">${k.replace(/_/g, " ")}</option>`).join("");
+      sa.innerHTML = opts; sb.innerHTML = opts;
+      sa.value = types.includes("unauthorized_commitment") ? "unauthorized_commitment" : types[0];
+      sb.value = types.includes("data_leakage") ? "data_leakage" : types[1];
+    }
+    if (sa.value === sb.value) sb.value = types.find(k => k !== sa.value);
+    const A = sa.value, B = sb.value, a0 = c.alpha0, pa0 = c.A;
+    const prior = [pa0 * c.mu[A], pa0 * c.mu[B], pa0 * (1 - c.mu[A] - c.mu[B])];
+    const post = [c.alpha[A], c.alpha[B], a0 - c.alpha[A] - c.alpha[B]];
+    Charts.simplex($("chart-simplex"), { prior, post, z: c.z, n: c.n,
+      observed: c.n ? [c.observed[A], c.observed[B]] : null, labels: [A.replace(/_/g, " "), B.replace(/_/g, " ")] });
+  }
   function renderCredibility(b) {
     const c = b.calculation.red_team_credibility, card = $("cred-card");
     if (!c) { card.style.display = "none"; return; }
@@ -302,6 +320,7 @@
     const pa = m === "all" ? a0 - c.alpha.pass : c.alpha[m];
     Charts.credCloud($("chart-cred-cloud"), { prior: [A * pm, A * (1 - pm)], post: [pa, a0 - pa], observed: v.observed, n: c.n, z: c.z,
       label: m === "all" ? "all failure types" : m.replace(/_/g, " ") });
+    drawSimplex();
     Charts.credCurve($("chart-cred-curve"), v);
     if (v.portfolio.length) Charts.shrinkage($("chart-cred-shrink"), v, b.id);
     $("cred-sub").textContent = "Every test case ends in a pass or exactly one failure type (a Dirichlet). Jewell credibility: one Z for all types, "
@@ -632,6 +651,8 @@
     $("pct-select").onchange = drawLoss;
     $("tornado-n").onchange = drawTornado;
     $("cred-measure").onchange = drawCredibility;
+    $("simplex-a").onchange = drawSimplex;
+    $("simplex-b").onchange = drawSimplex;
     $("mc-layers").onchange = () => drawEngine(false);
     $("mc-lines").onchange = () => drawEngine(true);
     $("mc-play").onclick = runSimulation;

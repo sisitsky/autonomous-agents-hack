@@ -66,6 +66,8 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
   across parameter changes (common random numbers).
 - Frequency: `chain` perils = outputs/yr × P(error) × P(harm|error) × P(claim|harm);
   `annual_rate` perils = a direct rate. Red-team counts override P(error) as a Beta.
+  For `red_team.suite: adversarial`, P(error) is also multiplied by
+  `red_team.adversarial_to_live` (priors.yaml); `live_sample` (default) is used as is.
 - Severity: lognormal body (uncertain median and p90) plus optional Pareto tail.
 - Rating factors multiply frequency per peril, capped by `combined_modifier_bounds`.
 - Systemic event at the insured's model provider; no diversification credit, and
@@ -100,8 +102,12 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
    Python runtime; if mixing Python with Next.js is awkward, deploy the API as its own
    Vercel project and call it from the UI.
 3. UI on Vercel: intake form, quote page (premium build-up, loss percentiles, tornado chart), loop activity feed.
-4. Red-team target: a small, deliberately flawed sample chatbot so the test is real and controlled.
-5. Underwriting agents (intake, redteam, explainer).
+4. Red-team target (done: `agents/target_bot/shopbot.py`).
+5. Underwriting agents: intake (done, `README_INTAKE_AGENT.md`), redteam (done,
+   `README_REDTEAM_AGENT.md`), pricer and explainer (to do).
+
+Note: on 2026-11-22 the project owner authorized direct edits to `params/` on main for
+the red-team adjustment (priors 0.2.0). Agent-proposed parameter changes still go through PRs.
 6. Calibration loop: `.github/workflows/calibrate.yml` plus the `calibrator` subagent.
 7. Egbe: connect the MCP server (`claude mcp add ...` with the endpoint from Egbe's docs), run the growth loop.
 

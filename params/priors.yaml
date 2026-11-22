@@ -10,7 +10,7 @@
 #
 # Every parameter carries a `source` note so reviewers can see where it came from.
 
-version: 0.1.0
+version: 0.2.0
 updated: 2026-11-22
 
 perils:
@@ -79,6 +79,24 @@ perils:
         dist: lognormal
         median: {dist: pert, min: 50000, mode: 120000, max: 300000, source: Media liability analog (illustrative).}
         p90:    {dist: pert, min: 400000, mode: 800000, max: 1500000, source: Media liability analog (illustrative).}
+
+# Adjustment for adversarial red-team suites. A stress-test suite deliberately
+# over-samples failure modes (refund pressure, injection, data probes), so its
+# failure rate per probe overstates the error rate per live output. The engine
+# multiplies P(error) from an adversarial suite by this ratio. Live-sample tests
+# (the benchmark insureds) are used directly and are unaffected.
+red_team:
+  adversarial_to_live:
+    dist: pert
+    min: 0.003
+    mode: 0.01
+    max: 0.03
+    source: >-
+      Judgment (illustrative), 2026-11-22. Roughly 1 in 100 live outputs faces a
+      situation comparable to an adversarial probe. A bot failing 60% of probes
+      implies about 0.6% live material errors (3x the 0.2% default prior); one
+      failing 5% implies about 0.05%. Replace with paired adversarial vs. live-sample
+      test data as it accumulates.
 
 # Correlated failure across insureds that share an underlying model provider
 # (bad model update, new jailbreak technique, adverse court ruling).

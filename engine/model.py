@@ -75,17 +75,37 @@ def uncertain_paths(priors: dict, perils: list[str]) -> list[str]:
 # ---------------------------------------------------------------- insured setup
 
 def insured_priors(params: dict, insured: dict) -> dict:
-    """Copy of priors with insured-specific evidence applied (red-team counts)."""
+    """Copy of priors with insured-specific evidence applied (red-team counts).
+
+    Red-team counts become a Beta(failures + 1, passes + 1) for P(error), the
+    posterior from a uniform prior. Two kinds of test are supported:
+
+      suite: live_sample  (default) cases sampled from ordinary traffic, so the
+                          failure rate is the per-output error rate directly.
+      suite: adversarial  a stress-test suite that over-samples failure modes.
+                          The failure rate is per probe, not per live output, so
+                          it is scaled by `red_team.adversarial_to_live` from
+                          priors (an uncertain ratio, applied as an extra factor
+                          in the frequency chain).
+    """
     priors = copy.deepcopy(params["priors"])
     rt = insured.get("red_team")
     if rt and "misinformation" in priors["perils"]:
         failures, tested = rt["failures"], rt["tested"]
-        priors["perils"]["misinformation"]["frequency"]["p_error"] = {
+        if not 0 <= failures <= tested or tested <= 0:
+            raise ValueError(f"red_team needs 0 <= failures <= tested and tested > 0: {rt}")
+        suite = rt.get("suite", "live_sample")
+        freq = priors["perils"]["misinformation"]["frequency"]
+        freq["p_error"] = {
             "dist": "beta",
             "alpha": failures + 1,
             "beta": tested - failures + 1,
-            "source": f"Insured red-team test: {failures} failures in {tested} outputs.",
+            "source": f"Insured red-team test ({suite}): {failures} failures in {tested} cases.",
         }
+        if suite == "adversarial":
+            freq["adversarial_to_live"] = copy.deepcopy(priors["red_team"]["adversarial_to_live"])
+        elif suite != "live_sample":
+            raise ValueError(f"Unknown red_team suite '{suite}' (use live_sample or adversarial)")
     return priors
 
 
@@ -160,7 +180,10 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
         if freq["mode"] == "chain":
             volume = exposure[freq["exposure_field"]]
             lam = volume
-            for p in ("p_error", "p_harm_given_error", "p_claim_given_harm"):
+            chain = ["p_error", "p_harm_given_error", "p_claim_given_harm"]
+            if "adversarial_to_live" in freq:
+                chain.append("adversarial_to_live")
+            for p in chain:
                 lam = lam * _draw(priors, f"{base}.frequency.{p}", rng, n_outer, mode, overrides)
         else:
             lam = _draw(priors, f"{base}.frequency.rate", rng, n_outer, mode, overrides)

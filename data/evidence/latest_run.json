@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-22T22:24:15+00:00",
+  "run_at": "2026-11-22T22:51:48+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -13,18 +13,20 @@
     "regulations_gov": {
       "name": "Regulations.gov",
       "category": "regulation",
-      "status": "ok",
-      "fetched": 20,
+      "status": "error",
+      "error": "HTTP Error 403: Forbidden",
+      "fetched": 0,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.3
     },
     "congress_gov": {
       "name": "Congress.gov",
       "category": "regulation",
-      "status": "ok",
-      "fetched": 3,
+      "status": "error",
+      "error": "HTTP Error 403: Forbidden",
+      "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -48,7 +50,7 @@
       "status": "ok",
       "fetched": 36,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -56,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 2.5
+      "seconds": 1.2
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -64,7 +66,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.5
     },
     "arxiv": {
       "name": "arXiv",
@@ -93,7 +95,7 @@
   },
   "new_items": [],
   "totals": {
-    "sources_ok": 11,
+    "sources_ok": 9,
     "sources": 11,
     "new": 0,
     "store": 208

@@ -232,5 +232,154 @@
    "needs_click": true
   },
   "status": "pr_opened"
+ },
+ {
+  "run_id": "20261122-225148",
+  "run_at": "2026-11-22T22:51:51+00:00",
+  "items_reviewed": 60,
+  "changes": [
+   {
+    "item_id": "nvd:dd8eea00a9cc3871",
+    "event": "CVE-2026-18883 (prompt injection)",
+    "event_description": "ServiceNow fixed an indirect prompt injection flaw in the Email Response AI Agent of its customer-service product; no malicious exploitation is known.",
+    "source": "nvd",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-18883",
+    "event_date": "2026-11-19",
+    "evidence_type": "security",
+    "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+    "old": {
+     "min": 0.002,
+     "mode": 0.01,
+     "max": 0.04
+    },
+    "new": {
+     "min": 0.002003,
+     "mode": 0.01001,
+     "max": 0.04006
+    },
+    "mode_change_pct": 0.0009999999999998899,
+    "implied_change": 0.03,
+    "strength": "weak",
+    "prior_weight": 20.0,
+    "evidence_weight": 1.0,
+    "reasoning": "This flaw sits in a widely deployed customer-service agent, close to our insureds' exposure. It confirms such vulnerabilities exist, but there was no exploitation and a central fix was applied. That justifies at most a marginal upward nudge."
+   },
+   {
+    "item_id": "cisa_kev:125e818c93087d47",
+    "event": "CVE-2026-40217: BerriAI LiteLLM",
+    "event_description": "A remote code execution flaw in LiteLLM, a widely used LLM proxy and gateway, is confirmed as actively exploited.",
+    "source": "cisa_kev",
+    "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2026-40217",
+    "event_date": "2026-11-18",
+    "evidence_type": "security",
+    "parameter": "systemic.annual_prob",
+    "old": {
+     "min": 0.01,
+     "mode": 0.03,
+     "max": 0.1
+    },
+    "new": {
+     "min": 0.01001,
+     "mode": 0.03004,
+     "max": 0.1001
+    },
+    "mode_change_pct": 0.0013333333333334085,
+    "implied_change": 0.03,
+    "strength": "weak",
+    "prior_weight": 20.0,
+    "evidence_weight": 1.0,
+    "reasoning": "Active exploitation of shared AI infrastructure suggests a common-mode failure path across many deployers. It is an infrastructure vulnerability rather than an AI-output failure, and no losses are reported, so the nudge is small."
+   }
+  ],
+  "relevant": 2,
+  "scaled": null,
+  "guardrails_passed": true,
+  "validation": {
+   "passed": true,
+   "problems": [],
+   "benchmark": [
+    {
+     "insured": "shopbot",
+     "current": 14178.180028925688,
+     "proposed": 14180.145787641482,
+     "change": 0.0001386467594419738
+    },
+    {
+     "insured": "hirescreen",
+     "current": 22016.691875957476,
+     "proposed": 22017.478060210848,
+     "change": 3.570855502732506e-05
+    },
+    {
+     "insured": "copydesk",
+     "current": 7712.147730091963,
+     "proposed": 7712.1755769644415,
+     "change": 3.610780479501585e-06
+    },
+    {
+     "insured": "book",
+     "current": 43907.01963497513,
+     "proposed": 43909.799424816774,
+     "change": 6.331082967503399e-05
+    }
+   ],
+   "limits": {
+    "max_benchmark_premium_change": 0.15,
+    "max_book_premium_change": 0.08
+   },
+   "accumulation": {
+    "before": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28857.015576562848,
+       "systemic_expected_loss": 1029.659756431244,
+       "systemic_capital": 132907.01771593184,
+       "premium": 85698.5888843631,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.29188037665,
+       "premium": 23519.69454871004,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    },
+    "after": {
+     "by_provider": [
+      {
+       "provider": "provider_a",
+       "policies": 4,
+       "aggregate_limits": 8000000.0,
+       "expected_loss": 28860.15094845471,
+       "systemic_expected_loss": 1029.7039749680314,
+       "systemic_capital": 132906.8279043051,
+       "premium": 85702.58743507751,
+       "limit_share": 0.6153846153846154
+      },
+      {
+       "provider": "provider_b",
+       "policies": 1,
+       "aggregate_limits": 5000000.0,
+       "expected_loss": 7336.545152163068,
+       "systemic_expected_loss": 260.64838722454624,
+       "systemic_capital": 33185.25611010001,
+       "premium": 23519.69148268633,
+       "limit_share": 0.38461538461538464
+      }
+     ],
+     "policies": 5
+    }
+   }
+  },
+  "status": "waiting_for_review"
  }
 ]

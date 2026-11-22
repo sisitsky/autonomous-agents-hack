@@ -247,3 +247,10 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 
 .foot { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 40px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
 .skeleton { color: var(--muted); font-size: 13px; padding: 20px 0; }
+
+.grid-2.tight { gap: 20px; margin-top: 8px; }
+.cred-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+@media (max-width: 760px) { .cred-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.stat .k { color: var(--muted); font-size: 12px; }
+.stat .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }

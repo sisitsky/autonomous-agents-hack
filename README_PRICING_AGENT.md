@@ -28,6 +28,13 @@ the results differ. Same insured + same parameter files + same seed ⇒ identica
 numbers. Recording the calculation trace consumes no random numbers, so benchmark
 premiums are unchanged.
 
+**Bühlmann credibility.** Red-team failure rates are weighted against the portfolio,
+Z = n / (n + k), using Bühlmann–Straub estimates from every other insured tested with the
+same suite (`engine/credibility.py`, store `data/portfolio/redteam_experience.jsonl`).
+Each underwriting run adds its result, so the collective keeps updating. For Northwind's
+planted-flaw bot: observed 61.3% on 31 error cases, Z = 0.79, portfolio mean 23.4%, priced
+rate 53.3%.
+
 The full method, every equation, and where each number lives are in
 [docs/PRICING_METHOD.md](docs/PRICING_METHOD.md). A complete example record is in
 [docs/examples/northwind_calculation.md](docs/examples/northwind_calculation.md).

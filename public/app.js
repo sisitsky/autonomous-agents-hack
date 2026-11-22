@@ -75,6 +75,8 @@
     $("explain-tornado").innerHTML = paras(n.tornado);
     $("evidence").innerHTML = (n.evidence_to_narrow || []).map(e => `<li><b>${esc(e.parameter)}</b>: ${esc(e.evidence)}</li>`).join("");
 
+    renderCredibility(b);
+
     Charts.controls($("chart-controls"), calc);
     const recs = Object.fromEntries((n.controls || []).map(c => [c.control_id, c.recommendation]));
     $("explain-controls").innerHTML = (facts.controls || []).map(c =>
@@ -138,6 +140,49 @@
   }
   function drawTornado() {
     Charts.tornado($("chart-tornado"), state.bundles[state.current].calculation, +$("tornado-n").value);
+  }
+
+  // ---------------------------------------------------------------- credibility
+  function credsOf(calc) {
+    const out = [];
+    Object.entries(calc.perils).forEach(([peril, p]) => {
+      if (p.credibility) out.push({ peril, c: p.credibility,
+        label: p.credibility.measure === "p_error" ? "Error rate (misinformation)" : "Data-leak rate (privacy)" });
+    });
+    return out;
+  }
+  function renderCredibility(b) {
+    const list = credsOf(b.calculation), card = $("cred-card");
+    if (!list.length) { card.style.display = "none"; return; }
+    card.style.display = "";
+    const sel = $("cred-measure");
+    const prev = sel.value;
+    sel.innerHTML = list.map((x, i) => `<option value="${i}">${esc(x.label)}</option>`).join("");
+    if (prev && +prev < list.length) sel.value = prev;
+    drawCredibility();
+    const n = (b.report || {}).narrative || {};
+    $("explain-cred").innerHTML = paras(n.credibility);
+    const eq = id => b.calculation.equations.find(e => e.id === id);
+    if (eq("buhlmann_credibility")) {
+      tex($("eq-cred"), eq("buhlmann_credibility").latex);
+      tex($("eq-bs"), eq("buhlmann_straub").latex);
+      tex($("eq-cprior"), eq("credibility_prior").latex);
+    }
+  }
+  function drawCredibility() {
+    const b = state.bundles[state.current], list = credsOf(b.calculation);
+    if (!list.length) return;
+    const { c } = list[+$("cred-measure").value || 0];
+    if (c.status === "insufficient_experience") {
+      $("cred-stats").innerHTML = `<div class="muted small">${esc(c.note)}</div>`;
+      $("chart-cred-curve").innerHTML = ""; $("chart-cred-shrink").innerHTML = ""; return;
+    }
+    const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+    $("cred-stats").innerHTML = stat("Observed rate", fmt.pct(c.observed)) + stat("Credibility Z", c.z.toFixed(2))
+      + stat("Portfolio mean μ", fmt.pct(c.mu)) + stat("Priced rate", fmt.pct(c.estimate))
+      + stat("k = EPV / VHM", `${c.k.toFixed(1)} <span class="muted small">(${c.r} insureds)</span>`);
+    Charts.credCurve($("chart-cred-curve"), c);
+    Charts.shrinkage($("chart-cred-shrink"), c, b.id);
   }
 
   // ---------------------------------------------------------------- what-if
@@ -351,6 +396,7 @@
     $("run-select").onchange = e => select(e.target.value);
     $("pct-select").onchange = drawLoss;
     $("tornado-n").onchange = drawTornado;
+    $("cred-measure").onchange = drawCredibility;
     $("case-cat").onchange = drawCases;
     $("case-verdict").onchange = drawCases;
     $("chat-form").onsubmit = chat;

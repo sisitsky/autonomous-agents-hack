@@ -92,6 +92,22 @@
       <details class="explain"><summary>Why these, and what evidence would narrow them</summary><div id="explain-tornado"></div><ul id="evidence"></ul></details>
     </div>
 
+    <div class="card wide" id="cred-card">
+      <div class="card-head">
+        <div><div class="card-title">Bühlmann credibility</div>
+          <div class="muted small" id="cred-sub">How much to trust this system's own red-team result versus the portfolio.</div></div>
+        <div class="select-wrap sm"><select id="cred-measure" aria-label="Measure"></select></div>
+      </div>
+      <div class="cred-stats" id="cred-stats"></div>
+      <div class="grid-2 tight">
+        <div><div class="muted small">Credibility Z rises with the number of cases tested</div><div class="chart" id="chart-cred-curve"></div></div>
+        <div><div class="muted small">Each system's rate is pulled toward the portfolio mean</div><div class="chart" id="chart-cred-shrink"></div></div>
+      </div>
+      <details class="explain"><summary>How credibility works here</summary><div id="explain-cred"></div>
+        <div class="eq" id="eq-cred"></div><div class="eq" id="eq-bs"></div><div class="eq" id="eq-cprior"></div>
+        <p class="muted small">The collective is re-estimated on every underwriting run: each new result joins the portfolio record, so every later quote uses more experience. The seed portfolio is fictional. Runs from this web page are not saved to the portfolio (read-only deployment); runs from the CLI are.</p></details>
+    </div>
+
     <div class="card wide">
       <div class="card-title">How to lower the price</div>
       <div class="muted small">Re-priced with the same simulation, so only the change moves the price.</div>

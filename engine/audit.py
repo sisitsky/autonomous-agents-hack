@@ -12,11 +12,13 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import credibility as CRED
 from . import distributions as D
 from .model import PARAMS_DIR, get_path, insured_priors, peril_modifier
 
 ROOT = Path(__file__).resolve().parent.parent
-ENGINE_FILES = ("engine/model.py", "engine/distributions.py", "engine/tornado.py", "engine/controls.py")
+ENGINE_FILES = ("engine/model.py", "engine/distributions.py", "engine/tornado.py", "engine/controls.py",
+                "engine/credibility.py")
 
 DISCLAIMER = ("Illustrative pricing on illustrative assumptions. This is a pricing and "
               "risk-assessment engine, not an offer of insurance.")
@@ -37,6 +39,21 @@ EQUATIONS = [
      "latex": r"P(\text{error}) \sim \mathrm{Beta}(F+1,\ T-F+1)",
      "meaning": "F failures in T tested cases, updating a uniform prior. Fewer tests give a wider distribution "
                 "and a larger uncertainty load. The same form is used for the leak rate on data-leak probes."},
+    {"id": "buhlmann_credibility", "name": "Bühlmann credibility",
+     "formula": "Z = n / (n + k),  k = EPV / VHM,  estimate = Z × X + (1 − Z) × μ",
+     "latex": r"Z = \frac{n}{n + k},\quad k = \frac{EPV}{VHM},\quad \hat{\theta} = Z\,\bar{X} + (1 - Z)\,\mu",
+     "meaning": "How much to trust the insured's own red-team result (n cases, failure rate X) versus the portfolio "
+                "mean μ. k is the ratio of within-system noise (EPV) to real differences between systems (VHM)."},
+    {"id": "buhlmann_straub", "name": "Bühlmann–Straub estimators",
+     "formula": "μ = Σ n_i X_i / m;  EPV = Σ n_i X_i (1 − X_i) / Σ (n_i − 1);  VHM = [Σ n_i (X_i − μ)² − (r − 1) EPV] / (m − Σ n_i² / m)",
+     "latex": r"\mu = \tfrac{\sum n_i X_i}{m},\ EPV = \tfrac{\sum n_i X_i (1 - X_i)}{\sum (n_i - 1)},\ VHM = \tfrac{\sum n_i (X_i - \mu)^2 - (r - 1)\,EPV}{m - \sum n_i^2 / m}",
+     "meaning": "Estimated from every other insured tested with the same suite (r insureds, m cases in total). "
+                "Re-estimated on every run, so the collective updates as the portfolio grows."},
+    {"id": "credibility_prior", "name": "Credibility prior for the failure rate",
+     "formula": "P(fail) ~ Beta(F + μk, n − F + (1 − μ)k)",
+     "latex": r"P(\text{fail}) \sim \mathrm{Beta}\!\left(F + \mu k,\ n - F + (1 - \mu) k\right)",
+     "meaning": "The Beta prior Beta(μk, (1 − μ)k) makes the posterior mean equal the Bühlmann estimate, so credibility "
+                "and parameter uncertainty come from one distribution. Without enough portfolio experience: Beta(1, 1)."},
     {"id": "adversarial_ratio", "name": "Adversarial suite adjustment",
      "formula": "P(error)_live = P(fail | probe) × r_adv",
      "latex": r"P(\text{error})_{live} = P(\text{fail}\mid\text{probe}) \cdot r_{adv}",
@@ -129,6 +146,8 @@ def provenance(params: dict, params_dir: Path | str = PARAMS_DIR) -> dict:
         "params_sha256": {f"params/{n}.yaml": _sha256(params_dir / f"{n}.yaml")
                           for n in ("priors", "rating_factors", "pricing", "guardrails")},
         "engine_sha256": {f: _sha256(ROOT / f) for f in ENGINE_FILES if (ROOT / f).exists()},
+        "experience_sha256": _sha256(CRED.EXPERIENCE_PATH) if CRED.EXPERIENCE_PATH.exists() else None,
+        "experience_records": len(params.get("experience") or []),
     }
 
 
@@ -166,6 +185,7 @@ def calculation(insured: dict, params: dict, quote: dict, tornado: dict | None =
             "equation": "frequency_chain" if freq["mode"] == "chain" else "frequency_rate",
             "base_claims_per_year": d["base_claims_per_year"],
             "red_team_leak_relativity": d.get("red_team_leak_relativity"),
+            "credibility": d.get("credibility"),
             "rating_factors": [{"factor": f, "level": insured["factors"][f], "relativity": rel,
                                 "source": rf["factors"][f]["source"]} for f, rel in detail.items()],
             "combined_relativity_raw": raw,

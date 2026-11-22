@@ -13,11 +13,13 @@ compute prices themselves.
 from __future__ import annotations
 
 import copy
+import zlib
 from pathlib import Path
 
 import numpy as np
 import yaml
 
+from . import credibility as CRED
 from . import distributions as D
 
 PARAMS_DIR = Path(__file__).resolve().parent.parent / "params"
@@ -31,6 +33,8 @@ def load_params(params_dir: Path | str = PARAMS_DIR) -> dict:
     for name in ("priors", "rating_factors", "pricing", "guardrails"):
         with open(params_dir / f"{name}.yaml") as f:
             out[name] = yaml.safe_load(f)
+    # Portfolio red-team experience for Bühlmann credibility (data, not assumptions).
+    out["experience"] = CRED.load_experience()
     return out
 
 
@@ -74,6 +78,26 @@ def uncertain_paths(priors: dict, perils: list[str]) -> list[str]:
 
 # ---------------------------------------------------------------- insured setup
 
+def _red_team_beta(params: dict, insured: dict, measure: str, tested: int, failures: int,
+                   suite: str, what: str) -> dict:
+    """Beta for a red-team failure rate.
+
+    Adversarial suites with enough portfolio experience use the Bühlmann–Straub
+    prior Beta(μk, (1 − μ)k), so the posterior mean is the credibility estimate
+    Z·X + (1 − Z)·μ with Z = n / (n + k). Otherwise the uniform prior Beta(1, 1).
+    """
+    rt = insured.get("red_team") or {}
+    if suite == "adversarial" and params.get("experience") is not None:
+        cred = CRED.credibility(insured.get("id"), measure, rt.get("suite_id", "customer_service"),
+                                tested, failures, params["experience"])
+        a0, b0 = cred["prior_alpha"], cred["prior_beta"]
+        how = (f"Bühlmann credibility Z = {cred['z']:.2f} (k = {cred['k']:.1f}, collective μ = {cred['mu']:.3f}, "
+               f"{cred['r']} insureds)" if cred["status"] != "insufficient_experience" else cred["note"])
+        return {"dist": "beta", "alpha": failures + a0, "beta": tested - failures + b0,
+                "source": f"{what}; {how}.", "credibility": cred}
+    return {"dist": "beta", "alpha": failures + 1, "beta": tested - failures + 1, "source": f"{what}."}
+
+
 def insured_priors(params: dict, insured: dict) -> dict:
     """Copy of priors with insured-specific evidence applied (red-team counts).
 
@@ -96,12 +120,8 @@ def insured_priors(params: dict, insured: dict) -> dict:
             raise ValueError(f"red_team needs 0 <= failures <= tested and tested > 0: {rt}")
         suite = rt.get("suite", "live_sample")
         freq = priors["perils"]["misinformation"]["frequency"]
-        freq["p_error"] = {
-            "dist": "beta",
-            "alpha": failures + 1,
-            "beta": tested - failures + 1,
-            "source": f"Insured red-team test ({suite}): {failures} failures in {tested} cases.",
-        }
+        freq["p_error"] = _red_team_beta(params, insured, "p_error", tested, failures, suite,
+                                         f"Insured red-team test ({suite}): {failures} failures in {tested} cases")
         if suite == "adversarial":
             freq["adversarial_to_live"] = copy.deepcopy(priors["red_team"]["adversarial_to_live"])
         elif suite != "live_sample":
@@ -118,12 +138,8 @@ def insured_priors(params: dict, insured: dict) -> dict:
             raise ValueError(f"red_team.data_leak needs 0 <= failures <= tested and tested > 0: {leak}")
         ref = priors["red_team"]["privacy"]
         freq = priors["perils"]["privacy_regulatory"]["frequency"]
-        freq["leak_rate"] = {
-            "dist": "beta",
-            "alpha": leaks + 1,
-            "beta": probes - leaks + 1,
-            "source": f"Insured red-team data-leak probes: {leaks} leaks in {probes} probes.",
-        }
+        freq["leak_rate"] = _red_team_beta(params, insured, "data_leak", probes, leaks, rt.get("suite", "live_sample"),
+                                           f"Insured red-team data-leak probes: {leaks} leaks in {probes} probes")
         freq["reference_leak_rate"] = copy.deepcopy(ref["reference_leak_rate"])
         freq["leak_relativity_bounds"] = dict(ref["relativity_bounds"])
     return priors
@@ -193,7 +209,11 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     seed = sim["seed"] if seed is None else seed
     if mode == "point":
         n_inner, n_outer = n_outer * n_inner, 1
-    rng = np.random.default_rng(seed)
+    # Separate, named random streams (common random numbers): each parameter path
+    # and each peril's simulation has its own stream, so changing one peril or
+    # parameter never shifts the random numbers used by any other.
+    def stream(*key: str) -> np.random.Generator:
+        return np.random.default_rng([seed, *(zlib.crc32(k.encode()) for k in key)])
     n_years = n_outer * n_inner
 
     pol = insured["policy"]
@@ -204,7 +224,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     used = {}  # trace: mean of every parameter as actually drawn (no extra randomness)
 
     def draw(path):
-        v = _draw(priors, path, rng, n_outer, mode, overrides)
+        v = _draw(priors, path, stream("param", path), n_outer, mode, overrides)
         used[path] = float(v.mean())
         return v
 
@@ -244,6 +264,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             t_prob = draw(f"{base}.severity.tail.prob")
             t_alpha = draw(f"{base}.severity.tail.alpha")
 
+        rng = stream("simulate", peril)
         counts = rng.poisson(np.repeat(lam, n_inner))          # claims per simulated year
         year_idx = np.repeat(np.arange(n_years), counts)        # which year each claim is in
         outer_idx = year_idx // n_inner                         # which parameter draw
@@ -264,6 +285,9 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
             "base_claims_per_year": base_claims,        # before red-team leak and rating factors
             "parameters": {k: v for k, v in used.items() if k.startswith(base + ".")},
         }
+        for key in ("p_error", "leak_rate"):
+            if isinstance(freq.get(key), dict) and freq[key].get("credibility"):
+                by_peril[peril]["credibility"] = freq[key]["credibility"]
         if leak_rel is not None:
             by_peril[peril]["red_team_leak_relativity"] = float(leak_rel.mean())
 
@@ -272,6 +296,7 @@ def price(insured: dict, params: dict | None = None, mode: str = "full",
     share = draw("systemic.share_affected")
     loss_share = draw("systemic.loss_share_of_limit")
     o = np.repeat(np.arange(n_outer), n_inner)
+    rng = stream("simulate", "systemic")
     hit = (rng.random(n_years) < ev_p[o]) & (rng.random(n_years) < share[o])
     systemic = np.where(hit, loss_share[o] * agg, 0.0)
 

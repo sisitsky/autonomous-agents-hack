@@ -70,6 +70,11 @@ Add `--json` to `quote` and `tornado` for machine-readable output (the API and U
   `red_team.adversarial_to_live` (priors.yaml); `live_sample` (default) is used as is.
   `red_team.data_leak` counts multiply the privacy rate by leak rate / typical leak
   rate (`red_team.privacy` in priors.yaml), capped at 0.5x to 3x.
+- Bühlmann–Straub credibility (`engine/credibility.py`): for adversarial suites the Beta prior
+  is Beta(μk, (1−μ)k) estimated leave-one-out from `data/portfolio/redteam_experience.jsonl`,
+  so the posterior mean is Z·X + (1−Z)·μ with Z = n/(n+k). Every underwriting run records its
+  result there (continuously updated collective). Seed portfolio is fictional.
+- Each parameter path and each peril's simulation has its own named random stream (CRN).
 - Severity: lognormal body (uncertain median and p90) plus optional Pareto tail.
 - Rating factors multiply frequency per peril, capped by `combined_modifier_bounds`.
 - Systemic event at the insured's model provider; no diversification credit, and

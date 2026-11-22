@@ -292,5 +292,73 @@
     });
   }
 
-  window.Charts = { waterfall, loss, tornado, controls, redteam, fmt, label };
+  // ---------------------------------------------------------------- credibility
+  function credCurve(container, c) {
+    const W = 560, H = 260, L = 44, R = 16, T = 18, B = 40, pw = W - L - R, ph = H - T - B;
+    const nMax = Math.max(120, Math.ceil(c.n * 3 / 20) * 20);
+    const x = n => L + pw * n / nMax, y = z => T + ph * (1 - z);
+    const s = svg(container, W, H, "Credibility Z versus number of tests");
+    const g0 = el("g", {}, s);
+    [0, 0.25, 0.5, 0.75, 1].forEach(z => {
+      el("line", { x1: L, x2: W - R, y1: y(z), y2: y(z), stroke: C.grid }, g0);
+      text(g0, L - 8, y(z) + 4, z.toFixed(2), { anchor: "end" });
+    });
+    for (let i = 0; i <= 4; i++) text(g0, x(nMax * i / 4), T + ph + 16, String(Math.round(nMax * i / 4)), { anchor: "middle" });
+    text(g0, L + pw / 2, H - 4, "cases tested (n)", { anchor: "middle", size: 10.5 });
+    let d = "";
+    for (let i = 0; i <= 200; i++) { const n = nMax * i / 200; d += (i ? "L" : "M") + x(n).toFixed(1) + "," + y(n / (n + c.k)).toFixed(1); }
+    el("path", { d, fill: "none", stroke: C.accent, "stroke-width": 2 }, g0);
+    // half-credibility point: n = k
+    el("line", { x1: x(c.k), x2: x(c.k), y1: y(0.5), y2: T + ph, stroke: C.muted, "stroke-dasharray": "2 3" }, g0);
+    text(g0, x(c.k) + 4, T + ph - 6, `n = k = ${c.k.toFixed(1)}: Z = 0.5`, { size: 10 });
+    el("circle", { cx: x(c.n), cy: y(c.z), r: 6, fill: C.ink, stroke: C.card, "stroke-width": 2 }, g0);
+    text(g0, x(c.n) + 10, y(c.z) - 8, `this system: n = ${c.n}, Z = ${c.z.toFixed(2)}`, { fill: C.ink, size: 11.5, weight: 600 });
+    const guide = el("line", { y1: T, y2: T + ph, stroke: C.ink2, "stroke-width": 1, opacity: 0 }, g0);
+    const dot = el("circle", { r: 4, fill: C.accent, opacity: 0 }, g0);
+    const hit = el("rect", { x: L, y: T, width: pw, height: ph, fill: "transparent", class: "hit" }, g0);
+    hit.addEventListener("pointermove", e => {
+      const box = s.getBoundingClientRect(), px = (e.clientX - box.left) * W / box.width;
+      const n = Math.max(0, Math.min(nMax, (px - L) / pw * nMax)), z = n / (n + c.k);
+      guide.setAttribute("x1", x(n)); guide.setAttribute("x2", x(n)); guide.setAttribute("opacity", 0.5);
+      dot.setAttribute("cx", x(n)); dot.setAttribute("cy", y(z)); dot.setAttribute("opacity", 1);
+      showTip(e, `<div class="tt-title">${Math.round(n)} cases tested</div><div class="tt-big">Z = ${z.toFixed(2)}</div>
+        <div class="muted small">${(z * 100).toFixed(0)}% weight on the system's own result, ${((1 - z) * 100).toFixed(0)}% on the portfolio mean</div>
+        <div class="tt-eq">Z = n / (n + k), k = ${c.k.toFixed(2)}</div>`);
+    });
+    hit.addEventListener("pointerleave", () => { hideTip(); guide.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
+  }
+
+  function shrinkage(container, c, selfLabel) {
+    const rows = c.portfolio.map(g => ({ id: g.insured_id, n: g.n, obs: g.observed, est: g.estimate, z: g.z, self: false }))
+      .concat([{ id: selfLabel || "this system", n: c.n, obs: c.observed, est: c.estimate, z: c.z, self: true }]);
+    const W = 560, H = 300, L = 110, R = 110, T = 30, B = 24, ph = H - T - B;
+    const top = Math.min(1, Math.max(...rows.map(r => Math.max(r.obs, r.est))) * 1.1 || 1);
+    const y = v => T + ph * (1 - v / top), xl = L, xr = W - R;
+    const s = svg(container, W, H, "Credibility shrinkage toward the portfolio mean");
+    const g0 = el("g", {}, s);
+    text(g0, xl, 16, "observed rate", { anchor: "middle", fill: C.ink2 });
+    text(g0, xr, 16, "credibility-weighted", { anchor: "middle", fill: C.ink2 });
+    [0, top / 2, top].forEach(v => { text(g0, xl - 12, y(v) + 4, fmt.pct(v, 0), { anchor: "end" }); text(g0, xr + 12, y(v) + 4, fmt.pct(v, 0)); });
+    el("line", { x1: xl, x2: xl, y1: T, y2: T + ph, stroke: C.axis }, g0);
+    el("line", { x1: xr, x2: xr, y1: T, y2: T + ph, stroke: C.axis }, g0);
+    el("line", { x1: xl, x2: xr, y1: y(c.mu), y2: y(c.mu), stroke: C.yellow, "stroke-dasharray": "5 3", "stroke-width": 1.5 }, g0);
+    text(g0, (xl + xr) / 2, y(c.mu) - 6, `portfolio mean μ = ${fmt.pct(c.mu)}`, { anchor: "middle", fill: C.ink, size: 11 });
+    rows.sort((a, b) => a.self - b.self).forEach(r => {
+      const col = r.self ? C.accent : C.blue, w = r.self ? 3 : 1.5;
+      const line = el("line", { x1: xl, x2: xr, y1: y(r.obs), y2: y(r.est), stroke: col, "stroke-width": w, class: "mark", opacity: r.self ? 1 : 0.7 }, g0);
+      const a = el("circle", { cx: xl, cy: y(r.obs), r: r.self ? 6 : 4, fill: col, stroke: C.card, "stroke-width": 2, class: "mark" }, g0);
+      const b = el("circle", { cx: xr, cy: y(r.est), r: r.self ? 6 : 4, fill: col, stroke: C.card, "stroke-width": 2, class: "mark" }, g0);
+      if (r.self) text(g0, xr + 12, y(r.est) + 18, "this system", { fill: C.ink, size: 11, weight: 600 });
+      const hitl = el("line", { x1: xl, x2: xr, y1: y(r.obs), y2: y(r.est), stroke: "transparent", "stroke-width": 12 }, g0);
+      hover(hitl, `<div class="tt-title">${fmt.esc(r.id.replace(/_/g, " "))}</div>
+        <div class="tt-row"><span>Cases tested</span><b>${r.n}</b></div>
+        <div class="tt-row"><span>Observed rate</span><b>${fmt.pct(r.obs)}</b></div>
+        <div class="tt-row"><span>Credibility Z</span><b>${r.z.toFixed(2)}</b></div>
+        <div class="tt-row"><span>Credibility-weighted</span><b>${fmt.pct(r.est)}</b></div>
+        <div class="tt-eq">${r.z.toFixed(2)} × ${fmt.pct(r.obs)} + ${(1 - r.z).toFixed(2)} × ${fmt.pct(c.mu)}</div>
+        ${r.self ? "" : `<div class="tt-src">FICTIONAL seed portfolio or earlier run</div>`}`, g0, [line, a, b]);
+    });
+  }
+
+  window.Charts = { credCurve, shrinkage, waterfall, loss, tornado, controls, redteam, fmt, label };
 })();

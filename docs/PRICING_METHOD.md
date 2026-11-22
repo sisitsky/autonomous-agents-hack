@@ -27,6 +27,7 @@ insured + same parameter files + same seed ⇒ identical numbers.
 | `params/rating_factors.yaml` | Rating factors, their levels and relativities, the modifier cap |
 | `params/pricing.yaml` | Uncertainty percentile, capital (TVaR level, pool size, cost of capital, provider shares), expenses |
 | `params/guardrails.yaml` | Bounds and change limits enforced on every parameter change |
+| `data/portfolio/redteam_experience.jsonl` | Portfolio red-team results for Bühlmann credibility (data, updated by every run) |
 
 Parameter distributions: `beta(α, β)` for probabilities from test counts,
 `pert(min, mode, max)` for expert three-point estimates, `lognormal(median, p90)`, and
@@ -55,6 +56,40 @@ available, otherwise from the prior.
     P(error) ~ Beta(F + 1, T − F + 1)
 
 Few tests give a wide distribution, and that width becomes uncertainty load.
+
+**`buhlmann_credibility`**: how much to trust the insured's own red-team result
+versus the rest of the portfolio:
+
+    Z = n / (n + k),   k = EPV / VHM,   priced rate = Z × X + (1 − Z) × μ
+
+Here n is the number of cases tested and X the observed failure rate. μ is the
+portfolio mean. EPV is the expected process variance (test-to-test noise within one
+system) and VHM is the variance of hypothetical means (real differences between
+systems). More tests give more credibility.
+
+**`buhlmann_straub`**: μ, EPV and VHM are estimated non-parametrically from every
+*other* insured tested with the same suite. The insured's own record is left out,
+so its result is never counted twice.
+
+    μ   = Σ nᵢ Xᵢ / m
+    EPV = Σ nᵢ Xᵢ (1 − Xᵢ) / Σ (nᵢ − 1)
+    VHM = [Σ nᵢ (Xᵢ − μ)² − (r − 1) EPV] / (m − Σ nᵢ² / m)
+
+This is separate for error cases (P(error)) and data-leak probes (the leak rate).
+**It updates continuously.** Every underwriting run adds its result to
+`data/portfolio/redteam_experience.jsonl`, replacing any earlier record for the same
+insured, and the next quote re-estimates μ, EPV, VHM and k from the larger
+portfolio. The store ships with a FICTIONAL seed portfolio of 12 earlier
+customer-service bots. The SHA-256 of the store is recorded with every quote. With
+fewer than 5 other insureds, the uniform prior Beta(1, 1) is used.
+
+**`credibility_prior`**: credibility enters the Beta as its prior:
+
+    P(fail) ~ Beta(F + μk, n − F + (1 − μ)k)
+
+The posterior mean of this Beta is exactly the Bühlmann estimate, so credibility
+and parameter uncertainty come from one distribution. Live-sample suites (the
+benchmark book) keep Beta(F + 1, n − F + 1).
 
 **`adversarial_ratio`**: adversarial suites over-sample failure modes, so
 
@@ -99,9 +134,11 @@ probability p_s, hits this insured with probability s, and costs ℓ × A.
 
 The Monte Carlo has two layers: n_outer parameter draws (what we don't know) ×
 n_inner simulated years per draw (luck). The default is 2,000 × 200 = 400,000
-years, seed 42. Inverse-transform sampling keeps random streams aligned across
-parameter changes (common random numbers), so price differences reflect the
-change, not noise.
+years, seed 42. Every parameter path and every peril's simulation draws from its
+own named random stream (seeded from the seed plus a hash of the name), and
+parameters use inverse-transform sampling. So changing one parameter or peril
+never shifts the random numbers used by any other (common random numbers), and
+price differences in the tornado and controls reflect the change, not noise.
 
 ### 4. Premium
 

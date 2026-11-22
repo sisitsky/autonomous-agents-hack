@@ -118,7 +118,7 @@ def test_controls_lower_price_and_are_sorted(tested_shopbot, params):
     c = control_options(tested_shopbot, params, **FAST)
     savings = [o["saving"] for o in c["options"]]
     assert savings == sorted(savings, reverse=True)
-    assert all(s > 0 for s in savings)
+    assert all(s > 0 for s in savings), [(o["factor"], o["to_level"], o["saving"]) for o in c["options"]]
     kinds = {(o["factor"], o["to_level"]) for o in c["options"]}
     assert ("governance", "strong") in kinds
     assert any(o["kind"] == "red_team_remediation" for o in c["options"])
@@ -127,9 +127,10 @@ def test_controls_lower_price_and_are_sorted(tested_shopbot, params):
 
 
 def test_trace_does_not_change_prices(params):
-    # Benchmark book prices recorded before the trace was added.
+    # Benchmark book prices pinned when per-parameter random streams were introduced;
+    # tracing and credibility (adversarial suites only) must not move them.
     from engine.cli import benchmark
     b = benchmark()["insureds"]
-    assert round(b["shopbot"]["gross_premium"]) == 190317
-    assert round(b["hirescreen"]["gross_premium"]) == 121271
-    assert round(b["copydesk"]["gross_premium"]) == 40517
+    assert round(b["shopbot"]["gross_premium"]) == 201854
+    assert round(b["hirescreen"]["gross_premium"]) == 123436
+    assert round(b["copydesk"]["gross_premium"]) == 40295

@@ -1,0 +1,15 @@
+# Maps vendor names stated in submissions to the anonymized provider buckets in
+# params/pricing.yaml (capital.provider_concentration), which drive systemic
+# capital. Matching is a case-insensitive substring match on the stated name.
+#
+# Left empty on purpose: which real vendor sits in which bucket is a portfolio
+# decision for a human. Unmapped vendors get the portfolio-average concentration.
+# Self-hosted open models map to `self_hosted_open_model` automatically.
+#
+# Example:
+#   aliases:
+#     "Acme AI": provider_a
+
+aliases:
+  # Fictional vendor used by the demo submission (agents/submissions/northwind).
+  "Acme AI": provider_a

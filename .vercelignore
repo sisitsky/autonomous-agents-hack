@@ -1,0 +1,9 @@
+.env
+.env*
+.venv
+agents/runs
+**/__pycache__
+.pytest_cache
+tests
+docs
+node_modules

@@ -355,6 +355,44 @@ def extract_profile(files: list[Path], description: str | None = None,
                           model=MODEL_FAST, max_tokens=16000, effort="medium")
 
 
+MAX_DOC_BYTES = 3_000_000
+
+
+def blocks_from_uploads(docs: list[dict], description: str | None = None) -> list[dict]:
+    """Same message shape as content_blocks, from in-memory uploads (web app).
+    Each doc: {"name": str, "text": str} or {"name": str, "pdf_base64": str}."""
+    if not docs and not description:
+        raise ValueError("Provide a description or at least one document")
+    total = sum(len(d.get("text") or d.get("pdf_base64") or "") for d in docs) + len(description or "")
+    if total > MAX_DOC_BYTES:
+        raise ValueError("Submission too large (limit about 3 MB)")
+    blocks = []
+    if description:
+        blocks.append({"type": "text", "text": f"<company_description>\n{description}\n</company_description>"})
+    for d in docs:
+        name = re.sub(r"[^\w .-]", "_", str(d.get("name") or "document"))[:120]
+        if d.get("pdf_base64"):
+            blocks.append({"type": "document", "title": name, "source": {
+                "type": "base64", "media_type": "application/pdf", "data": d["pdf_base64"]}})
+        else:
+            blocks.append({"type": "text", "text": f"<document name=\"{name}\">\n{d.get('text', '')}\n</document>"})
+    blocks.append({"type": "text", "text": "Fill in the risk profile for the AI system described above."})
+    return blocks
+
+
+def analyze(docs: list[dict], description: str | None = None, insured_id: str | None = None) -> dict:
+    """Pure core (no files) for the web app: uploads -> profile, insured, review notes."""
+    if not llm_available():
+        raise SystemExit("Intake needs the Claude API: set ANTHROPIC_API_KEY.")
+    params = load_params()
+    system = SYSTEM + "\n" + _instructions(params)
+    profile = llm.structured(system, blocks_from_uploads(docs, description), profile_schema(params),
+                             model=MODEL_FAST, max_tokens=16000, effort="medium")
+    insured, notes = to_insured(profile, params, insured_id, load_aliases())
+    return {"profile": profile, "insured": insured, "review_notes": notes,
+            "open_questions": profile["open_questions"]}
+
+
 def write_outputs(out_dir: Path, profile: dict, insured: dict, notes: list[str]) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "profile.json").write_text(json.dumps(profile, indent=2))

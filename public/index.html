@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Underwriter</title>
+<meta name="description" content="Autonomous underwriting for AI-liability risk: intake, red-team testing, Monte Carlo pricing, and an explained quote. Illustrative, not an offer of insurance.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23111113'/><path d='M8 22 L14 10 L18 18 L24 8' stroke='%239085e9' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+
+<header class="nav">
+  <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>AI Underwriter</a>
+  <nav>
+    <a href="#loop">Loop</a>
+    <a href="#price">Price</a>
+    <a href="#risk">Risk</a>
+    <a href="#redteam">Red team</a>
+    <a href="#live" class="cta">Run live</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="eyebrow">Loop 1 · Autonomous underwriting</div>
+    <h1>Price the risk of an AI system<br><span class="grad">by testing it.</span></h1>
+    <p class="lede">Agents read a company's documents, red-team its chatbot, run a Monte Carlo pricing engine,
+      and explain the quote. A human approves what matters.</p>
+    <p class="notice">Illustrative pricing on illustrative assumptions. A pricing and risk-assessment engine, not an offer of insurance.</p>
+
+    <div class="picker">
+      <label for="run-select">Quote</label>
+      <div class="select-wrap"><select id="run-select"></select></div>
+      <span id="run-blurb" class="muted"></span>
+    </div>
+
+    <div class="hero-grid">
+      <div class="card premium-card">
+        <div class="status"><span class="dot"></span><span id="status-text">Indicative · pending underwriter review</span></div>
+        <div class="premium" id="premium">—</div>
+        <div class="premium-sub" id="premium-sub"></div>
+        <p class="headline" id="headline"></p>
+        <details class="explain"><summary>Summary</summary><div id="summary"></div></details>
+      </div>
+      <div class="card compare-card">
+        <div class="card-title">Same company. Same documents.</div>
+        <div id="compare"></div>
+        <p class="muted small">The only difference is how the chatbot behaved under testing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="loop">
+    <div class="section-head"><h2>The loop</h2><p class="muted">Every step the agents took for this quote. Click a step for detail.</p></div>
+    <ol class="timeline" id="timeline"></ol>
+  </section>
+
+  <section id="price">
+    <div class="section-head"><h2>How the price is built</h2><p class="muted">Deterministic engine. Hover anything for the numbers behind it.</p></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Premium build-up</div>
+        <div class="chart" id="chart-waterfall"></div>
+        <details class="explain"><summary>Explain the build-up</summary><div id="explain-buildup"></div><div class="eq" id="eq-gross"></div></details>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Annual loss distribution</div>
+          <div class="select-wrap sm"><select id="pct-select" aria-label="Highlight a percentile">
+            <option value="">Expected, P90, P99.5</option><option value="50">P50 (typical year)</option>
+            <option value="75">P75</option><option value="90">P90 (1 in 10)</option><option value="95">P95 (1 in 20)</option>
+            <option value="99">P99 (1 in 100)</option><option value="99.5">P99.5 (1 in 200)</option></select></div>
+        </div>
+        <div class="chart" id="chart-loss"></div>
+        <details class="explain"><summary>What a typical and a bad year look like</summary><div id="explain-loss"></div><div class="table-wrap" id="pct-table"></div></details>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <div class="card-head">
+        <div><div class="card-title">What moves the price</div><div class="muted small" id="tornado-sub"></div></div>
+        <div class="select-wrap sm"><select id="tornado-n" aria-label="Number of parameters"><option value="6">Top 6</option><option value="10" selected>Top 10</option><option value="99">All</option></select></div>
+      </div>
+      <div class="chart" id="chart-tornado"></div>
+      <div class="legend"><span><i class="sw sw-lo"></i>parameter at its P10</span><span><i class="sw sw-hi"></i>parameter at its P90</span></div>
+      <details class="explain"><summary>Why these, and what evidence would narrow them</summary><div id="explain-tornado"></div><ul id="evidence"></ul></details>
+    </div>
+
+    <div class="card wide">
+      <div class="card-title">How to lower the price</div>
+      <div class="muted small">Re-priced with the same simulation, so only the change moves the price.</div>
+      <div class="chart" id="chart-controls"></div>
+      <div class="whatif">
+        <div class="whatif-head"><b>What if?</b> <span class="muted small">Combine changes and re-price live with the engine.</span></div>
+        <div id="whatif-options" class="chips"></div>
+        <div class="whatif-result" id="whatif-result"></div>
+      </div>
+      <details class="explain"><summary>Recommendations</summary><div id="explain-controls"></div></details>
+    </div>
+  </section>
+
+  <section id="risk">
+    <div class="section-head"><h2>Risk profile</h2><p class="muted">Extracted by the intake agent. Every field cites the document it came from.</p></div>
+    <div class="grid-2">
+      <div class="card"><div class="card-title">Profile</div><div id="profile"></div></div>
+      <div class="card"><div class="card-title">Per peril</div><div id="perils"></div>
+        <div class="card-title mt">Open questions for the underwriter</div><ul id="questions" class="questions"></ul></div>
+    </div>
+  </section>
+
+  <section id="redteam">
+    <div class="section-head"><h2>Red-team findings</h2><p class="muted" id="rt-sub"></p></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Material failures by category</div>
+        <div class="chart" id="chart-redteam"></div>
+        <div class="legend"><span><i class="sw" style="background:var(--orange)"></i>material failure</span><span><i class="sw" style="background:#3a3936"></i>pass</span></div>
+        <details class="explain" open><summary>What testing found</summary><div id="explain-redteam"></div></details>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Case explorer</div>
+          <div class="filters">
+            <div class="select-wrap sm"><select id="case-cat" aria-label="Category"></select></div>
+            <div class="select-wrap sm"><select id="case-verdict" aria-label="Verdict"><option value="">All verdicts</option><option value="material_failure">Failures</option><option value="pass">Passes</option></select></div>
+          </div>
+        </div>
+        <div id="cases" class="cases"></div>
+      </div>
+    </div>
+    <div class="card wide">
+      <div class="card-head"><div class="card-title">Talk to the bot under test</div>
+        <div class="select-wrap sm"><select id="chat-bot" aria-label="Bot"><option value="deterministic">ShopBot: planted flaws</option><option value="llm">ShopBot: Claude-powered (access code)</option></select></div></div>
+      <div id="chat-log" class="chat-log"><div class="muted small">Try: “What's the shipping address on order 10432?”</div></div>
+      <form id="chat-form" class="chat-form"><input id="chat-input" placeholder="Message ShopBot…" autocomplete="off"><button class="btn">Send</button></form>
+    </div>
+  </section>
+
+  <section id="live">
+    <div class="section-head"><h2>Run the loop live</h2><p class="muted">Submit an AI system. The agents run every step in front of you, about a minute end to end.</p></div>
+    <div class="card wide live-card">
+      <form id="live-form">
+        <div class="grid-2">
+          <div>
+            <label class="lbl" for="live-desc">Describe the AI system</label>
+            <textarea id="live-desc" rows="6" placeholder="What it does, who uses it, volume, model provider, human review, data it sees, jurisdictions, coverage wanted…"></textarea>
+            <div class="row">
+              <label class="btn ghost file"><input type="file" id="live-files" multiple accept=".md,.txt,.pdf,.json,.yaml,.yml,.csv,.html">Attach documents</label>
+              <button type="button" class="btn ghost" id="load-sample">Use the Northwind sample</button>
+            </div>
+            <div id="file-list" class="muted small"></div>
+          </div>
+          <div>
+            <label class="lbl" for="live-bot">Red-team target</label>
+            <div class="select-wrap"><select id="live-bot"><option value="deterministic">Demo ShopBot: planted flaws</option><option value="llm">Demo ShopBot: Claude-powered</option></select></div>
+            <p class="muted small">From the web, only our own demo bots can be tested. Testing a real endpoint needs the owner's authorization (CLI <code>--authorized</code>).</p>
+            <label class="lbl" for="live-code">Access code</label>
+            <input id="live-code" type="password" placeholder="Needed for steps that call Claude">
+            <button class="btn primary big" id="live-run">Run underwriting</button>
+          </div>
+        </div>
+      </form>
+      <ol class="timeline live" id="live-timeline"></ol>
+      <div id="live-error" class="error"></div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-head"><h2>Method</h2><p class="muted">Every equation the engine uses. The same list is saved with each quote.</p></div>
+    <div class="card wide"><div id="equations" class="equations"></div></div>
+    <div class="card wide"><div class="card-title">Provenance</div><div id="provenance" class="muted small"></div></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>AI Underwriter · hackathon build · illustrative data, not an offer of insurance.</span>
+  <a href="https://github.com/sisitsky/autonomous-agents-hack" target="_blank" rel="noopener">Source</a>
+</footer>
+
+<div id="tooltip" role="tooltip" aria-hidden="true"></div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="/charts.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

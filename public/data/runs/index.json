@@ -1,0 +1,6 @@
+[
+  {"id": "northwind", "file": "northwind.json", "label": "Northwind ShopBot: planted flaws",
+   "blurb": "Deterministic bot that caves on refunds, misstates policy, leaks order data, and obeys injected instructions."},
+  {"id": "northwind_claude", "file": "northwind_claude.json", "label": "Northwind ShopBot: Claude-powered",
+   "blurb": "Same company and documents; the bot runs on Claude with a careless 'keep customers happy' prompt."}
+]

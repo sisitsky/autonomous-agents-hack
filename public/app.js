@@ -1,0 +1,364 @@
+/* AI Underwriter web app: loads run bundles, renders the quote, and runs the
+   loop live against the API (one endpoint per step). */
+(function () {
+  const { fmt } = Charts;
+  const $ = id => document.getElementById(id);
+  const esc = fmt.esc;
+  const state = { runs: [], bundles: {}, current: null, live: 0 };
+  const STEP_NAMES = { intake: "Intake", redteam: "Red team", pricing: "Pricing", explainer: "Explainer", review: "Human review" };
+  const STEP_DESC = {
+    intake: "Claude reads the documents and fills in the risk profile, citing evidence.",
+    redteam: "40 adversarial cases sent to the bot; Claude grades each against a rubric.",
+    pricing: "Deterministic Monte Carlo engine. Priced twice to prove reproducibility.",
+    explainer: "Claude writes the report; code checks every number against the pricing record.",
+    review: "The quote is indicative. A human underwriter reviews open questions before anything binds.",
+  };
+
+  const paras = t => (t || "").split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("");
+  const gross = calc => calc.premium_build_up.find(s => s.id === "gross_premium").value;
+
+  async function api(path, body) {
+    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    let data; try { data = await r.json(); } catch { data = {}; }
+    if (!r.ok) throw new Error(data.detail || `${path} failed (${r.status})`);
+    return data;
+  }
+
+  // ---------------------------------------------------------------- loading
+  async function init() {
+    state.runs = await (await fetch("/data/runs/index.json")).json();
+    await Promise.all(state.runs.map(async r => { state.bundles[r.id] = await (await fetch("/data/runs/" + r.file)).json(); }));
+    renderPicker();
+    select(state.runs[0].id);
+    bindControls();
+  }
+
+  function renderPicker() {
+    const sel = $("run-select");
+    sel.innerHTML = state.runs.map(r => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join("");
+    if (state.current) sel.value = state.current;
+  }
+
+  function select(id) {
+    state.current = id;
+    $("run-select").value = id;
+    const r = state.runs.find(x => x.id === id);
+    $("run-blurb").textContent = r.blurb || "";
+    render(state.bundles[id]);
+  }
+
+  // ---------------------------------------------------------------- render
+  function render(b) {
+    const calc = b.calculation, rep = b.report || {}, n = rep.narrative || {}, facts = rep.facts || {};
+    const g = gross(calc);
+    animateNumber($("premium"), g);
+    $("premium-sub").innerHTML = `per year · rate on line <b>${fmt.pct(calc.premium_build_up.find(s => s.id === "rate_on_line").value)}</b>
+      · ${fmt.short(calc.policy.limit_per_claim)} per claim / ${fmt.short(calc.policy.aggregate_limit)} aggregate · ${fmt.short(calc.policy.deductible)} deductible`;
+    $("headline").textContent = n.headline || "";
+    $("summary").innerHTML = paras(n.summary);
+    renderCompare();
+    renderTimeline($("timeline"), b.events || []);
+
+    Charts.waterfall($("chart-waterfall"), calc, calc.equations);
+    $("explain-buildup").innerHTML = paras(n.price_build_up);
+    tex($("eq-gross"), calc.equations.find(e => e.id === "gross_premium").latex);
+
+    drawLoss();
+    $("explain-loss").innerHTML = paras(n.loss_distribution);
+    const p = calc.loss_distribution.percentiles;
+    $("pct-table").innerHTML = `<table><tr><th>Percentile of annual loss</th><th class="r">Amount</th><th class="r">Means</th></tr>` +
+      Object.entries(p).map(([k, v]) => `<tr data-p="${k}"><td>P${k}</td><td class="r">${fmt.money(v)}</td><td class="r muted">${
+        { 50: "typical year", 75: "1 in 4", 90: "1 in 10", 95: "1 in 20", 99: "1 in 100", "99.5": "1 in 200" }[k] || ""}</td></tr>`).join("") + "</table>";
+
+    drawTornado();
+    $("tornado-sub").textContent = `Each parameter at its P10 and P90, others at their medians · point premium ${fmt.money(calc.tornado.base_premium)} (excludes the uncertainty load)`;
+    $("explain-tornado").innerHTML = paras(n.tornado);
+    $("evidence").innerHTML = (n.evidence_to_narrow || []).map(e => `<li><b>${esc(e.parameter)}</b>: ${esc(e.evidence)}</li>`).join("");
+
+    Charts.controls($("chart-controls"), calc);
+    const recs = Object.fromEntries((n.controls || []).map(c => [c.control_id, c.recommendation]));
+    $("explain-controls").innerHTML = (facts.controls || []).map(c =>
+      `<p><b>${esc(c.change)}</b> → ${esc(c.premium)} (saves ${esc(c.saving)}, ${esc(c.saving_pct)}).<br>${esc(recs[c.control_id] || "")}</p>`).join("");
+    renderWhatIf(b);
+
+    renderProfile(b);
+    renderRedTeam(b);
+    renderMethod(calc, rep.check);
+  }
+
+  function animateNumber(node, target) {
+    const start = performance.now(), from = node._v || 0, dur = 700;
+    node._v = target;
+    const tick = t => {
+      const k = Math.min(1, (t - start) / dur), e = 1 - Math.pow(1 - k, 3);
+      node.textContent = fmt.money(from + (target - from) * e);
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  function tex(node, latex) {
+    if (!node) return;
+    try { katex.render(latex, node, { throwOnError: false, displayMode: true }); } catch { node.textContent = latex; }
+  }
+
+  function renderCompare() {
+    const rows = state.runs.map(r => ({ r, g: gross(state.bundles[r.id].calculation) }));
+    const max = Math.max(...rows.map(x => x.g));
+    $("compare").innerHTML = rows.map(({ r, g }) => `
+      <div class="compare-row ${r.id === state.current ? "active" : ""}" data-id="${esc(r.id)}">
+        <span class="nm">${esc(r.label)}</span><span class="val">${fmt.money(g)}</span>
+        <span class="bar"><i style="width:${(g / max * 100).toFixed(1)}%"></i></span></div>`).join("");
+    $("compare").querySelectorAll(".compare-row").forEach(n => n.onclick = () => select(n.dataset.id));
+  }
+
+  function renderTimeline(root, events) {
+    const by = {};
+    events.forEach(e => { by[e.step] = e; });
+    root.innerHTML = Object.keys(STEP_NAMES).map((s, i) => {
+      const e = by[s];
+      const status = e ? e.status : "pending";
+      const badge = { ok: "ok", skipped: "", review: "review", error: "error", running: "run", pending: "" }[status];
+      const detail = e && e.data ? Object.entries(e.data).filter(([k]) => k !== "trace").map(([k, v]) =>
+        `<div><span class="muted">${esc(k.replace(/_/g, " "))}:</span> ${esc(typeof v === "object" ? JSON.stringify(v) : v)}</div>`).join("") : "";
+      return `<li class="step" data-step="${s}">
+        <div class="n">0${i + 1}</div>
+        <div class="nm">${STEP_NAMES[s]} <span class="badge ${badge}">${esc(status)}</span></div>
+        <div class="sm">${esc(e ? e.summary : STEP_DESC[s])}</div>
+        ${e && e.duration_s !== undefined ? `<div class="dur">${e.duration_s}s</div>` : ""}
+        <div class="detail"><p class="muted">${esc(STEP_DESC[s])}</p>${detail}</div></li>`;
+    }).join("");
+    root.querySelectorAll(".step").forEach(li => li.onclick = () => li.classList.toggle("open"));
+  }
+
+  function drawLoss() {
+    const b = state.bundles[state.current];
+    Charts.loss($("chart-loss"), b.calculation, $("pct-select").value || null);
+    document.querySelectorAll("#pct-table tr").forEach(tr => tr.classList.toggle("hl", tr.dataset.p === $("pct-select").value));
+  }
+  function drawTornado() {
+    Charts.tornado($("chart-tornado"), state.bundles[state.current].calculation, +$("tornado-n").value);
+  }
+
+  // ---------------------------------------------------------------- what-if
+  function renderWhatIf(b) {
+    const opts = b.calculation.controls.options;
+    const box = $("whatif-options");
+    box.innerHTML = opts.map((o, i) => `<button type="button" class="chip" data-i="${i}">${esc(
+      o.kind === "red_team_remediation" ? "Fix red-team failures" : `${o.factor.replace(/_/g, " ")} → ${o.to_level.replace(/_/g, " ")}`)}</button>`).join("");
+    $("whatif-result").innerHTML = `<span class="muted">Pick one or more changes.</span>`;
+    box.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+      const o = opts[+c.dataset.i];
+      // one level per factor
+      box.querySelectorAll(".chip.on").forEach(x => { if (x !== c && opts[+x.dataset.i].factor === o.factor) x.classList.remove("on"); });
+      c.classList.toggle("on");
+      queueWhatIf(b);
+    });
+  }
+  let whatIfTimer = null, whatIfSeq = 0;
+  function queueWhatIf(b) {
+    clearTimeout(whatIfTimer);
+    whatIfTimer = setTimeout(() => runWhatIf(b), 250);
+  }
+  async function runWhatIf(b) {
+    const opts = b.calculation.controls.options;
+    const on = [...document.querySelectorAll("#whatif-options .chip.on")].map(c => opts[+c.dataset.i]);
+    const base = gross(b.calculation);
+    if (!on.length) { $("whatif-result").innerHTML = `<span class="muted">Pick one or more changes.</span>`; return; }
+    const ins = JSON.parse(JSON.stringify(b.insured));
+    on.forEach(o => {
+      if (o.kind === "red_team_remediation") {
+        ins.red_team.failures = 0;
+        if (ins.red_team.data_leak) ins.red_team.data_leak.failures = 0;
+      } else { ins.factors = ins.factors || {}; ins.factors[o.factor] = o.to_level; }
+    });
+    const seq = ++whatIfSeq;
+    $("whatif-result").innerHTML = `<span class="badge run">pricing</span> <span class="muted">Running the Monte Carlo engine…</span>`;
+    try {
+      const r = await api("/api/price", { insured: ins, tornado: false, controls: false });
+      if (seq !== whatIfSeq) return;
+      const g = gross(r.calculation), save = base - g;
+      const sumSingles = on.reduce((a, o) => a + o.saving, 0);
+      $("whatif-result").innerHTML = `Combined premium <b>${fmt.money(g)}</b> · saves ${fmt.money(save)} (${fmt.pct(save / base, 0)})
+        <span class="muted small"> · the changes priced one at a time would add up to ${fmt.money(sumSingles)}; combined effects aren't additive.</span>`;
+    } catch (e) {
+      if (seq === whatIfSeq) $("whatif-result").innerHTML = `<span class="error">${esc(e.message)}</span>`;
+    }
+  }
+
+  // ---------------------------------------------------------------- profile
+  function renderProfile(b) {
+    const p = b.profile;
+    if (!p) { $("profile").innerHTML = `<div class="skeleton">No intake profile (priced from an existing insured).</div>`; }
+    else {
+      const rows = [
+        ["Company", `${p.company_name} · ${p.system_name}`, p.summary],
+        ["Use case", `${p.use_case.category.replace(/_/g, " ")} · criticality ${p.use_case.criticality}`, p.use_case.evidence],
+        ["Autonomy", p.autonomy.level, p.autonomy.evidence],
+        ["Data sensitivity", p.data_sensitivity.level, p.data_sensitivity.evidence],
+        ["Jurisdictions", p.jurisdictions.regions.join(", "), p.jurisdictions.details + " · " + p.jurisdictions.evidence],
+        ["Customer facing", p.customer_facing.level, p.customer_facing.evidence],
+        ["Governance", p.governance.level, p.governance.evidence],
+        ["Vendor indemnity", p.vendor_indemnity.level, p.vendor_indemnity.evidence],
+        ["Model provider", `${p.model_provider.name} (${p.model_provider.hosting})`, p.model_provider.evidence],
+        ["Volume", p.exposure.outputs_per_year ? p.exposure.outputs_per_year.toLocaleString() + " outputs / yr" : "unknown", p.exposure.evidence],
+      ];
+      $("profile").innerHTML = `<div class="kv">` + rows.map(([k, v, ev]) => `<details><summary><span class="k">${esc(k)}</span>
+        <span class="v">${esc(String(v).replace(/_/g, " "))}</span></summary><div class="ev">${esc(ev)}</div></details>`).join("") + `</div>`;
+    }
+    const calc = b.calculation;
+    $("perils").innerHTML = Object.entries(calc.perils).map(([name, x]) => `
+      <div class="peril"><div class="top"><span>${esc(name.replace(/_/g, " "))}</span><span class="num">${fmt.money(x.expected_loss)}</span></div>
+      <div class="facts"><span>${x.expected_claims_per_year.toFixed(2)} claims / yr</span><span>modifier ×${x.modifier.toFixed(2)}</span>
+      ${x.red_team_leak_relativity != null ? `<span>leak multiplier ×${x.red_team_leak_relativity.toFixed(2)}</span>` : ""}
+      ${x.rating_factors.map(f => `<span class="tag">${esc(f.factor)} ${esc(f.level)} ×${f.relativity}</span>`).join("")}</div></div>`).join("");
+    const qs = ((p && p.open_questions) || []).concat(b.review_notes || []);
+    $("questions").innerHTML = qs.map(q => `<li>${esc(q)}</li>`).join("") || "<li>None.</li>";
+  }
+
+  // ---------------------------------------------------------------- red team
+  function renderRedTeam(b) {
+    const rt = b.redteam, n = (b.report || {}).narrative || {};
+    if (!rt) {
+      $("rt-sub").textContent = "No red-team test for this quote.";
+      $("chart-redteam").innerHTML = ""; $("cases").innerHTML = ""; $("explain-redteam").innerHTML = ""; return;
+    }
+    const s = rt.summary;
+    $("rt-sub").textContent = `${s.failures} of ${s.tested} material failures · target ${s.endpoint} · scored by ${s.scorer === "judge" ? "Claude judge" : "patterns"}`
+      + (s.disagreements && s.disagreements.length ? ` · ${s.disagreements.length} judge-vs-pattern disagreements` : "");
+    Charts.redteam($("chart-redteam"), s);
+    $("explain-redteam").innerHTML = paras(n.red_team);
+    $("case-cat").innerHTML = `<option value="">All categories</option>` + Object.keys(s.by_category)
+      .map(c => `<option value="${c}">${c.replace(/_/g, " ")}</option>`).join("");
+    drawCases();
+  }
+  function drawCases() {
+    const b = state.bundles[state.current];
+    if (!b.redteam) return;
+    const cat = $("case-cat").value, ver = $("case-verdict").value;
+    const cases = b.redteam.cases.filter(c => (!cat || c.category === cat) && (!ver || c.verdict === ver));
+    $("cases").innerHTML = cases.map(c => {
+      const v = c.judge_verdict || c.pattern_verdict || {};
+      const fail = c.verdict === "material_failure";
+      return `<details class="case"><summary><span class="tag">${esc(c.id)}</span><span class="q">${esc(c.input)}</span>
+        <b class="${fail ? "v-fail" : "v-pass"}">${fail ? "fail" : c.status === "error" ? "error" : "pass"}</b></summary>
+        <div class="body"><div class="muted small">Bot replied</div><div class="reply">${esc(c.reply || c.error || "")}</div>
+        <div><b>Rubric:</b> ${esc(c.rubric)}</div>
+        ${v.reason ? `<div><b>Why:</b> ${esc(v.reason)}</div>` : ""}
+        ${v.quote ? `<div><b>Quote:</b> “${esc(v.quote)}”</div>` : ""}
+        ${c.disagreement ? `<div class="muted">Pattern scorer disagreed: ${esc(c.pattern_verdict.verdict)}</div>` : ""}</div></details>`;
+    }).join("") || `<div class="skeleton">No cases match.</div>`;
+  }
+
+  // ---------------------------------------------------------------- method
+  function renderMethod(calc, check) {
+    $("equations").innerHTML = calc.equations.map(e => `<details><summary>${esc(e.name)}</summary>
+      <div class="tex" data-tex="${esc(e.latex)}"></div><div class="meaning">${esc(e.meaning)}</div>
+      <div class="muted small"><code>${esc(e.formula)}</code></div></details>`).join("");
+    $("equations").querySelectorAll(".tex").forEach(n => tex(n, n.dataset.tex));
+    const m = calc.meta;
+    $("provenance").innerHTML = `Priced ${esc(m.priced_at)} · code <code>${esc(String(m.git_commit || "n/a").slice(0, 12))}</code> ·
+      parameters ${esc(Object.entries(m.params_versions).map(([k, v]) => k + " " + v).join(", "))} ·
+      seed ${m.simulation.seed}, ${m.simulation.n_years.toLocaleString()} simulated years · ${esc(m.reproducibility_check || "")}
+      ${check ? ` · narrative: ${esc(check.source)}${check.model ? " (" + esc(check.model) + ")" : ""}, every number checked against the pricing record` : ""}`;
+  }
+
+  // ---------------------------------------------------------------- chat
+  async function chat(e) {
+    e.preventDefault();
+    const input = $("chat-input"), msg = input.value.trim();
+    if (!msg) return;
+    input.value = "";
+    const log = $("chat-log");
+    if (log.querySelector(".muted")) log.innerHTML = "";
+    log.insertAdjacentHTML("beforeend", `<div class="msg me">${esc(msg)}</div>`);
+    const pending = document.createElement("div");
+    pending.className = "msg bot"; pending.textContent = "…"; log.appendChild(pending);
+    log.scrollTop = log.scrollHeight;
+    try {
+      const r = await api("/api/chat", { message: msg, bot: $("chat-bot").value, access_code: $("live-code").value });
+      pending.textContent = r.reply;
+    } catch (err) { pending.textContent = err.message; pending.classList.add("error"); }
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ---------------------------------------------------------------- live run
+  let uploads = [];
+  async function readFiles(files) {
+    uploads = await Promise.all([...files].map(f => new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onerror = () => rej(r.error);
+      if (f.name.toLowerCase().endsWith(".pdf")) {
+        r.onload = () => res({ name: f.name, pdf_base64: String(r.result).split(",")[1] });
+        r.readAsDataURL(f);
+      } else { r.onload = () => res({ name: f.name, text: String(r.result) }); r.readAsText(f); }
+    })));
+    $("file-list").textContent = uploads.map(u => u.name).join(" · ");
+  }
+  async function loadSample() {
+    const names = ["01_application.md", "02_architecture.md", "03_customer_policy.md"];
+    uploads = await Promise.all(names.map(async n => ({ name: n, text: await (await fetch("/data/submissions/" + n)).text() })));
+    $("file-list").textContent = "Loaded: " + names.join(" · ");
+  }
+
+  async function runLive(e) {
+    e.preventDefault();
+    const btn = $("live-run"), code = $("live-code").value, bot = $("live-bot").value, desc = $("live-desc").value.trim();
+    $("live-error").textContent = "";
+    if (!uploads.length && !desc) { $("live-error").textContent = "Describe the system or attach documents (or use the Northwind sample)."; return; }
+    btn.disabled = true;
+    const events = [];
+    const tl = $("live-timeline");
+    const push = ev => { const i = events.findIndex(x => x.step === ev.step); i >= 0 ? (events[i] = ev) : events.push(ev); renderTimeline(tl, events); };
+    const timed = async (step, fn, summarize) => {
+      push({ step, status: "running", summary: STEP_DESC[step] });
+      const t0 = performance.now();
+      try {
+        const r = await fn();
+        push({ step, status: "ok", summary: summarize(r), duration_s: +((performance.now() - t0) / 1000).toFixed(1) });
+        return r;
+      } catch (err) { push({ step, status: "error", summary: err.message }); throw err; }
+    };
+    try {
+      state.live += 1;
+      const id = "live_" + state.live;
+      const intake = await timed("intake", () => api("/api/intake", { documents: uploads, description: desc || null, insured_id: id, access_code: code }),
+        r => `${r.profile.company_name} / ${r.profile.system_name}: ${r.profile.use_case.category.replace(/_/g, " ")}, ${Object.keys(r.insured.perils).length} perils, ${r.open_questions.length} open questions`);
+      const rt = await timed("redteam", () => api("/api/redteam", { insured: intake.insured, profile: intake.profile, bot, access_code: code }),
+        r => `${r.summary.failures} of ${r.summary.tested} material failures on the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`);
+      const pr = await timed("pricing", () => api("/api/price", { insured: rt.insured }),
+        r => `Gross premium ${fmt.money(gross(r.calculation))}; reproducibility check passed`);
+      const ex = await timed("explainer", () => api("/api/explain", {
+        calculation: pr.calculation, profile: intake.profile, review_notes: intake.review_notes,
+        redteam: { summary: rt.summary, cases: rt.cases }, access_code: code }),
+        r => `Report written (${r.check.source} narrative, numbers verified${r.check.fallback_sections.length ? "; template fallback for " + r.check.fallback_sections.join(", ") : ""})`);
+      push({ step: "review", status: "review", summary: `Indicative quote ready. Awaiting underwriter review of ${intake.open_questions.length} open questions. Not bound.` });
+      const bundle = { id, profile: intake.profile, insured: rt.insured, review_notes: intake.review_notes,
+        redteam: { summary: rt.summary, cases: rt.cases }, calculation: pr.calculation, report: ex, events: events.slice() };
+      state.bundles[id] = bundle;
+      const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      state.runs.push({ id, file: null, label: `Live run ${state.live} (${t}): ${intake.profile.system_name}`, blurb: "Run live in this browser session." });
+      renderPicker();
+      select(id);
+      document.getElementById("top").scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      $("live-error").textContent = err.message;
+    } finally { btn.disabled = false; }
+  }
+
+  // ---------------------------------------------------------------- bindings
+  function bindControls() {
+    $("run-select").onchange = e => select(e.target.value);
+    $("pct-select").onchange = drawLoss;
+    $("tornado-n").onchange = drawTornado;
+    $("case-cat").onchange = drawCases;
+    $("case-verdict").onchange = drawCases;
+    $("chat-form").onsubmit = chat;
+    $("live-form").onsubmit = runLive;
+    $("live-files").onchange = e => readFiles(e.target.files);
+    $("load-sample").onclick = loadSample;
+    renderTimeline($("live-timeline"), []);
+  }
+
+  init().catch(err => { document.querySelector(".hero").insertAdjacentHTML("beforeend", `<p class="error">Could not load quotes: ${esc(err.message)}</p>`); });
+})();

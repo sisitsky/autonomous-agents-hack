@@ -494,17 +494,70 @@
   }
 
   // ---------------------------------------------------------------- live run
+  // Uploads must fit Vercel's 4.5 MB request limit. Small PDFs go as-is (Claude reads
+  // the layout); large ones are converted to text in the browser, and very long
+  // documents keep the pages most relevant to underwriting.
   let uploads = [];
+  const BODY_BUDGET = 1_200_000;        // characters of document content per request (~300k tokens)
+  const PDF_INLINE_MAX = 1_500_000;     // PDFs smaller than this are sent as PDF
+  const KEYWORDS = /\b(artificial intelligence|AI|model|models|Claude|LLM|chatbot|agent|safety|risk factors?|customers?|users?|revenue|liabilit|lawsuit|litigation|regulat|privacy|personal data|data protection|security|breach|copyright|intellectual property|indemn|hallucinat|misuse|outage|incident|insurance|governance|EU AI Act|enterprise|API|volume|tokens?)\b/gi;
+  const readAs = (f, how) => new Promise((res, rej) => { const r = new FileReader(); r.onerror = () => rej(r.error); r.onload = () => res(r.result); r[how](f); });
+
+  async function pdfToText(f, onProgress) {
+    if (!window.pdfjsLib) throw new Error("PDF reader failed to load; try a smaller file or paste text");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await readAs(f, "readAsArrayBuffer")) }).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const tc = await (await pdf.getPage(i)).getTextContent();
+      pages.push(tc.items.map(it => it.str).join(" ").replace(/\s+/g, " ").trim());
+      if (i % 10 === 0) onProgress(`${f.name}: reading page ${i} of ${pdf.numPages}…`);
+    }
+    return pages;
+  }
+
+  function fitPages(name, pages, budget) {
+    const total = pages.reduce((a, p) => a + p.length, 0);
+    if (total <= budget) return { text: pages.map((p, i) => `[page ${i + 1}] ${p}`).join("\n"), note: null };
+    // Keep the opening pages (cover, summary, business overview) and then the
+    // pages with the densest underwriting-relevant language, in page order.
+    const scored = pages.map((p, i) => ({ i, len: p.length, score: (p.match(KEYWORDS) || []).length / Math.sqrt(p.length + 200) + (i < 8 ? 100 : 0) }));
+    scored.sort((a, b) => b.score - a.score);
+    const keep = new Set(); let used = 0;
+    for (const s of scored) { if (used + s.len > budget) continue; keep.add(s.i); used += s.len; }
+    const text = pages.map((p, i) => keep.has(i) ? `[page ${i + 1}] ${p}` : null).filter(Boolean).join("\n");
+    return { text, note: `${name}: ${pages.length} pages, ${Math.round(total / 1000)}k characters. Kept the ${keep.size} most underwriting-relevant pages (opening pages plus business, AI, risk-factor, data, customer and regulation content); the rest were omitted to fit the upload limit.` };
+  }
+
   async function readFiles(files) {
-    uploads = await Promise.all([...files].map(f => new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onerror = () => rej(r.error);
-      if (f.name.toLowerCase().endsWith(".pdf")) {
-        r.onload = () => res({ name: f.name, pdf_base64: String(r.result).split(",")[1] });
-        r.readAsDataURL(f);
-      } else { r.onload = () => res({ name: f.name, text: String(r.result) }); r.readAsText(f); }
-    })));
-    $("file-list").textContent = uploads.map(u => u.name).join(" · ");
+    const list = [...files], status = $("file-list");
+    const raw = [];
+    for (const f of list) {
+      const lower = f.name.toLowerCase();
+      if (lower.endsWith(".pdf") && f.size <= PDF_INLINE_MAX) {
+        raw.push({ name: f.name, pdf_base64: String(await readAs(f, "readAsDataURL")).split(",")[1] });
+      } else if (lower.endsWith(".pdf")) {
+        status.textContent = `${f.name}: large PDF (${(f.size / 1e6).toFixed(1)} MB), extracting text in your browser…`;
+        raw.push({ name: f.name, pages: await pdfToText(f, m => { status.textContent = m; }) });
+      } else {
+        raw.push({ name: f.name, text: String(await readAs(f, "readAsText")) });
+      }
+    }
+    // Share the budget across documents (inline PDFs count at their encoded size).
+    const fixed = raw.reduce((a, d) => a + (d.pdf_base64 ? d.pdf_base64.length : 0), 0);
+    const flexible = raw.filter(d => !d.pdf_base64);
+    const each = Math.max(150_000, Math.floor((BODY_BUDGET - fixed) / Math.max(1, flexible.length)));
+    const notes = [];
+    uploads = raw.map(d => {
+      if (d.pdf_base64) return d;
+      const pages = d.pages || [d.text];
+      const fit = d.pages ? fitPages(d.name, pages, each)
+        : (d.text.length > each ? { text: d.text.slice(0, each), note: `${d.name}: truncated to the first ${Math.round(each / 1000)}k characters.` } : { text: d.text, note: null });
+      if (fit.note) notes.push(fit.note);
+      return { name: d.name + (d.pages ? " (text extracted)" : ""), text: fit.text };
+    });
+    state.uploadNotes = notes;
+    status.textContent = uploads.map(u => u.name).join(" · ") + (notes.length ? " · " + notes.join(" ") : "");
   }
   async function loadSample() {
     const names = ["01_application.md", "02_architecture.md", "03_customer_policy.md"];
@@ -539,7 +592,8 @@
                    reply_path: $("ep-reply").value.trim() || "reply", auth_header: $("ep-auth").value.trim() || null,
                    authorized: $("ep-ok").checked };
       if (bot === "endpoint" && (!ep.endpoint || !ep.authorized)) throw new Error("Enter the endpoint URL and confirm you are authorized to test it.");
-      const intake = await timed("intake", () => api("/api/intake", { documents: uploads, description: desc || null, insured_id: id,
+      const descFull = [desc, ...(state.uploadNotes || []).map(n => "Upload note: " + n)].filter(Boolean).join("\n") || null;
+      const intake = await timed("intake", () => api("/api/intake", { documents: uploads, description: descFull, insured_id: id,
         outputs_per_year: vol, plan, endpoint: bot === "endpoint" ? ep.endpoint : null, access_code: code }),
         r => `${r.profile.company_name} / ${r.profile.system_name}: ${r.profile.use_case.category.replace(/_/g, " ")}, ${Object.keys(r.insured.perils).length} perils, ${r.open_questions.length} open questions`);
       let rt = null;

@@ -79,5 +79,18 @@ def test_evaluate_runs_a_generated_suite():
     transport = lambda m: (calls.append(m), {"reply": "Sorry, I can't help with that.", "latency_s": 0.0})[1]
     ev = redteam.evaluate({"perils": {}}, HIRING, transport, "stub", scorer="patterns", generate=True)
     s = ev["summary"]
-    assert s["suite_id"].startswith("generated-") and s["tested"] == len(calls) == s["plan"]["n_cases"]
+    assert s["suite_id"].startswith("generated-")
+    assert s["tested"] + s["signal_tested"] == len(calls) == s["plan"]["n_cases"]
+    assert s["signals"]["bias_discrimination"]["tested"] > 0          # a screener gets bias tests
     assert s["failures"] == 0 and ev["insured"]["red_team"]["tested"] == s["tested"]
+    assert ev["insured"]["red_team"]["signals"] == s["signals"]
+
+
+def test_general_model_gets_every_category():
+    prof = copy.deepcopy(HIRING)
+    prof["use_case"]["category"] = "foundation_model_or_general_assistant"
+    p = redteam_plan.build_plan(prof)
+    cats = {t["category"] for t in p["templates"]}
+    assert {"scope_violation", "unsafe_advice", "harmful_content", "bias", "ip",
+            "prompt_injection", "data_leakage", "policy_facts"} <= cats
+    assert p["n_cases"] <= redteam_plan.MAX_CASES and all(t["count"] >= 1 for t in p["templates"])

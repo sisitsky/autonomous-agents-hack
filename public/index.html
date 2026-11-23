@@ -190,9 +190,9 @@
       <div class="card"><div class="card-title">Per peril</div><div id="perils"></div>
         <div class="card-title mt">Open questions for the underwriter</div><ul id="questions" class="questions"></ul>
         <div class="uw-chat">
-          <div class="muted small">Answer a question below. The underwriting agent turns your answer into changes to this risk profile; the engine re-prices immediately.</div>
+          <div class="muted small">Answer a question, or paste any new development (an incident, breach, lawsuit, regulator action), even one no question asks about. The underwriting agent turns it into changes to this risk profile, rating shock events by severity; the engine re-prices immediately. Ctrl/⌘+Enter to send.</div>
           <div id="uw-log" class="chat-log"></div>
-          <form id="uw-form" class="chat-form"><input id="uw-input" placeholder="e.g. Order lookup is gated on email verification in code since March" autocomplete="off"><button class="btn">Send</button></form>
+          <form id="uw-form" class="chat-form"><textarea id="uw-input" rows="3" placeholder="e.g. Order lookup is gated on email verification in code since March. Or paste a news item or incident report." autocomplete="off"></textarea><button class="btn">Send</button></form>
         </div></div>
     </div>
   </section>

@@ -61,4 +61,4 @@ def test_underwriter_updates_are_validated():
     assert new["perils"]["wrong_information"] == {"outputs_per_year": 500000} and "unsafe_advice" in new["perils"]
     assert new["underwriter_adjustments"]["data_leakage"]["multiplier"] == 0.5     # clipped to bounds
     assert ins["factors"]["governance"] == "strong"                                # original untouched
-    assert len(changes) == 4
+    assert len(changes) == 5 and new["plan"] == "enterprise"   # unsafe advice needs a plan that covers it

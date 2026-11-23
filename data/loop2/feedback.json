@@ -59,6 +59,42 @@
    "event": "Financial Transaction Hijacking with M365 Copilot as an Insider",
    "human_scale": 1.0,
    "decided_at": "2026-11-22T23:02:53Z"
+  },
+  {
+   "run_id": "20261122-234508",
+   "pr": 3,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/3",
+   "outcome": "approved",
+   "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+   "source": "nvd",
+   "strength": "weak",
+   "event": "CVE-2026-119050 (prompt injection)",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:59:26Z"
+  },
+  {
+   "run_id": "20261122-234508",
+   "pr": 3,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/3",
+   "outcome": "approved",
+   "parameter": "perils.prompt_injection.frequency.p_harm_given_failure",
+   "source": "nvd",
+   "strength": "weak",
+   "event": "CVE-2026-115415 (LLM)",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:59:26Z"
+  },
+  {
+   "run_id": "20261122-234508",
+   "pr": 3,
+   "pr_url": "https://github.com/sisitsky/autonomous-agents-hack/pull/3",
+   "outcome": "approved",
+   "parameter": "perils.unauthorized_commitment.frequency.p_claim_given_harm",
+   "source": "claims_experience",
+   "strength": "strong",
+   "event": "A/E 1.67 for unauthorized commitment (341 actual vs 204.1 expected claims)",
+   "human_scale": 1.0,
+   "decided_at": "2026-11-22T23:59:26Z"
   }
  ],
  "by_source": {
@@ -75,6 +111,20 @@
    "rejected": 0,
    "n": 4,
    "acceptance": 1.0
+  },
+  "nvd": {
+   "approved": 2,
+   "edited": 0,
+   "rejected": 0,
+   "n": 2,
+   "acceptance": 1.0
+  },
+  "claims_experience": {
+   "approved": 1,
+   "edited": 0,
+   "rejected": 0,
+   "n": 1,
+   "acceptance": 1.0
   }
  },
  "by_strength": {
@@ -86,17 +136,25 @@
    "acceptance": 1.0
   },
   "weak": {
-   "approved": 4,
+   "approved": 6,
    "edited": 0,
    "rejected": 0,
-   "n": 4,
+   "n": 6,
+   "acceptance": 1.0
+  },
+  "strong": {
+   "approved": 1,
+   "edited": 0,
+   "rejected": 0,
+   "n": 1,
    "acceptance": 1.0
   }
  },
  "human_scale_by_parameter": {
   "perils.unauthorized_commitment.severity.tail.prob": 1.0,
   "systemic.annual_prob": 1.0,
-  "perils.prompt_injection.frequency.p_harm_given_failure": 1.0
+  "perils.prompt_injection.frequency.p_harm_given_failure": 1.0,
+  "perils.unauthorized_commitment.frequency.p_claim_given_harm": 1.0
  },
  "skip_sources": [],
  "rules": {

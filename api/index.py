@@ -5,7 +5,8 @@ step and show progress. All of them wrap the same agent code the CLI uses.
 
     GET  /api/health
     POST /api/intake     documents -> risk profile + insured           (Claude; access code)
-    POST /api/redteam    insured -> red-team results on a demo ShopBot (Claude judge; access code)
+    POST /api/redteam    insured -> red-team results on a demo ShopBot (fixed suite) or an authorized
+                         endpoint (suite generated from the company's profile); Claude judge; access code
     POST /api/price      insured -> calculation archive                (deterministic)
     POST /api/explain    calculation -> checked narrative              (Claude; access code)
     POST /api/chat       talk to a demo ShopBot                        (llm bot needs access code)
@@ -119,6 +120,7 @@ async def api_redteam(request: Request):
     body = await request.json()
     _require_code(body); _require_llm()
     bot = body.get("bot", "deterministic")
+    generate = False
     if bot in BOTS:
         transport, label = redteam.demo_transport(bot), f"demo ShopBot ({bot})"
     elif bot == "endpoint":
@@ -131,10 +133,11 @@ async def api_redteam(request: Request):
         transport = redteam.http_transport(url, message_field=str(body.get("message_field") or "message")[:64],
                                            reply_path=str(body.get("reply_path") or "reply")[:128], headers=headers)
         label = url
+        generate = True     # tests written for this company from its profile, graded against its own policy
     else:
         raise HTTPException(400, "Unknown red-team target")
     ev = _call(redteam.evaluate, _insured(body), body.get("profile") or {}, transport,
-               label, scorer="judge", workers=10)
+               label, scorer="judge", workers=10, generate=generate)
     return {"summary": ev["summary"], "cases": ev["results"], "insured": ev["insured"]}
 
 

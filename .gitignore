@@ -20,3 +20,4 @@ agents/runs/
 /egbe-docs/**/*-wal
 /egbe-docs/**/*-shm
 /egbe-docs/**/*-journal
+.claude/settings.local.json

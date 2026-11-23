@@ -8,7 +8,7 @@
   const STEP_NAMES = { intake: "Intake", redteam: "Red team", pricing: "Pricing", explainer: "Explainer", review: "Human review" };
   const STEP_DESC = {
     intake: "Claude reads the documents and fills in the risk profile, citing evidence.",
-    redteam: "40 adversarial cases sent to the bot; Claude grades each against a rubric.",
+    redteam: "Adversarial cases sent to the bot (the demo suite, or a suite written for your system from its documents); Claude grades each against a rubric.",
     pricing: "Deterministic Monte Carlo engine. Priced twice to prove reproducibility.",
     explainer: "Claude writes the report; code checks every number against the pricing record.",
     review: "The quote is indicative. A human underwriter reviews open questions before anything binds.",
@@ -456,10 +456,17 @@
     $("rt-sub").textContent = `${s.failures} of ${s.tested} material failures · target ${s.endpoint} · scored by ${s.scorer === "judge" ? "Claude judge" : "patterns"}`
       + (s.disagreements && s.disagreements.length ? ` · ${s.disagreements.length} judge-vs-pattern disagreements` : "");
     Charts.redteam($("chart-redteam"), s);
-    $("explain-redteam").innerHTML = paras(n.red_team);
+    $("explain-redteam").innerHTML = (s.plan ? planHtml(s) : "") + paras(n.red_team);
     $("case-cat").innerHTML = `<option value="">All categories</option>` + Object.keys(s.by_category)
       .map(c => `<option value="${c}">${c.replace(/_/g, " ")}</option>`).join("");
     drawCases();
+  }
+  function planHtml(s) {
+    const p = s.plan, caps = Object.entries(p.capabilities || {});
+    return `<div class="muted small"><b>Test plan for this system:</b> ${p.n_cases} cases from ${p.templates.length} attack templates,
+      written by ${esc(s.generator || "templates")}; graded against ${esc(p.ground_truth_source)}.
+      ${caps.map(([k, v]) => `${esc(k.replace(/_/g, " "))}: ${v.on ? "yes" : "no"} <span title="${esc(v.why)}">ⓘ</span>`).join(" · ")}
+      ${p.skipped.length ? `<br>Not tested: ${p.skipped.map(x => `${esc(x.template_id.replace(/_/g, " "))} (${esc(x.why)})`).join("; ")}` : ""}</div>`;
   }
   function drawCases() {
     const b = state.bundles[state.current];
@@ -469,7 +476,7 @@
     $("cases").innerHTML = cases.map(c => {
       const v = c.judge_verdict || c.pattern_verdict || {};
       const fail = c.verdict === "material_failure";
-      return `<details class="case"><summary><span class="tag">${esc(c.id)}</span>${c.id && c.id[0] === "e" ? '<span class="tag">from evidence</span>' : ""}<span class="q">${esc(c.input)}</span>
+      return `<details class="case"><summary><span class="tag">${esc(c.id)}</span>${c.id && c.id[0] === "e" ? '<span class="tag">from evidence</span>' : ""}${c.id && c.id.startsWith("g-") ? '<span class="tag">written for this system</span>' : ""}<span class="q">${esc(c.input)}</span>
         <b class="${fail ? "v-fail" : "v-pass"}">${fail ? "fail" : c.status === "error" ? "error" : "pass"}</b></summary>
         <div class="body"><div class="muted small">Bot replied</div><div class="reply">${esc(c.reply || c.error || "")}</div>
         <div><b>Rubric:</b> ${esc(c.rubric)}</div>

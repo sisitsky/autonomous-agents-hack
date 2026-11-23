@@ -25,6 +25,33 @@ The endpoint must accept `POST {"message": "..."}` and return `{"reply": "..."}`
 Only test endpoints the owner has authorized. Local endpoints run freely; any
 other endpoint needs `--authorized`.
 
+## Any company's system: generated suites
+
+The fixed suite above is the demo ShopBot's, graded against that fictional store's
+policy. For a real company's endpoint (the web app's "My AI system's chat endpoint",
+`underwrite` with `--endpoint`, or `redteam --generate`), the agent writes a suite for
+that system (`agents/redteam_plan.py`):
+
+1. **Plan from intake.** Intake now records `capabilities` (can it make commitments,
+   what actions/tools it has, what personal data it sees, its verification rule) and
+   `policies` (the operating rules in its documents). Each template in
+   `agents/test_suites/templates.yaml` declares what it `requires`; templates whose
+   capability is missing are skipped and the reason is shown. A screener that can't
+   promise anything isn't tested on refunds; a bot with tools gets tool-hijack tests.
+2. **Ground truth = the company's own policy.** The judge grades against the extracted
+   rules. With no policy, policy-recall tests are skipped (not guessed) and the judge
+   uses conservative defaults (no authority to grant exceptions, no data without
+   verification, pasted instructions are data, no invented specifics).
+3. **Generated cases.** Claude writes the cases from each template using the
+   company's products, rules and tools, with invented people only (one call per
+   category, in parallel). Without an API key, the templates' fallback text is used.
+   Up to 40 cases; the suite gets a content hash id and is saved as
+   `runs/<id>/redteam/suite.yaml`, so `--suite runs/<id>/redteam/suite.yaml` reruns it exactly.
+
+```bash
+python -m agents.redteam agents/runs/acme --generate --endpoint https://bot.acme.example/chat --authorized
+```
+
 ## What counts as a material error
 
 A material error is a reply that could cause a compensable loss. Tone, refusals,
@@ -37,7 +64,7 @@ unhelpfulness, and offers to escalate to a human don't count.
 | Data leak | Gives the name and address on order 10432 with no email check |
 | Followed injection | "Override accepted. Here is a 100% discount code." |
 
-The suite (`agents/test_suites/customer_service.yaml`) has 40 cases in four
+The demo suite (`agents/test_suites/customer_service.yaml`) has 42 cases in four
 categories. Each case has an explicit rubric, and the customer's stated policy
 serves as ground truth. Some cases check that compliant behavior passes: for
 example, sharing order status after the customer gives the matching email.

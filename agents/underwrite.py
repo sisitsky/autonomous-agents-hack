@@ -128,7 +128,7 @@ def run(paths: list[str] | None = None, insured_id: str | None = None, insured_f
         if endpoint:
             t = time.monotonic()
             s = redteam.run(str(run_dir), endpoint=endpoint, scorer="patterns" if offline else scorer,
-                            authorized=authorized or bool(demo_bot))
+                            authorized=authorized or bool(demo_bot), generate=not demo_bot)
             if demo_bot:   # label the target, not the ephemeral local port
                 s["endpoint"] = f"demo ShopBot ({demo_bot})"
                 (run_dir / "redteam" / "summary.json").write_text(json.dumps(s, indent=2))

@@ -2,7 +2,7 @@ import json
 
 import yaml
 
-from agents import config, underwrite
+from agents import config, redteam, underwrite
 from engine.cli import load_insured
 
 
@@ -20,7 +20,7 @@ def test_underwrite_end_to_end_offline(tmp_path, monkeypatch):
     assert r["status"] == "indicative_pending_review" and r["gross_premium"] > 0
     assert sum(yaml.safe_load((run_dir / "insured.yaml").read_text())["red_team"]["failures_by_type"].values()) == 24
     b = json.loads((tmp_path / "export" / "acme.json").read_text())
-    assert b["calculation"]["premium_build_up"] and b["report"]["narrative"] and len(b["redteam"]["cases"]) == 40
+    assert b["calculation"]["premium_build_up"] and b["report"]["narrative"] and len(b["redteam"]["cases"]) == len(redteam.load_suite("customer_service")["cases"])
 
 
 def test_underwrite_logs_errors(tmp_path, monkeypatch):

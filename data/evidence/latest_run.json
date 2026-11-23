@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-23T20:56:19+00:00",
+  "run_at": "2026-11-23T21:55:11+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.0
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 36,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.5
+      "seconds": 1.4
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -74,7 +74,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.0
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.8
+      "seconds": 1.0
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",

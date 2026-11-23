@@ -636,6 +636,21 @@
     state.docKey = null; state.memory = null; $("mem-note").hidden = $("mem-fresh-wrap").hidden = true;
   }
 
+  // The Anthropic IPO filing, served from the site. Loaded as a real File so it takes
+  // the same path as an upload: same content key (memory) and in-browser text extraction.
+  async function loadAnthropic() {
+    const btn = $("load-anthropic"), status = $("file-list");
+    btn.disabled = true; status.textContent = "Downloading AnthropicIPO.pdf (9 MB)…";
+    try {
+      const r = await fetch("/data/submissions/AnthropicIPO.pdf");
+      if (!r.ok) throw new Error(`Could not load the sample (HTTP ${r.status})`);
+      const file = new File([await r.blob()], "AnthropicIPO.pdf", { type: "application/pdf" });
+      if (!$("live-desc").value.trim()) $("live-desc").value = "Underwrite the Claude.ai consumer assistant and the Claude API.";
+      await readFiles([file]);
+    } catch (err) { status.textContent = err.message; }
+    finally { btn.disabled = false; }
+  }
+
   async function runLive(e) {
     e.preventDefault();
     const btn = $("live-run"), code = $("live-code").value, bot = $("live-bot").value, desc = $("live-desc").value.trim();
@@ -739,6 +754,7 @@
     $("live-form").onsubmit = runLive;
     $("live-files").onchange = e => readFiles(e.target.files);
     $("load-sample").onclick = loadSample;
+    $("load-anthropic").onclick = loadAnthropic;
     $("live-bot").onchange = e => { $("endpoint-fields").hidden = e.target.value !== "endpoint"; };
     renderTimeline($("live-timeline"), []);
   }

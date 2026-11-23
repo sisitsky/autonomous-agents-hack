@@ -294,11 +294,14 @@
               <button type="button" class="btn ghost" id="load-sample">Use the Northwind sample</button>
             </div>
             <div id="file-list" class="muted small"></div>
+            <div id="mem-note" class="muted small" hidden></div>
+            <label class="check small" id="mem-fresh-wrap" hidden><input type="checkbox" id="mem-fresh"> Re-analyze from scratch (ignore the saved profile and tests)</label>
           </div>
           <div>
             <label class="lbl" for="live-bot">Red-team target</label>
             <div class="select-wrap"><select id="live-bot">
               <option value="none">No test: price on the portfolio average</option>
+              <option value="claude">Claude (Anthropic API): test the model itself</option>
               <option value="endpoint">My AI system's chat endpoint</option>
               <option value="deterministic">Demo ShopBot: planted flaws</option>
               <option value="llm">Demo ShopBot: Claude-powered</option></select></div>
@@ -322,6 +325,7 @@
       </form>
       <ol class="timeline live" id="live-timeline"></ol>
       <div id="live-error" class="error"></div>
+      <div id="mem-saved" class="muted small"></div>
     </div>
   </section>
 

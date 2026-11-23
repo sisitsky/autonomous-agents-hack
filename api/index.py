@@ -12,7 +12,8 @@ step and show progress. All of them wrap the same agent code the CLI uses.
     POST /api/chat       talk to a demo ShopBot                        (llm bot needs access code)
 
 Steps that spend Claude API credit need the DEMO_ACCESS_CODE when it is set.
-Only our own demo bots can be red-teamed from the web.
+From the web: our demo bots, Claude via our Anthropic key, or an authorized public endpoint.
+    POST /api/memory     documents' content key -> pinned profile + red-team suite, if any
 """
 from __future__ import annotations
 
@@ -26,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from fastapi import FastAPI, HTTPException, Request  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
-from agents import explainer, intake, pricer, redteam, underwriter_chat  # noqa: E402
+from agents import explainer, intake, memory, pricer, redteam, underwriter_chat  # noqa: E402
 from agents.config import llm_available  # noqa: E402
 from agents.target_bot import shopbot  # noqa: E402
 from engine.model import load_params  # noqa: E402
@@ -89,10 +90,26 @@ def health():
 @app.post("/api/intake")
 async def api_intake(request: Request):
     body = await request.json()
-    _require_code(body); _require_llm()
+    _require_code(body)
     vol = body.get("outputs_per_year")
-    return _call(intake.analyze, body.get("documents") or [], body.get("description"), body.get("insured_id"),
-                 int(vol) if vol else None, body.get("plan") or None, body.get("endpoint") or None)
+    remembered = body.get("profile")      # from submission memory: same documents -> same profile
+    if remembered is not None:
+        memory.check_record({"key": "0" * 64, "profile": remembered})
+    else:
+        _require_llm()
+    r = _call(intake.analyze, body.get("documents") or [], body.get("description"), body.get("insured_id"),
+              int(vol) if vol else None, body.get("plan") or None, body.get("endpoint") or None, remembered)
+    r["from_memory"] = remembered is not None
+    return r
+
+
+@app.post("/api/memory")
+async def api_memory(request: Request):
+    """A pinned memory (data/memory/<key>.json) for these documents, if any. The key is
+    the SHA-256 over the files' SHA-256s, computed in the browser; no documents are sent."""
+    body = await request.json()
+    rec = memory.get(str(body.get("key") or ""))
+    return {"found": bool(rec), "memory": rec}
 
 
 def _public_endpoint(url: str) -> str:
@@ -123,6 +140,10 @@ async def api_redteam(request: Request):
     generate = False
     if bot in BOTS:
         transport, label = redteam.demo_transport(bot), f"demo ShopBot ({bot})"
+    elif bot == "claude":
+        from agents.config import MODEL_FAST
+        transport, label = redteam.claude_transport(MODEL_FAST), f"Claude via the Anthropic API ({MODEL_FAST})"
+        generate = True
     elif bot == "endpoint":
         if body.get("authorized") is not True:
             raise HTTPException(400, "Confirm that you own or are authorized to test this endpoint")
@@ -136,9 +157,15 @@ async def api_redteam(request: Request):
         generate = True     # tests written for this company from its profile, graded against its own policy
     else:
         raise HTTPException(400, "Unknown red-team target")
+    suite = body.get("suite")             # from submission memory: rerun the exact same tests
+    if suite is not None:
+        memory.check_record({"key": "0" * 64, "suite": suite})
+        suite = {**suite, "_path": suite.get("id") or "remembered"}
     ev = _call(redteam.evaluate, _insured(body), body.get("profile") or {}, transport,
-               label, scorer="judge", workers=10, generate=generate)
-    return {"summary": ev["summary"], "cases": ev["results"], "insured": ev["insured"]}
+               label, scorer="judge", workers=10, generate=generate, suite=suite)
+    keep = {k: v for k, v in ev["suite"].items() if k != "_path"}
+    return {"summary": ev["summary"], "cases": ev["results"], "insured": ev["insured"],
+            "suite": keep if keep.get("plan") else None, "suite_from_memory": suite is not None}
 
 
 @app.post("/api/price")

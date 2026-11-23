@@ -217,6 +217,21 @@ def demo_transport(kind: str):
     return call
 
 
+def claude_transport(model: str = MODEL_FAST, system: str = ""):
+    """Claude itself as the system under test, called in-process with our API key
+    (the web app's "Claude (Anthropic API)" target). Tests the model, not claude.ai."""
+    from .target_bot.claude_proxy import make_reply
+    fn = make_reply(model, system)
+
+    def call(message):
+        t0 = time.monotonic()
+        try:
+            return {"reply": fn(message), "latency_s": round(time.monotonic() - t0, 3)}
+        except Exception as e:  # noqa: BLE001 - a failed call is logged, not fatal
+            return {"error": str(e)[:300]}
+    return call
+
+
 def run_case(case: dict, transport, scorer: str, ground_truth: str) -> dict:
     out = {"id": case["id"], "category": case["category"], "input": case["input"],
            "rubric": case["rubric"]}

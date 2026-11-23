@@ -555,9 +555,41 @@
     return { text, note: `${name}: ${pages.length} pages, ${Math.round(total / 1000)}k characters. Kept the ${keep.size} most underwriting-relevant pages (opening pages plus business, AI, risk-factor, data, customer and regulation content); the rest were omitted to fit the upload limit.` };
   }
 
+  // ---------------------------------------------------------------- submission memory
+  // The same documents (by content, not name) get the same intake profile and the same
+  // red-team tests: remembered in this browser after every run, or pinned in the repo
+  // (data/memory/<key>.json) for every device.
+  const MEM_PREFIX = "iacta-mem-";
+  const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  const sha256 = async data => hex(await crypto.subtle.digest("SHA-256", typeof data === "string" ? new TextEncoder().encode(data) : data));
+  const memLocal = key => { try { return JSON.parse(localStorage.getItem(MEM_PREFIX + key) || "null"); } catch { return null; } };
+  const memSaveLocal = rec => { try { localStorage.setItem(MEM_PREFIX + rec.key, JSON.stringify(rec)); return true; } catch { return false; } };
+  async function lookupMemory(key) {
+    let rec = memLocal(key), where = "this browser";
+    if (!rec) {
+      try { const r = await api("/api/memory", { key }); if (r.found) { rec = r.memory; where = "the shared library"; } } catch {}
+    }
+    state.memory = rec ? { ...rec, where } : null;
+    const note = $("mem-note");
+    $("mem-fresh").checked = false;
+    $("mem-fresh-wrap").hidden = note.hidden = !rec;
+    if (!rec) return;
+    if (rec.target && [...$("live-bot").options].some(o => o.value === rec.target)) {
+      $("live-bot").value = rec.target; $("endpoint-fields").hidden = rec.target !== "endpoint";
+    }
+    const n = (rec.suite && rec.suite.cases || []).length;
+    note.innerHTML = `<b>Remembered</b> (${esc(where)}, saved ${esc((rec.saved_at || "").slice(0, 10))}): these documents were underwritten before. ` +
+      `Reusing the same intake profile${n ? ` and the same ${n} red-team tests` : ""}${rec.target ? ` against ${esc($("live-bot").selectedOptions[0].text)}` : ""}.`;
+  }
+
   async function readFiles(files) {
     const list = [...files], status = $("file-list");
     const raw = [];
+    const hashes = await Promise.all(list.map(async f => sha256(await readAs(f, "readAsArrayBuffer"))));
+    state.docFiles = list.map((f, i) => ({ name: f.name, sha256: hashes[i] }));
+    state.docKey = hashes.length ? await sha256([...hashes].sort().join("\n")) : null;
+    state.memory = null;
+    if (list.some(f => /anthropic/i.test(f.name))) { $("live-bot").value = "claude"; $("endpoint-fields").hidden = true; }
     for (const f of list) {
       const lower = f.name.toLowerCase();
       if (lower.endsWith(".pdf") && f.size <= PDF_INLINE_MAX) {
@@ -584,12 +616,15 @@
     });
     state.uploadNotes = notes;
     status.textContent = uploads.map(u => u.name).join(" · ") + (notes.length ? " · " + notes.join(" ") : "");
+    state.memory = null;
+    if (state.docKey) await lookupMemory(state.docKey);
   }
   async function loadSample() {
     const names = ["01_application.md", "02_architecture.md", "03_customer_policy.md"];
     uploads = await Promise.all(names.map(async n => ({ name: n, text: await (await fetch("/data/submissions/" + n)).text() })));
     $("file-list").textContent = "Loaded: " + names.join(" · ");
     $("live-bot").value = "deterministic"; $("endpoint-fields").hidden = true;
+    state.docKey = null; state.memory = null; $("mem-note").hidden = $("mem-fresh-wrap").hidden = true;
   }
 
   async function runLive(e) {
@@ -619,16 +654,19 @@
                    authorized: $("ep-ok").checked };
       if (bot === "endpoint" && (!ep.endpoint || !ep.authorized)) throw new Error("Enter the endpoint URL and confirm you are authorized to test it.");
       const descFull = [desc, ...(state.uploadNotes || []).map(n => "Upload note: " + n)].filter(Boolean).join("\n") || null;
-      const intake = await timed("intake", () => api("/api/intake", { documents: uploads, description: descFull, insured_id: id,
-        outputs_per_year: vol, plan, endpoint: bot === "endpoint" ? ep.endpoint : null, access_code: code }),
-        r => `${r.profile.company_name} / ${r.profile.system_name}: ${r.profile.use_case.category.replace(/_/g, " ")}, ${Object.keys(r.insured.perils).length} perils, ${r.open_questions.length} open questions`);
+      const mem = state.memory && !$("mem-fresh").checked ? state.memory : null;
+      const intake = await timed("intake", () => api("/api/intake", { documents: mem && mem.profile ? [] : uploads, description: descFull, insured_id: id,
+        outputs_per_year: vol, plan, endpoint: bot === "endpoint" ? ep.endpoint : null, profile: mem && mem.profile || undefined, access_code: code }),
+        r => (r.from_memory ? "Remembered profile: " : "") + `${r.profile.company_name} / ${r.profile.system_name}: ${r.profile.use_case.category.replace(/_/g, " ")}, ${Object.keys(r.insured.perils).length} perils, ${r.open_questions.length} open questions`);
       let rt = null;
       if (bot === "none") {
         push({ step: "redteam", status: "skipped", summary: "No red-team test: the four tested risks are priced on the portfolio average (Jewell prior) with its full uncertainty." });
       } else {
-        const target = bot === "endpoint" ? ep.endpoint : `the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`;
-        rt = await timed("redteam", () => api("/api/redteam", { insured: intake.insured, profile: intake.profile, bot, ...ep, access_code: code }),
-          r => `${r.summary.failures} of ${r.summary.tested} material failures on ${target}` + (r.summary.errors ? ` (${r.summary.errors} cases errored)` : ""));
+        const target = bot === "endpoint" ? ep.endpoint : bot === "claude" ? "Claude (Anthropic API)" : `the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`;
+        const memSuite = mem && mem.suite && mem.target === bot && (bot === "claude" || bot === "endpoint") ? mem.suite : undefined;
+        rt = await timed("redteam", () => api("/api/redteam", { insured: intake.insured, profile: intake.profile, bot, ...ep, suite: memSuite, access_code: code }),
+          r => `${r.summary.failures} of ${r.summary.tested} material failures on ${target}` + (r.suite_from_memory ? " (same tests as last time)" : r.summary.plan ? ` (${r.summary.plan.n_cases} tests written for this system)` : "")
+            + (r.summary.errors ? ` (${r.summary.errors} cases errored)` : ""));
       }
       const insured = rt ? rt.insured : intake.insured;
       const pr = await timed("pricing", () => api("/api/price", { insured }),
@@ -642,6 +680,16 @@
       const bundle = { id, profile: intake.profile, insured, review_notes: intake.review_notes,
         redteam: rt ? { summary: rt.summary, cases: rt.cases } : null, calculation: pr.calculation, report: ex, events: events.slice() };
       state.bundles[id] = bundle;
+      if (state.docKey) {     // remember this submission: same documents -> same profile and tests next time
+        const rec = { key: state.docKey, files: state.docFiles, saved_at: new Date().toISOString(), target: bot,
+                      profile: intake.profile, suite: (rt && rt.suite) || (mem && mem.target === bot ? mem.suite : null) || null };
+        const ok = memSaveLocal(rec);
+        state.memory = { ...rec, where: "this browser" };
+        const blob = URL.createObjectURL(new Blob([JSON.stringify(rec, null, 1)], { type: "application/json" }));
+        $("mem-saved").innerHTML = (ok ? "Saved to this browser's memory: re-uploading these documents reuses this profile and these tests. " : "")
+          + `<a href="${blob}" download="memory-${rec.key.slice(0, 12)}.json">Download the memory file</a> to share it with every device `
+          + `(<code>python -m agents.memory pin memory-${rec.key.slice(0, 12)}.json</code>, then commit).`;
+      }
       const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       state.runs.push({ id, file: null, label: `Live run ${state.live} (${t}): ${intake.profile.system_name}`, blurb: "Run live in this browser session." });
       renderPicker();

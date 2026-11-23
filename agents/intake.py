@@ -431,14 +431,21 @@ def blocks_from_uploads(docs: list[dict], description: str | None = None) -> lis
 
 
 def analyze(docs: list[dict], description: str | None = None, insured_id: str | None = None,
-            outputs_per_year: int | None = None, plan: str | None = None, endpoint: str | None = None) -> dict:
-    """Pure core (no files) for the web app: uploads -> profile, insured, review notes."""
-    if not llm_available():
-        raise SystemExit("Intake needs the Claude API: set ANTHROPIC_API_KEY.")
+            outputs_per_year: int | None = None, plan: str | None = None, endpoint: str | None = None,
+            profile: dict | None = None) -> dict:
+    """Pure core (no files) for the web app: uploads -> profile, insured, review notes.
+    A remembered `profile` (agents/memory.py) skips the Claude call, so the same
+    documents always produce the same profile."""
     params = load_params()
-    system = SYSTEM + "\n" + _instructions(params)
-    profile = llm.structured(system, blocks_from_uploads(docs, description), profile_schema(params),
-                             model=MODEL_FAST, max_tokens=16000, effort="medium")
+    if profile is None:
+        if not llm_available():
+            raise SystemExit("Intake needs the Claude API: set ANTHROPIC_API_KEY.")
+        system = SYSTEM + "\n" + _instructions(params)
+        profile = llm.structured(system, blocks_from_uploads(docs, description), profile_schema(params),
+                                 model=MODEL_FAST, max_tokens=16000, effort="medium")
+    else:
+        import copy
+        profile = copy.deepcopy(profile)
     if outputs_per_year:
         profile["exposure"] = {"outputs_per_year": int(outputs_per_year),
                                "evidence": "Provided by the submitter on the web form."}

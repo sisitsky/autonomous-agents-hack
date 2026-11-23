@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-23T13:19:57+00:00",
+  "run_at": "2026-11-23T15:05:25+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.1
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.0
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,15 +50,16 @@
       "status": "ok",
       "fetched": 34,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
       "category": "security",
-      "status": "ok",
-      "fetched": 10,
+      "status": "error",
+      "error": "HTTP Error 403: rate limit exceeded",
+      "fetched": 0,
       "new": 0,
-      "seconds": 1.9
+      "seconds": 0.0
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,7 +67,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 1.0
+      "seconds": 0.3
     },
     "arxiv": {
       "name": "arXiv",
@@ -75,7 +76,7 @@
       "error": "HTTP Error 429: Unknown Error",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 10.3
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -83,7 +84,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 1.2
+      "seconds": 1.0
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -96,7 +97,7 @@
   },
   "new_items": [],
   "totals": {
-    "sources_ok": 8,
+    "sources_ok": 7,
     "sources": 11,
     "new": 0,
     "store": 215

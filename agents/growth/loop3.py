@@ -351,6 +351,8 @@ def export() -> dict:
     segs = _load("segments.json", {})
     out = {"updated_at": _now(), "egbe_connected": egbe.available(),
            "checkout_url": cfg.get("checkout_url"), "analytics_app": cfg.get("analytics_app"),
+           "checkout_status": cfg.get("checkout_status"),
+           "stripe": {k: cfg["stripe"].get(k) for k in ("mode", "plan_key", "unit_amount_cents", "currency")} if cfg.get("stripe") else None,
            "full_report_price": FULL_REPORT_PRICE, "guardrails": guardrails(),
            "segments": [{k: v for k, v in s.items()} for s in segs.get("segments", [])],
            "research_via": segs.get("via"), "research_at": segs.get("run_at"),

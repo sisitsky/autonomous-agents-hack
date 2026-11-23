@@ -59,7 +59,9 @@
     $("g-stats").innerHTML = stat("Egbe", g.egbe_connected ? "connected" : "not connected")
       + stat("Wallet", g.wallet && g.wallet.available_to_spend_cents != null ? fmt.money(g.wallet.available_to_spend_cents / 100) : "–")
       + stat("Cycle", plan.cycle || "–") + stat("Spend vs cap", `${fmt.money(spent)} / ${fmt.money(cap)}`)
-      + stat("Full report", g.checkout_url ? `<a href="${esc(g.checkout_url)}" target="_blank" rel="noopener">$${g.full_report_price} checkout</a>` : `$${g.full_report_price} (link pending)`);
+      + stat("Analytics", g.analytics_app ? `Egbe · ${esc(g.analytics_app)}` : "–")
+      + stat("Full report", g.checkout_url ? `<a href="${esc(g.checkout_url)}" target="_blank" rel="noopener">$${g.full_report_price} checkout</a>`
+          : g.stripe ? `$${g.full_report_price} · Stripe price ready, checkout held` : `$${g.full_report_price} (link pending)`);
     $("g-via").textContent = g.research_via === "egbe_research" ? "researched with Egbe" : g.research_via ? "researched with Claude web search" : "";
     $("g-segs").innerHTML = (g.segments || []).map(s => `<div class="l2-card"><div class="top"><div><div class="ev">${esc(s.name)}</div>
       <div class="meta">${esc(s.id)} · channels: ${s.channels.map(esc).join(", ")} · typical system ${s.archetype.outputs_per_year.toLocaleString()} outputs/yr</div></div>

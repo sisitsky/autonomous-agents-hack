@@ -20,6 +20,10 @@
   .plans-mini div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 6px 0; font-variant-numeric: tabular-nums; }
   .lp ul.b { color: var(--ink-2); padding-left: 18px; } .lp ul.b li { margin: 6px 0; }
 </style>
+<!-- Egbe analytics (Umami) + session replay; site "iacta" -->
+<script async defer data-website-id="7cd84b0e-0153-46a1-b8a0-b030d7e97929" data-performance="true" data-host-url="https://analytics.hz.egbe.dev" src="https://analytics.hz.egbe.dev/script.js"></script>
+<script src="/egbe-attribution.js"></script>
+<script defer src="https://analytics.hz.egbe.dev/recorder.js" data-website-id="7cd84b0e-0153-46a1-b8a0-b030d7e97929" data-sample-rate="1" data-mask-level="moderate" data-max-duration="1800000"></script>
 </head>
 <body>
 <div class="glow" aria-hidden="true"></div>
@@ -49,11 +53,12 @@
       <div class="select-wrap"><select id="f-gov"><option value="adequate">Some monitoring and an incident process</option><option value="weak">Little or none yet</option><option value="strong">NIST AI RMF / ISO 42001 aligned</option></select></div>
       <label>AI responses per year</label>
       <input id="f-vol" type="number" min="1000" step="10000" value="500000">
-      <button class="btn primary big" id="f-go">Get my free risk score</button>
+      <button class="btn primary big" id="f-go" data-umami-event="cta_click" data-umami-event-cta_id="get_free_risk_score" data-umami-event-surface="score_form" data-umami-event-path="/score">Get my free risk score</button>
     </form>
     <div class="card" id="result"><div class="muted">Your score appears here.</div></div>
   </div>
 </main>
+<footer class="foot"><span class="small muted">Privacy: we use privacy-friendly analytics and masked session recordings of page interactions (all sessions, capped at 30 minutes) to improve usability. Payments, when open, are processed by Egbe (<a href="https://egbe.ai/terms/" target="_blank" rel="noopener">terms</a>).</span></footer>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -83,7 +88,12 @@
     try {
       const r = await fetch("/api/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = await r.json();
+      if (!r.ok || d.risk_score == null) throw new Error(d.error || "Scoring failed");
+      // Egbe analytics: server confirmed the score, so the browser records first value.
+      const track = (name, data) => window.__egbeAttribution && window.__egbeAttribution.track(name, Object.assign({ product_slug: "iacta", path: "/score", segment: seg || "direct" }, data));
+      track("activated", { activation_type: "risk_score_generated", grade: d.grade });
       const ck = growth.checkout_url;
+      track("paywall_view", { plan_key: "full-report", checkout_live: !!ck });
       const utm = ["utm_source", "utm_medium", "utm_campaign"].map(k => params.get(k) ? `&${k}=${encodeURIComponent(params.get(k))}` : "").join("");
       $("result").innerHTML = `<div class="muted small">Your AI risk score</div>
         <div><span class="score-big">${d.risk_score}</span><span class="grade">${esc(d.grade)}</span></div>
@@ -91,7 +101,7 @@
         <div class="plans-mini">${Object.values(d.plans).map(p => `<div><span>${esc(p.name)} · ${money(p.limits.aggregate_limit)} limit</span><b>${money(p.premium)}/yr</b></div>`).join("")}</div>
         <p class="small muted">${esc(d.note)} A red-team test of your system usually moves this a lot, in either direction.</p>
         ${ck ? `<a class="btn primary big" href="${esc(ck)}${ck.includes("?") ? "&" : "?"}client_reference_id=${encodeURIComponent(seg || "direct")}${utm}">Get the full underwriting report · $${growth.full_report_price || 49}</a>`
-             : `<a class="btn primary big" href="/#live">Run the full underwriting loop</a><p class="small muted">Paid full reports (Stripe via Egbe) open soon.</p>`}`;
+             : `<a class="btn primary big" href="/#live" data-umami-event="button_click" data-umami-event-button_id="run_full_loop" data-umami-event-surface="score_result">Run the full underwriting loop</a><p class="small muted">Full underwriting report · $${growth.full_report_price || 49} (Stripe via Egbe) opens soon.</p>`}`;
     } catch (err) { $("result").innerHTML = `<div class="error">${esc(err.message)}</div>`; }
   };
 })();

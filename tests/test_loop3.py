@@ -24,7 +24,8 @@ def test_archetype_volume_is_clamped():
     assert a["outputs_per_year"] == loop3.VOLUME_RANGE[1] and 1 <= s["risk_score"] <= 100
 
 
-def test_no_analytics_means_no_data_unless_simulated():
+def test_no_analytics_means_no_data_unless_simulated(monkeypatch):
+    monkeypatch.setattr(loop3.egbe, "available", lambda: False)   # behave as if Egbe were not connected
     plan = {"cycle": 1, "campaigns": [{"segment_id": "x", "utm_campaign": "u", "budget_usd": 25.0}]}
     assert loop3.read_funnel(plan)["by_campaign"] == {}
     sim = loop3.read_funnel(plan, simulate=True)

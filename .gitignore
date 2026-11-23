@@ -10,3 +10,13 @@ pr_body.md
 .venv/
 agents/runs/
 .vercel
+/.egbe/
+!/egbe-docs/marketing/campaigns/instantly/outreach.db
+/egbe-docs/**/.local/
+/egbe-docs/**/.env
+/egbe-docs/**/.env.*
+/egbe-docs/**/*.lock
+/egbe-docs/**/*.tmp
+/egbe-docs/**/*-wal
+/egbe-docs/**/*-shm
+/egbe-docs/**/*-journal

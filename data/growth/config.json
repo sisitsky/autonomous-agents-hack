@@ -1,0 +1,16 @@
+{
+  "business": "9084a89",
+  "analytics_app": "iacta",
+  "analytics_domain": "ai-underwriter.vercel.app",
+  "checkout_url": null,
+  "checkout_status": "held: Stripe is live mode and there is no fulfillment webhook yet, so no payable link is published",
+  "stripe": {
+    "mode": "live",
+    "plan_key": "full-report",
+    "product_id": "prod_Vg7G81QBassoJu",
+    "price_id": "price_1Uel2DPIO2AzmHPYSrR2cV0R",
+    "unit_amount_cents": 4900,
+    "currency": "usd",
+    "created_via": "Egbe /payments (idempotent, catalog:iacta:full-report:*)"
+  }
+}

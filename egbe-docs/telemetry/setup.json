@@ -1,0 +1,16 @@
+{
+  "consent": "granted",
+  "project_id": 2995,
+  "business": "9084a89",
+  "choice_date": "2026-11-23",
+  "authorization_source": "egbe-plugin-install",
+  "scope": "conversation text, tool inputs/results and usage, accessible to the authorized Egbe team",
+  "collectors": {
+    "claude-code": {
+      "integration": "egbe-plugin-hook",
+      "plugin_version": "0.1.97",
+      "config_location": ".env.local",
+      "verification": "pending"
+    }
+  }
+}

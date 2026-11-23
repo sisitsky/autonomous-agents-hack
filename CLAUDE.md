@@ -1,5 +1,7 @@
 # AI Underwriter: CLAUDE.md
 
+Read and apply EGBE.md when working on this project.
+
 ## What this is
 
 A hackathon project for the brief **"Build business loops"**: closed autonomous

@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-23T02:12:50+00:00",
+  "run_at": "2026-11-23T02:58:09+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 34,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.3
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.3
+      "seconds": 1.2
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,15 +66,15 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 0,
-      "seconds": 0.2
+      "new": 6,
+      "seconds": 0.6
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -93,11 +93,72 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "arxiv:909bb1f292586036",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Auditing and Adapting kNNGuard for Long-Context Prompts",
+      "url": "http://arxiv.org/abs/2611.27084v1",
+      "date": "2026-11-20",
+      "summary": "Training-free activation guardrails such as kNNGuard score prompts by comparing last-token LLM hidden states (the Layer Ensemble branch, kNNGuard LE) and sentence embeddings (all-MiniLM-L6-v2, Embedding-kNN) against a small reference bank (50 examples per class), combining the two branches into a Fused Ensemble (kNNGuard FE). While effective on short inputs (up to 256 tokens), standard kNNGuard degrades substantially on long inputs (over 1000 tokens): averaged across Qwen3.5-4B and Gemma-4-E4B-it, kNNGuard LE AUROC drops from 0.742 (0.777 and 0.706) to 0.554 (0.587 and 0.521) on Content Harm Moderation (Aegis-2.0), and from 0.994 (0.995 and 0.992) to 0.556 (0.598 and 0.513) on RAG Hallucination Detection (HaluBench). We trace this degradation to three causes: (1) hidden-state drift as sequ",
+      "first_seen": "2026-11-23T02:58:09+00:00"
+    },
+    {
+      "id": "arxiv:54a3f6aff5b607d1",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Actions Speak Louder than Words: Stateful Privacy Sniffing of LLM Agents via Behavioral Covert Channels in Web Interactions",
+      "url": "http://arxiv.org/abs/2611.27046v1",
+      "date": "2026-11-20",
+      "summary": "LLM agents increasingly rely on Web interaction, issuing searches, following links, and reading pages, to complete complex user tasks. Since each action is driven by the agent's private context, including the user's prompt, dialogue history, memory, and connected data, it also opens a new privacy exposure surface. Prior attacks either passively analyze network traffic, which yields only coarse correlations, or hijack the agent through indirect prompt injection, which must place sensitive content in an outgoing field and is blocked by content-level defenses. Whether an attacker can actively recover fine-grained private context without any explicit transmission thus remains insufficiently understood. Our insight is that an agent's benign Web decisions themselves leak private context, as what",
+      "first_seen": "2026-11-23T02:58:09+00:00"
+    },
+    {
+      "id": "arxiv:de1e780ab0decd71",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Subverting Tool Arguments: Defense-Evading Metadata Poisoning in LLM Agents",
+      "url": "http://arxiv.org/abs/2611.27041v1",
+      "date": "2026-11-20",
+      "summary": "Conventional indirect prompt injection (IPI) attacks hijack an LLM agent's workflow through malicious instructions embedded in retrieved external content. The growing adoption of the Model Context Protocol (MCP) exposes another attack surface: tool descriptions supplied by third-party MCP servers. Attackers can manipulate this metadata to induce malicious argument generation during tool calls. The challenge is to ensure that the modified descriptions still appear benign to both LLMs and users. Existing IPI attacks, however, struggle to achieve both high attack success and low detectability in this setting. To address this challenge, we propose GRAFT, an LLM-based optimization method for crafting adversarial tool descriptions. Specifically, GRAFT uses a masking mechanism to identify argumen",
+      "first_seen": "2026-11-23T02:58:09+00:00"
+    },
+    {
+      "id": "arxiv:a529732b2bdc4677",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Keep the Process, Change the Supplier: Runtime Governance for Tool-Using AI Agents",
+      "url": "http://arxiv.org/abs/2611.26966v1",
+      "date": "2026-11-20",
+      "summary": "Tool-using AI agents propose actions whose authorization and external effects cannot be inferred from generated text alone. We study an execution boundary that separates agent proposals from business-controlled authority, context disclosure, and supplier selection. The Open Process Control Plane (OPCP) mediates capability calls and records uncertain outcomes when a supplier may have acted without returning an acceptable reply. We evaluate this runtime with scripted requests and synthetic suppliers: 2,400 fault episodes across four policies, 60 process-termination/restart episodes, 19,000 timed calls across 19 configurations, five targeted mutations over 43 fixtures, and 160 substitution records. No language model or autonomous agent is evaluated. OPCP and a conservative composition agree o",
+      "first_seen": "2026-11-23T02:58:09+00:00"
+    },
+    {
+      "id": "arxiv:41f280c05a091606",
+      "source": "arxiv",
+      "type": "research",
+      "title": "LLMs Memorize Their Own Hallucinations During Post-Training",
+      "url": "http://arxiv.org/abs/2611.26863v1",
+      "date": "2026-11-19",
+      "summary": "Reasoning domains have shaped the post-training recipes of frontier models even though they are trained and deployed in domains beyond math and code. In this paper, we study the consequences of directly adopting reasoning-centric training recipes, e.g., the use of outcome-based rewards for reinforcement learning (RL), injection of \"cognitive\" behaviors such as proposing and backtracking from hypotheses in reasoning chains, etc., for knowledge tasks. We hypothesize that these decisions, while useful for reasoning, inadvertently encourage models to memorize hallucinations they themselves generate in their long reasoning chains when trained on knowledge tasks. To study this, we train models with standard post-training, extract their self-generated hallucinations during RL, and track memorizat",
+      "first_seen": "2026-11-23T02:58:09+00:00"
+    },
+    {
+      "id": "arxiv:92e2e0ec3b7459e8",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Specification-Grounded Adaptive Triage and Formal Invariant Exclusion Synthesis for Autonomous Silicon Coverage Closure",
+      "url": "http://arxiv.org/abs/2611.26815v1",
+      "date": "2026-11-19",
+      "summary": "Closing the final 5%-15% of code and functional coverage remains a major schedule bottleneck in silicon tapeouts. Existing LLM-based coverage closure loops feed raw uncovered RTL lines or branches directly into iterative prompts, failing on industrial subsystems due to: (1) token and context explosion from querying thousands of correlated holes independently; (2) illegal stimulus that violates cross-signal invariants and yields dirty coverage; and (3) unsafe exclusion hallucination on structurally unreachable dead code. We present ARGUS (Autonomous Reachability & Guided Unified Stimulus), a specification-grounded, dual-regime coverage closure and formal exclusion synthesis engine. ARGUS mines microarchitectural specs and SystemVerilog Assertions into a formal Block Contract (C), then runs ",
+      "first_seen": "2026-11-23T02:58:09+00:00"
+    }
+  ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 0,
-    "store": 208
+    "new": 6,
+    "store": 214
   }
 }

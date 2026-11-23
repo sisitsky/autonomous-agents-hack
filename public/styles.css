@@ -357,3 +357,9 @@ tr.hl td { color: var(--ink); background: rgba(144,133,233,.08); }
 .cube .p.c7 { grid-area: 3 / 1; } .cube .p.c8 { grid-area: 3 / 2; } .cube .p.c9 { grid-area: 3 / 3; }
 @media (max-width: 980px) { .dice { position: static; justify-content: flex-end; margin: 0 8px -30px 0; gap: 22px; } .scene { --s: 64px; } .scene.b { margin-top: 16px; } }
 @media (prefers-reduced-motion: reduce) { .cube { transition: none; } }
+
+.meter { height: 10px; border-radius: 5px; background: var(--grid); overflow: hidden; margin: 10px 0 4px; }
+.meter i { display: block; height: 100%; background: var(--aqua); border-radius: 5px; }
+.playbook h1, .playbook h2, .playbook h3 { font-size: 17px; margin: 14px 0 6px; color: var(--ink); }
+.playbook ul { padding-left: 18px; } .playbook li { margin: 4px 0; }
+.email { white-space: pre-wrap; background: #0c0c0e; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); }

@@ -1,0 +1,10 @@
+[
+ {
+  "cycle": 1,
+  "run_at": "2026-11-23T00:08:57+00:00",
+  "simulated": true,
+  "spend_usd": 75.0,
+  "purchases": 10,
+  "revenue_usd": 490
+ }
+]

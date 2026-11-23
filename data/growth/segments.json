@@ -1,0 +1,307 @@
+{
+ "run_at": "2026-11-23T00:06:59+00:00",
+ "via": "claude_web_search",
+ "research_markdown": "**Caveat:** my search quota ran out after about 8 queries. Claims with a URL come from sources I retrieved. Items marked **[unverified]** are from my background knowledge and need checking before you use them in outreach or a deck. The sources imply today is roughly Q3\u2013Q4 2026, so I treat \"next 6 months\" as about Oct 2026\u2013Mar 2027.\n\n## Market backdrop (applies to every segment)\n\n**Standard policies are closing the gap on AI.**\n- A secondary source (a Substack, so verify against the primary filings) reports that <a href=\"https://lawandkoffee.substack.com/p/your-insurance-policy-just-changed\">Berkley introduced an \"absolute\" AI exclusion across D&O, E&O and fiduciary lines, and AIG and Great American followed with their own filings</a>.\n- The same source says <a href=\"https://lawandkoffee.substack.com/p/your-insurance-policy-just-changed\">Verisk's ISO form CG 40 47 01 26 removes CGL coverage for bodily injury, property damage and advertising injury arising from generative AI</a>.\n- This is the main trigger for the pitch. Customers who renew into these forms will find their AI exposure uninsured.\n\n**A few affirmative products exist, so there are competitors and reinsurance partners to benchmark.**\n- <a href=\"https://www.cdomagazine.tech/aiml/armilla-launches-first-of-its-kind-ai-liability-insurance-with-lloyds-backing\">Armilla launched affirmative AI liability cover backed by Lloyd's underwriters</a>, and a <a href=\"https://medium.com/@purdyhouse/the-first-ai-liability-insurance-product-has-25-million-in-coverage-five-exist-worldwide-575a2903b17b\">Medium analysis cites $25M limits</a>.\n- Per <a href=\"https://www.armilla.ai/press\">Armilla's press page</a>, Chaucer and Armilla launched a combined cyber, tech E&O and AI liability structure in Feb 2026. The page also lists an A-LIGN partnership.\n\n**Regulation is a mixed picture.**\n- The EU Digital Omnibus <a href=\"https://usercentrics.com/knowledge-hub/eu-ai-act-high-risk-delay-article-50-transparency-consent/\">moves the high-risk deadline to 2 Dec 2027 and the Annex I deadline to 2 Aug 2028, but Article 50 transparency rules still apply from Aug 2026</a>.\n- <a href=\"https://www.gibsondunn.com/eu-ai-act-omnibus-agreement-postponed-high-risk-deadlines-and-other-key-changes/\">Gibson Dunn confirms 2 Aug 2026 remains a live compliance date for Article 50</a>.\n- Chatbots are therefore in scope now, while high-risk use cases such as HR and credit have more time.\n- Colorado AI Act status and federal preemption: I couldn't verify these. **[unverified]**\n\n## Segments, ranked by 6-month purchase likelihood\n\n### 1. Consumer companion and character chatbot platforms (highest pain, hardest to insure)\n- **Who:** AI companion, role-play, wellness and teen-facing chat apps (Character.AI, Replika-type apps), plus big-tech chat products.\n- **Why liability:**\n  - <a href=\"https://openclassactions.com/lawsuits/character-ai-google-teen-harm-lawsuits-settlement.php\">Character.AI and Google agreed to settle the first teen chatbot harm and wrongful-death suits, including Garcia</a>, though <a href=\"https://openclassactions.com/lawsuits/character-ai-google-teen-harm-lawsuits-settlement.php\">more families keep filing</a>.\n  - <a href=\"https://www.yahoo.com/news/articles/google-chatbot-startup-character-ai-054822780.html\">OpenAI and Meta have faced similar chatbot safety suits and probes</a>.\n  - <a href=\"https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6078226\">California SB 243 took effect 1 Jan 2026</a>. <a href=\"https://fpf.org/blog/understanding-the-new-wave-of-chatbot-legislation-california-sb-243-and-beyond/\">It is the first chatbot law with protections tailored to minors, and New York has a comparable law</a>.\n  - <a href=\"https://www.skadden.com/insights/publications/2025/10/new-california-companion-chatbot-law\">SB 243 requires disclosures, safety protocols and annual reporting</a>.\n- **Buying signals:** a new SB 243 compliance program, minor-safety hires, a pending suit or AG inquiry, or a funding round with investor diligence on liability.\n- **Public examples:** Meta, Alphabet, Snap, Microsoft. The pure-plays are private.\n- **Channels:** trust and safety leaders, general counsel, and their venture investors. A risk assessment mapped to SB 243 is an easier first sale than a policy, because capacity for bodily-injury exposure is thin.\n\n### 2. B2B AI SaaS vendors with copilots and agents sold to enterprises\n- **Who:** CX and support automation, sales and HR copilots, vertical AI SaaS.\n- **Why liability:**\n  - Customers push indemnities and AI-specific warranties down the supply chain in procurement.\n  - Tech E&O renewals are adding AI exclusions (see the backdrop above).\n  - Affirmative products now exist, notably the <a href=\"https://www.armilla.ai/press\">Chaucer/Armilla combined cyber, tech E&O and AI structure</a>, so buyers have something concrete to compare.\n  - EU Article 50 applies to chatbot providers. <a href=\"https://cdp.cooley.com/digital-ai-omnibus-delays-key-deadlines-introduces-new-rules/\">Cooley notes it still applies from 2 Aug 2026 for new generative AI systems</a>.\n- **Buying signals:** enterprise security questionnaires asking for AI coverage, SOC 2 or ISO 42001 projects, an E&O renewal with a new exclusion endorsement, and EU customer expansion.\n- **Public examples (my selection, not from sources):** Salesforce, ServiceNow, HubSpot, Workday, C3.ai, UiPath, SoundHound, Freshworks. Workday also faces a hiring-AI bias suit (Mobley) **[unverified]**.\n- **Channels:** tech E&O brokers (Marsh, Aon, WTW, and specialists such as Founder Shield or Embroker), A-LIGN-style auditors and compliance platforms (Vanta, Drata), and CISO and GC communities. Partnering with auditors is a proven route, per <a href=\"https://www.armilla.ai/press\">Armilla's A-LIGN deal</a>.\n\n### 3. Customer-service-heavy deployers (airlines, retail, telecom, travel)\n- **Who:** non-tech companies that put an LLM bot in front of customers.\n- **Why liability:** companies are held to what their bot says. The best-known case is Moffatt v. Air Canada (BC tribunal, 2024), which held the airline liable for its chatbot's misstatement. I did not retrieve a source this session, so I'm flagging it **[unverified]**.\n- Standard CGL and cyber forms now exclude generative AI. See <a href=\"https://lawandkoffee.substack.com/p/your-insurance-policy-just-changed\">the CG 40 47 01 26 discussion</a>.\n- **Buying signals:** a public bot launch, a viral bot-error incident, risk-factor language on AI in 10-Ks, and CGL renewals with the new endorsement.\n- **Public examples:** Air Canada, plus large US airlines, telcos and retailers **[my selection]**.\n- **Channels:** corporate risk managers and large-account brokers. The sales pitch is that the CGL or E&O coverage they assume they have is gone.\n\n### 4. Regulated-industry deployers (healthcare and mental health, fintech, insurance, legal)\n- **Who:** AI intake and triage bots, wellness chat, lending and support agents, legal copilots.\n- **Why liability:** several states regulate AI in mental health and healthcare, and sector regulators such as the CFPB and state insurance departments apply existing rules to AI. I did not retrieve sources for these, so I'm flagging them **[unverified]**.\n- Companion-chatbot laws such as <a href=\"https://fpf.org/blog/understanding-the-new-wave-of-chatbot-legislation-california-sb-243-and-beyond/\">SB 243 and New York's law</a> will overlap with wellness products.\n- Professional-services AI work is called out as excluded under Berkley's wording, <a href=\"https://lawandkoffee.substack.com/p/your-insurance-policy-just-changed\">per the same Substack source</a>.\n- **Buying signals:** compliance hires, regulator inquiries, and a model-risk or vendor-risk review of AI.\n- **Channels:** compliance and model-risk officers, industry associations, and regulated-sector brokers. A risk assessment tends to lead here, because these buyers already know how to buy audits.\n\n### 5. Agentic AI and coding-agent startups (growing, not yet the top segment)\n- **Who:** companies shipping agents that take actions such as refunds, code changes and purchases.\n- **Why liability:** autonomous actions create property-damage and financial-loss exposure that sits between cyber and E&O. I did not retrieve incident sources, so I'm flagging this **[unverified]**.\n- **Buying signals:** enterprise pilots stalling at procurement over \"who pays if the agent errs\", and pursuit of an AI security or agent standard.\n- **Channels:** VCs and accelerators, and developer and security conferences. Expect a long cycle and a focus on assessments, because there is little loss history to price.\n\n## What to do next\n- **Lead with:** segments 2 and 3. They have the clearest trigger (exclusions at renewal) and an identifiable budget owner. Use segment 1 for urgency-driven assessments.\n- **Priority gaps to verify:**\n  - Colorado AI Act status.\n  - Federal preemption of state AI laws.\n  - Illinois, Utah and Nevada AI health laws.\n  - The Air Canada ruling.\n  - Agent incidents.\n  - The Berkley and ISO filings (the Substack is secondary).\n- I can rerun those searches if you give me another search window.",
+ "segments": [
+  {
+   "id": "companion-chatbots",
+   "name": "Consumer companion and character chatbot platforms",
+   "description": "AI companion, role-play, wellness and teen-facing chat apps, plus big-tech consumer chat products.",
+   "why_they_need_cover": "Teen-harm and wrongful-death suits are being filed and settled, and more families keep filing. California SB 243, in effect since 1 Jan 2026, and a comparable New York law add disclosure, safety-protocol and reporting duties. Insurance capacity for bodily-injury exposure is thin, so a risk assessment mapped to SB 243 is the easier first sale.",
+   "buying_signals": [
+    "New SB 243 compliance program",
+    "Minor-safety or trust and safety hires",
+    "Pending suit or state AG inquiry",
+    "Funding round with investor diligence on liability"
+   ],
+   "example_companies": [
+    "Character.AI",
+    "Meta",
+    "Alphabet",
+    "Snap",
+    "Microsoft"
+   ],
+   "channels": [
+    "communities",
+    "partnerships",
+    "cold_email"
+   ],
+   "evidence": [
+    "Character.AI and Google agreed to settle the first teen chatbot harm and wrongful-death suits, including Garcia; more families keep filing (openclassactions.com)",
+    "OpenAI and Meta have faced similar chatbot safety suits and probes (Yahoo News)",
+    "California SB 243 took effect 1 Jan 2026 and is the first chatbot law with minor-specific protections; New York has a comparable law (SSRN, FPF)",
+    "SB 243 requires disclosures, safety protocols and annual reporting (Skadden)"
+   ],
+   "archetype": {
+    "use_case_criticality": "critical",
+    "autonomy": "autonomous",
+    "data_sensitivity": "personal",
+    "jurisdiction": "us_high_reg",
+    "customer_facing": "public",
+    "outputs_per_year": 5000000,
+    "perils": [
+     "harmful_content",
+     "unsafe_advice",
+     "data_leakage",
+     "prompt_injection"
+    ]
+   },
+   "score": {
+    "plans": {
+     "essential": {
+      "premium": 3571.4285714285716,
+      "rate_on_line": 0.0071428571428571435,
+      "expected_loss": 0.0
+     },
+     "professional": {
+      "premium": 51845.0195109207,
+      "rate_on_line": 0.02592250975546035,
+      "expected_loss": 18038.2608904319
+     },
+     "enterprise": {
+      "premium": 67965.89135439557,
+      "rate_on_line": 0.013593178270879113,
+      "expected_loss": 25528.15255695841
+     }
+    },
+    "risk_score": 65
+   }
+  },
+  {
+   "id": "b2b-ai-saas",
+   "name": "B2B AI SaaS vendors with copilots and agents",
+   "description": "CX and support automation, sales and HR copilots, and vertical AI SaaS sold to enterprises.",
+   "why_they_need_cover": "Enterprise customers push AI indemnities and warranties down the supply chain during procurement. Tech E&O renewals are adding AI exclusions. EU Article 50 applies to chatbot providers from 2 Aug 2026.",
+   "buying_signals": [
+    "Enterprise security questionnaires asking for AI coverage",
+    "SOC 2 or ISO 42001 projects",
+    "E&O renewal with a new AI exclusion endorsement",
+    "Expansion to EU customers"
+   ],
+   "example_companies": [
+    "Salesforce",
+    "ServiceNow",
+    "HubSpot",
+    "Workday",
+    "C3.ai",
+    "UiPath",
+    "SoundHound",
+    "Freshworks"
+   ],
+   "channels": [
+    "partnerships",
+    "linkedin_ads",
+    "cold_email",
+    "communities"
+   ],
+   "evidence": [
+    "Berkley reportedly introduced an absolute AI exclusion across D&O, E&O and fiduciary lines, with AIG and Great American following (Substack, secondary source; verify against filings)",
+    "Chaucer and Armilla launched a combined cyber, tech E&O and AI liability structure in Feb 2026; Armilla also lists an A-LIGN partnership (armilla.ai/press)",
+    "Cooley notes Article 50 still applies from 2 Aug 2026 for new generative AI systems",
+    "Example companies were the researcher's own selection, not from sources"
+   ],
+   "archetype": {
+    "use_case_criticality": "high",
+    "autonomy": "autonomous",
+    "data_sensitivity": "personal",
+    "jurisdiction": "eu",
+    "customer_facing": "public",
+    "outputs_per_year": 5000000,
+    "perils": [
+     "wrong_information",
+     "unauthorized_commitment",
+     "data_leakage",
+     "prompt_injection",
+     "bias_discrimination"
+    ]
+   },
+   "score": {
+    "plans": {
+     "essential": {
+      "premium": 33549.64735573611,
+      "rate_on_line": 0.06709929471147222,
+      "expected_loss": 11661.866637069754
+     },
+     "professional": {
+      "premium": 76841.0006553062,
+      "rate_on_line": 0.038420500327653095,
+      "expected_loss": 31157.070797603894
+     },
+     "enterprise": {
+      "premium": 103082.20683825313,
+      "rate_on_line": 0.020616441367650624,
+      "expected_loss": 44203.5380424254
+     }
+    },
+    "risk_score": 96
+   }
+  },
+  {
+   "id": "cx-deployers",
+   "name": "Customer-service-heavy deployers",
+   "description": "Airlines, retailers, telcos and travel companies that put LLM bots in front of customers.",
+   "why_they_need_cover": "Companies are held to what their bots tell customers. The new ISO CGL endorsement excludes generative AI, so the coverage risk managers assume they have may be gone at renewal.",
+   "buying_signals": [
+    "Public bot launch",
+    "Viral bot-error incident",
+    "AI risk-factor language in 10-K filings",
+    "CGL renewal carrying the new endorsement"
+   ],
+   "example_companies": [
+    "Air Canada"
+   ],
+   "channels": [
+    "linkedin_ads",
+    "partnerships",
+    "cold_email"
+   ],
+   "evidence": [
+    "ISO form CG 40 47 01 26 reportedly removes CGL coverage for bodily injury, property damage and advertising injury arising from generative AI (Substack, secondary source)",
+    "Moffatt v. Air Canada held the airline liable for its chatbot's misstatement [unverified]"
+   ],
+   "archetype": {
+    "use_case_criticality": "medium",
+    "autonomy": "autonomous",
+    "data_sensitivity": "personal",
+    "jurisdiction": "us_low_reg",
+    "customer_facing": "public",
+    "outputs_per_year": 5000000,
+    "perils": [
+     "wrong_information",
+     "unauthorized_commitment",
+     "data_leakage",
+     "prompt_injection"
+    ]
+   },
+   "score": {
+    "plans": {
+     "essential": {
+      "premium": 20756.406776206695,
+      "rate_on_line": 0.04151281355241339,
+      "expected_loss": 6480.806412220538
+     },
+     "professional": {
+      "premium": 57336.71755936217,
+      "rate_on_line": 0.028668358779681085,
+      "expected_loss": 22038.25399540319
+     },
+     "enterprise": {
+      "premium": 64340.85935763427,
+      "rate_on_line": 0.012868171871526854,
+      "expected_loss": 24250.81988382055
+     }
+    },
+    "risk_score": 72
+   }
+  },
+  {
+   "id": "regulated-deployers",
+   "name": "Regulated-industry deployers",
+   "description": "Healthcare and mental-health, fintech, insurance and legal firms using intake and triage bots, wellness chat, lending and support agents, or legal copilots.",
+   "why_they_need_cover": "Sector regulators apply existing rules to AI [unverified]. Companion-chatbot laws overlap with wellness products. Berkley's exclusion wording reportedly calls out professional-services AI work. These buyers already know how to buy audits, so an assessment is a natural lead offer.",
+   "buying_signals": [
+    "Compliance hires",
+    "Regulator inquiries",
+    "Model-risk or vendor-risk review of AI"
+   ],
+   "example_companies": [],
+   "channels": [
+    "communities",
+    "partnerships",
+    "cold_email"
+   ],
+   "evidence": [
+    "SB 243 and New York's companion-chatbot law will overlap with wellness products (FPF)",
+    "Berkley's wording reportedly excludes professional-services AI work (Substack, secondary source)",
+    "State AI health laws and CFPB and state insurance department positions on AI are [unverified]"
+   ],
+   "archetype": {
+    "use_case_criticality": "critical",
+    "autonomy": "human_review_sampled",
+    "data_sensitivity": "financial_or_health",
+    "jurisdiction": "us_high_reg",
+    "customer_facing": "public",
+    "outputs_per_year": 5000000,
+    "perils": [
+     "unsafe_advice",
+     "wrong_information",
+     "bias_discrimination",
+     "data_leakage"
+    ]
+   },
+   "score": {
+    "plans": {
+     "essential": {
+      "premium": 21934.403698921786,
+      "rate_on_line": 0.04386880739784357,
+      "expected_loss": 5891.791882982303
+     },
+     "professional": {
+      "premium": 61625.66229530614,
+      "rate_on_line": 0.03081283114765307,
+      "expected_loss": 21077.010308979672
+     },
+     "enterprise": {
+      "premium": 96743.09316718024,
+      "rate_on_line": 0.019348618633436048,
+      "expected_loss": 39591.17338030993
+     }
+    },
+    "risk_score": 77
+   }
+  },
+  {
+   "id": "agentic-startups",
+   "name": "Agentic AI and coding-agent startups",
+   "description": "Startups shipping agents that take real actions such as refunds, code changes and purchases.",
+   "why_they_need_cover": "Autonomous actions create property-damage and financial-loss exposure that sits between cyber and E&O [unverified]. Little loss history exists to price, so expect a long sales cycle that starts with assessments.",
+   "buying_signals": [
+    "Enterprise pilots stalling at procurement over who pays if the agent errs",
+    "Pursuit of an AI security or agent standard"
+   ],
+   "example_companies": [],
+   "channels": [
+    "partnerships",
+    "communities",
+    "reddit_ads"
+   ],
+   "evidence": [
+    "Segment is the researcher's assessment; agent incident sources were not retrieved [unverified]"
+   ],
+   "archetype": {
+    "use_case_criticality": "high",
+    "autonomy": "autonomous_actions",
+    "data_sensitivity": "financial_or_health",
+    "jurisdiction": "us_low_reg",
+    "customer_facing": "internal",
+    "outputs_per_year": 5000000,
+    "perils": [
+     "unauthorized_commitment",
+     "prompt_injection",
+     "data_leakage",
+     "wrong_information"
+    ]
+   },
+   "score": {
+    "plans": {
+     "essential": {
+      "premium": 26328.76890880117,
+      "rate_on_line": 0.05265753781760234,
+      "expected_loss": 8760.981337045107
+     },
+     "professional": {
+      "premium": 101869.68719847339,
+      "rate_on_line": 0.050934843599236695,
+      "expected_loss": 40619.10725882249
+     },
+     "enterprise": {
+      "premium": 116006.5375216189,
+      "rate_on_line": 0.023201307504323778,
+      "expected_loss": 45015.36283858398
+     }
+    },
+    "risk_score": 100
+   }
+  }
+ ]
+}

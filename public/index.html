@@ -25,6 +25,7 @@
     <a href="#risk">Risk</a>
     <a href="#redteam">Red team</a>
     <a href="#loop2">Loop 2</a>
+    <a href="#loop3">Loop 3</a>
     <button type="button" id="unlock" class="unlock">🔒 Enter access code</button>
     <a href="#live" class="cta">Run live</a>
   </nav>
@@ -260,6 +261,22 @@
     <div class="card wide"><details class="explain"><summary>Latest evidence gathered (including items judged not relevant)</summary><div id="l2-evidence" class="l2-evidence"></div></details></div>
   </section>
 
+  <section id="loop3">
+    <div class="section-head"><h2>Loop 3: growth (the business itself, via Egbe)</h2>
+      <p class="muted">A research agent finds target segments and prices a typical system in each with the real engine; a campaign agent drafts a "free AI risk score" landing page, outreach and ads within a spend cap; every template waits for human approval in a pull request; an analytics agent reads conversion by segment and rewrites the playbook. Growth data never changes price.</p></div>
+    <div class="l2-stats" id="g-stats"></div>
+    <div class="card wide"><div class="card-title">Target segments <span class="tag" id="g-via"></span></div>
+      <div class="muted small">Risk score and indicative premiums for a typical early-stage system in each segment, from the pricing engine (untested: portfolio-average failure rates).</div>
+      <div id="g-segs" class="l2-changes"></div></div>
+    <div class="card wide"><div class="card-head"><div><div class="card-title">Campaigns this cycle</div><div class="muted small" id="g-camp-sub"></div></div>
+      <a class="btn" href="/score" target="_blank" rel="noopener">Open the landing page →</a></div>
+      <div id="g-spend"></div><div id="g-camps" class="l2-changes"></div></div>
+    <div class="card wide"><div class="card-title">Conversion by segment <span class="tag" id="g-sim"></span></div>
+      <div class="muted small">visits → free scores → checkouts → purchased reports. Hover a bar.</div>
+      <div class="chart" id="chart-funnel"></div><div id="g-funnel-table" class="table-wrap"></div></div>
+    <div class="card wide"><details class="explain" open><summary>Targeting playbook for the next cycle (rewritten by the analytics agent)</summary><div id="g-playbook" class="playbook"></div></details></div>
+  </section>
+
   <section id="live">
     <div class="section-head"><h2>Run the loop live</h2><p class="muted">Submit any company's AI system: paste a description and attach its documents (applications, architecture notes, policies, model cards). The agents run every step in front of you, about a minute end to end.</p></div>
     <div class="card wide live-card">
@@ -322,5 +339,6 @@
 <script src="/charts.js"></script>
 <script src="/app.js"></script>
 <script src="/loop2.js"></script>
+<script src="/growth.js"></script>
 </body>
 </html>

@@ -22,6 +22,7 @@ def _load_dotenv(path: Path = ROOT / ".env") -> None:
 
 
 _load_dotenv()
+_load_dotenv(ROOT / ".env.local")   # Egbe project key (OS_URL, OS_API_KEY) written by /egbe:egbe-setup
 RUNS_DIR = ROOT / "agents" / "runs"
 SUITES_DIR = ROOT / "agents" / "test_suites"
 

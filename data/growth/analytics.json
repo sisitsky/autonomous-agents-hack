@@ -1,0 +1,53 @@
+{
+ "cycle": 1,
+ "run_at": "2026-11-23T00:08:47+00:00",
+ "source": "simulated",
+ "simulated": true,
+ "rows": [
+  {
+   "segment_id": "cx-deployers",
+   "utm_campaign": "iacta-c1-cx-deployers",
+   "channel": "linkedin_ads",
+   "visits": 225,
+   "score_requests": 30,
+   "checkout_started": 6,
+   "purchases": 2,
+   "spend_usd": 25.0,
+   "visit_to_score": 0.13333333333333333,
+   "score_to_checkout": 0.2,
+   "checkout_to_purchase": 0.3333333333333333,
+   "cost_per_purchase": 12.5,
+   "revenue_usd": 98
+  },
+  {
+   "segment_id": "b2b-ai-saas",
+   "utm_campaign": "iacta-c1-b2b-ai-saas",
+   "channel": "linkedin_ads",
+   "visits": 241,
+   "score_requests": 41,
+   "checkout_started": 13,
+   "purchases": 6,
+   "spend_usd": 25.0,
+   "visit_to_score": 0.17012448132780084,
+   "score_to_checkout": 0.3170731707317073,
+   "checkout_to_purchase": 0.46153846153846156,
+   "cost_per_purchase": 4.166666666666667,
+   "revenue_usd": 294
+  },
+  {
+   "segment_id": "companion-chatbots",
+   "utm_campaign": "iacta-c1-companion-chatbots",
+   "channel": "communities",
+   "visits": 217,
+   "score_requests": 35,
+   "checkout_started": 5,
+   "purchases": 2,
+   "spend_usd": 25.0,
+   "visit_to_score": 0.16129032258064516,
+   "score_to_checkout": 0.14285714285714285,
+   "checkout_to_purchase": 0.4,
+   "cost_per_purchase": 12.5,
+   "revenue_usd": 98
+  }
+ ]
+}

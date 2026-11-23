@@ -1,0 +1,102 @@
+{
+ "cycle": 1,
+ "created_at": "2026-11-23T00:07:40+00:00",
+ "campaigns": [
+  {
+   "segment_id": "cx-deployers",
+   "landing": {
+    "headline": "Your support bot speaks for your company. Is it covered?",
+    "subhead": "Get a free AI risk score in 2 minutes. Indicative only, not an offer of insurance.",
+    "bullets": [
+     "Customer-service deployers in our model score 72 on risk",
+     "Indicative Professional premium: $57,337; Essential: $20,756",
+     "New ISO CGL endorsement excludes generative AI, so check what your renewal says",
+     "Full underwriting report for $49"
+    ],
+    "cta": "Get my free AI risk score"
+   },
+   "outreach_email": {
+    "subject": "Does your CGL still cover what your chatbot says?",
+    "body": "Hi,\n\nI noticed your company runs an AI assistant for customer support. A new ISO CGL endorsement excludes generative AI, so coverage you assume you have may change at renewal.\n\niacta.ai offers a free AI risk score in 2 minutes. A full underwriting report is $49. Figures are indicative and not an offer of insurance.\n\nWant the free score?\n\nIf you'd rather not hear from us, reply \"opt out\" and we won't contact you again.\n\nThe iacta.ai team"
+   },
+   "ad": {
+    "channel": "linkedin_ads",
+    "headline": "Is your support chatbot still covered?",
+    "text": "New ISO CGL endorsement excludes generative AI. Get a free AI risk score in 2 minutes. Indicative, not an offer of insurance."
+   },
+   "budget_usd": 25.0,
+   "utm_campaign": "iacta-c1-cx-deployers",
+   "landing_url": "https://iacta-ai.vercel.app/score?seg=cx-deployers&utm_source=linkedin_ads&utm_medium=paid&utm_campaign=iacta-c1-cx-deployers",
+   "approval": "pending",
+   "daily_cap_usd": 25,
+   "max_emails_per_day": 20
+  },
+  {
+   "segment_id": "b2b-ai-saas",
+   "landing": {
+    "headline": "Win enterprise deals with a clear AI risk picture",
+    "subhead": "Free AI risk score in 2 minutes. Indicative only, not an offer of insurance.",
+    "bullets": [
+     "B2B AI SaaS risk score in our model: 96",
+     "Indicative Professional premium: $76,841; Essential: $33,550",
+     "Buyers push AI indemnities down to vendors, and Tech E&O renewals are adding AI exclusions",
+     "Full underwriting report for $49"
+    ],
+    "cta": "Get my free AI risk score"
+   },
+   "outreach_email": {
+    "subject": "AI indemnity asks in your enterprise deals?",
+    "body": "Hi,\n\nEnterprise buyers increasingly push AI indemnities and warranties onto vendors, and Tech E&O renewals are adding AI exclusions.\n\niacta.ai gives you a free AI risk score in 2 minutes. A full underwriting report is $49. Figures are indicative and not an offer of insurance.\n\nWant to see your score?\n\nTo opt out of future emails, just reply \"opt out\".\n\nThe iacta.ai team"
+   },
+   "ad": {
+    "channel": "linkedin_ads",
+    "headline": "Buyers want AI indemnities. Know your risk.",
+    "text": "Free AI risk score in 2 minutes for B2B AI SaaS teams. Indicative, not an offer of insurance."
+   },
+   "budget_usd": 25.0,
+   "utm_campaign": "iacta-c1-b2b-ai-saas",
+   "landing_url": "https://iacta-ai.vercel.app/score?seg=b2b-ai-saas&utm_source=linkedin_ads&utm_medium=paid&utm_campaign=iacta-c1-b2b-ai-saas",
+   "approval": "pending",
+   "daily_cap_usd": 25,
+   "max_emails_per_day": 20
+  },
+  {
+   "segment_id": "companion-chatbots",
+   "landing": {
+    "headline": "Know your SB 243 risk before regulators and plaintiffs do",
+    "subhead": "Free AI risk score in 2 minutes. Indicative only, not an offer of insurance.",
+    "bullets": [
+     "Companion chatbot platforms score 65 on risk in our model",
+     "Indicative Professional premium: $51,845; Essential: $3,571",
+     "California SB 243 has been in effect since 1 Jan 2026, with a comparable New York law",
+     "Full underwriting report for $49"
+    ],
+    "cta": "Get my free AI risk score"
+   },
+   "outreach_email": {
+    "subject": "SB 243 readiness for your companion chatbot",
+    "body": "Hi,\n\nCalifornia SB 243 has been in effect since 1 Jan 2026 and adds disclosure, safety-protocol and reporting duties for companion chatbots. A comparable New York law exists too.\n\niacta.ai offers a free AI risk score in 2 minutes. A full underwriting report is $49. Figures are indicative and not an offer of insurance.\n\nInterested in your score?\n\nReply \"opt out\" and we won't email you again.\n\nThe iacta.ai team"
+   },
+   "ad": {
+    "channel": "communities",
+    "headline": "SB 243 in effect. Know your risk score.",
+    "text": "Free AI risk score in 2 minutes for companion chatbot platforms. Indicative, not an offer of insurance."
+   },
+   "budget_usd": 25.0,
+   "utm_campaign": "iacta-c1-companion-chatbots",
+   "landing_url": "https://iacta-ai.vercel.app/score?seg=companion-chatbots&utm_source=communities&utm_medium=paid&utm_campaign=iacta-c1-companion-chatbots",
+   "approval": "pending",
+   "daily_cap_usd": 25,
+   "max_emails_per_day": 20
+  }
+ ],
+ "total_budget_usd": 75.0,
+ "budget_left_before": 100,
+ "guardrail_notes": [],
+ "status": "pending_approval",
+ "how_to_approve": "Merge the growth pull request; nothing is sent or bought before that.",
+ "approval_pr": {
+  "branch": "growth/cycle-1-000842",
+  "url": "https://github.com/sisitsky/autonomous-agents-hack/compare/main...growth/cycle-1-000842?expand=1"
+ }
+}

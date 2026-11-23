@@ -55,3 +55,19 @@ def structured(system: str, user, schema: dict, model: str = MODEL_FAST,
                    output_config={"format": {"type": "json_schema", "schema": schema}})
     raw = next(b.text for b in resp.content if b.type == "text")
     return json.loads(raw)
+
+
+def web_research(system: str, user: str, model: str = MODEL_FAST, max_uses: int = 6) -> str:
+    """Text answer grounded in Claude's server-side web search (used when Egbe research
+    isn't connected). Handles pause_turn by continuing the turn."""
+    messages = [{"role": "user", "content": user}]
+    tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": max_uses}]
+    for _ in range(4):
+        resp = client().messages.create(model=model, max_tokens=16000, system=system, messages=messages,
+                                        tools=tools, output_config={"effort": "medium"})
+        if resp.stop_reason == "refusal":
+            raise LLMError("Model declined the research request")
+        if resp.stop_reason != "pause_turn":
+            return "".join(b.text for b in resp.content if b.type == "text")
+        messages.append({"role": "assistant", "content": resp.content})
+    raise LLMError("Research did not finish")

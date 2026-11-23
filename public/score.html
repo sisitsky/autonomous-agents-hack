@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free AI risk score · iacta.ai</title>
+<meta name="description" content="Get a free AI liability risk score in 2 minutes. Indicative, not an offer of insurance.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .lp { max-width: 980px; margin: 0 auto; padding: 56px 20px 80px; position: relative; z-index: 1; }
+  .lp h1 { font-size: clamp(32px, 5vw, 54px); margin: 10px 0 12px; }
+  .lp .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; margin-top: 24px; }
+  @media (max-width: 820px) { .lp .grid { grid-template-columns: 1fr; } }
+  .lp label { display: block; font-weight: 600; font-size: 14px; color: var(--ink-2); margin: 12px 0 6px; }
+  .lp .chips { margin: 4px 0; }
+  .score-big { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+  .grade { display: inline-block; font-size: 22px; font-weight: 700; border: 1px solid var(--line-2); border-radius: 10px; padding: 2px 12px; margin-left: 10px; vertical-align: middle; }
+  .plans-mini { display: grid; gap: 8px; margin-top: 14px; }
+  .plans-mini div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 6px 0; font-variant-numeric: tabular-nums; }
+  .lp ul.b { color: var(--ink-2); padding-left: 18px; } .lp ul.b li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+<header class="nav"><a class="brand" href="/"><span class="logo" aria-hidden="true"></span><span>iacta<span class="brand-tld">.ai</span></span></a>
+  <nav><a href="/">How it works</a></nav></header>
+<main class="lp">
+  <div class="eyebrow" id="lp-eyebrow">Free AI risk score</div>
+  <h1 id="lp-h">Is your AI covered when it gets something wrong?</h1>
+  <p class="lede" id="lp-sub">Answer six questions and get an indicative AI-liability risk score and premium range in two minutes.</p>
+  <ul class="b" id="lp-bullets"></ul>
+  <p class="notice">Indicative pricing on illustrative assumptions. A risk-assessment engine, not an offer of insurance.</p>
+  <div class="grid">
+    <form class="card" id="sf">
+      <label>What does your AI system do?</label>
+      <div class="select-wrap"><select id="f-use">
+        <option value="medium">Customer support or sales assistant</option><option value="low">Internal drafting or search</option>
+        <option value="high">Hiring, lending, eligibility or pricing decisions</option><option value="critical">Medical, legal or financial advice</option></select></div>
+      <label>How much human review?</label>
+      <div class="select-wrap"><select id="f-aut">
+        <option value="human_review_sampled">A human reviews a sample</option><option value="advisory_human_signoff">A human signs off on every output</option>
+        <option value="autonomous">Fully autonomous replies</option><option value="autonomous_actions">It takes actions (tools, refunds, payments)</option></select></div>
+      <label>What data does it see?</label>
+      <div class="select-wrap"><select id="f-data"><option value="personal">Customers' personal data</option><option value="none">No personal data</option><option value="financial_or_health">Financial or health data</option></select></div>
+      <label>Where are your users?</label>
+      <div class="select-wrap"><select id="f-jur"><option value="us_low_reg">US</option><option value="us_high_reg">US incl. California, Colorado, NYC, Illinois</option><option value="eu">EU</option></select></div>
+      <label>AI governance today</label>
+      <div class="select-wrap"><select id="f-gov"><option value="adequate">Some monitoring and an incident process</option><option value="weak">Little or none yet</option><option value="strong">NIST AI RMF / ISO 42001 aligned</option></select></div>
+      <label>AI responses per year</label>
+      <input id="f-vol" type="number" min="1000" step="10000" value="500000">
+      <button class="btn primary big" id="f-go">Get my free risk score</button>
+    </form>
+    <div class="card" id="result"><div class="muted">Your score appears here.</div></div>
+  </div>
+</main>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const money = x => "$" + Math.round(x).toLocaleString("en-US");
+  const params = new URLSearchParams(location.search), seg = params.get("seg");
+  let growth = {};
+  fetch("/data/growth.json?t=" + Date.now()).then(r => r.json()).then(g => {
+    growth = g;
+    const plan = g.plan || {}, c = (plan.campaigns || []).find(x => x.segment_id === seg);
+    if (c) {   // segment variant written by the campaign agent
+      $("lp-h").textContent = c.landing.headline; $("lp-sub").textContent = c.landing.subhead;
+      $("lp-bullets").innerHTML = c.landing.bullets.map(b => `<li>${esc(b)}</li>`).join("");
+      $("f-go").textContent = c.landing.cta;
+      const s = (g.segments || []).find(x => x.id === seg); if (s) $("lp-eyebrow").textContent = "Free AI risk score · " + s.name;
+    }
+  }).catch(() => {});
+  $("sf").onsubmit = async e => {
+    e.preventDefault();
+    $("result").innerHTML = `<div class="muted">Running the pricing engine…</div>`;
+    const uc = $("f-use").value;
+    const perils = ["wrong_information", "unauthorized_commitment", "data_leakage", "prompt_injection"]
+      .concat(uc === "high" ? ["bias_discrimination"] : uc === "critical" ? ["unsafe_advice"] : []);
+    const body = { outputs_per_year: +$("f-vol").value, perils,
+      factors: { use_case_criticality: uc, autonomy: $("f-aut").value, data_sensitivity: $("f-data").value,
+                 jurisdiction: $("f-jur").value, governance: $("f-gov").value, customer_facing: uc === "low" ? "internal" : "public" } };
+    try {
+      const r = await fetch("/api/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await r.json();
+      const ck = growth.checkout_url;
+      const utm = ["utm_source", "utm_medium", "utm_campaign"].map(k => params.get(k) ? `&${k}=${encodeURIComponent(params.get(k))}` : "").join("");
+      $("result").innerHTML = `<div class="muted small">Your AI risk score</div>
+        <div><span class="score-big">${d.risk_score}</span><span class="grade">${esc(d.grade)}</span></div>
+        <p class="small muted">0 = lowest risk, 100 = highest. Biggest drivers: ${d.top_drivers.map(x => esc(x.peril.replace(/_/g, " "))).join(", ")}.</p>
+        <div class="plans-mini">${Object.values(d.plans).map(p => `<div><span>${esc(p.name)} · ${money(p.limits.aggregate_limit)} limit</span><b>${money(p.premium)}/yr</b></div>`).join("")}</div>
+        <p class="small muted">${esc(d.note)} A red-team test of your system usually moves this a lot, in either direction.</p>
+        ${ck ? `<a class="btn primary big" href="${esc(ck)}${ck.includes("?") ? "&" : "?"}client_reference_id=${encodeURIComponent(seg || "direct")}${utm}">Get the full underwriting report · $${growth.full_report_price || 49}</a>`
+             : `<a class="btn primary big" href="/#live">Run the full underwriting loop</a><p class="small muted">Paid full reports (Stripe via Egbe) open soon.</p>`}`;
+    } catch (err) { $("result").innerHTML = `<div class="error">${esc(err.message)}</div>`; }
+  };
+})();
+</script>
+</body>
+</html>

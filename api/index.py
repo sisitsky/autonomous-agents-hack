@@ -248,3 +248,33 @@ async def api_underwriter_chat(request: Request):
               body.get("history") or [], msg)
     calc = _call(pricer.compute, r["insured"], plan=body.get("plan"))["calculation"] if r["changes"] else None
     return {**r, "calculation": calc}
+
+
+@app.post("/api/score")
+async def api_score(request: Request):
+    """Free AI risk score for the Loop 3 landing page: a short form priced by the
+    deterministic engine (no Claude call, so no access code). Indicative only."""
+    from engine.model import apply_plan, price
+    body = await request.json()
+    params = load_params()
+    f = params["rating_factors"]["factors"]
+    rt = {"wrong_information", "unauthorized_commitment", "data_leakage", "prompt_injection"}
+    vol = int(min(max(int(body.get("outputs_per_year") or 250_000), 1_000), 50_000_000))
+    perils = [p for p in (body.get("perils") or []) if p in params["priors"]["perils"]] or sorted(rt)
+    factors = {k: v for k, v in (body.get("factors") or {}).items() if k in f and v in f[k]["levels"]}
+    ins = {"id": "score", "perils": {p: ({"outputs_per_year": vol} if p in rt else {}) for p in perils}, "factors": factors}
+    plans = {}
+    for pid, plan in params["plans"]["plans"].items():
+        i = apply_plan(ins, params, pid)
+        if not i["perils"]:
+            continue
+        q = price(i, params, n_outer=400, n_inner=200)
+        plans[pid] = {"name": plan["name"], "premium": q["gross_premium"], "rate_on_line": q["rate_on_line"],
+                      "limits": plan["policy"], "covers": list(i["perils"])}
+    rol = (plans.get("professional") or next(iter(plans.values())))["rate_on_line"]
+    score = int(round(min(100, max(1, rol * 2500))))
+    q = price(apply_plan(ins, params, "enterprise"), params, n_outer=400, n_inner=200)
+    drivers = sorted(((p, d["expected_loss"]) for p, d in q["by_peril"].items()), key=lambda x: -x[1])[:3]
+    return {"risk_score": score, "grade": "A" if score < 25 else "B" if score < 45 else "C" if score < 65 else "D" if score < 85 else "E",
+            "plans": plans, "top_drivers": [{"peril": p, "expected_loss": v} for p, v in drivers],
+            "note": "Indicative, untested (no red-team test: portfolio-average failure rates). Not an offer of insurance."}

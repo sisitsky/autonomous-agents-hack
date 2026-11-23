@@ -27,7 +27,7 @@ from .config import ROOT
 
 MEM_DIR = ROOT / "data" / "memory"
 KEY_RE = re.compile(r"^[0-9a-f]{64}$")
-TARGETS = {"none", "endpoint", "deterministic", "llm", "claude"}
+TARGETS = {"none", "endpoint", "deterministic", "llm", "claude", "twin"}
 
 
 def doc_key(file_hashes: list[str]) -> str:

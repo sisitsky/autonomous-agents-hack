@@ -443,7 +443,9 @@
         px = `<div class="px">Premium ${fmt.money(before)} → ${fmt.money(after)} (${after >= before ? "+" : ""}${((after / before - 1) * 100).toFixed(1)}%)</div>`;
       }
       b.uwLog.pop();
-      b.uwLog.push({ html: `<div class="msg bot">${esc(r.reply)}${r.changes.length ? `<ul class="chg">${r.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}${px}</div>` });
+      if (!r.calculation) px = `<div class="px muted">No change to the risk profile, so the premium stays ${fmt.money(before)}.</div>`;
+      const ign = (r.ignored || []).length ? `<div class="muted small">Not applied: ${r.ignored.map(esc).join("; ")}</div>` : "";
+      b.uwLog.push({ html: `<div class="msg bot">${esc(r.reply)}${r.changes.length ? `<ul class="chg">${r.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}${px}${ign}</div>` });
       render(shown());
       document.getElementById("uw-log").scrollTop = 1e9;
     } catch (err) {
@@ -460,7 +462,7 @@
       $("chart-redteam").innerHTML = ""; $("cases").innerHTML = ""; $("explain-redteam").innerHTML = ""; return;
     }
     const s = rt.summary;
-    $("rt-sub").textContent = `${s.failures} of ${s.tested} material failures · target ${s.endpoint} · scored by ${s.scorer === "judge" ? "Claude judge" : "patterns"}`
+    $("rt-sub").textContent = (s.evidence === "simulated" ? "SIMULATED COPY (counts at reduced weight) · " : "") + `${s.failures} of ${s.tested} material failures · target ${s.endpoint} · scored by ${s.scorer === "judge" ? "Claude judge" : "patterns"}`
       + (s.disagreements && s.disagreements.length ? ` · ${s.disagreements.length} judge-vs-pattern disagreements` : "");
     Charts.redteam($("chart-redteam"), s);
     $("explain-redteam").innerHTML = (s.plan ? planHtml(s) : "") + paras(n.red_team);
@@ -669,8 +671,8 @@
       if (bot === "none") {
         push({ step: "redteam", status: "skipped", summary: "No red-team test: the four tested risks are priced on the portfolio average (Jewell prior) with its full uncertainty." });
       } else {
-        const target = bot === "endpoint" ? ep.endpoint : bot === "claude" ? "Claude (Anthropic API)" : `the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`;
-        const memSuite = mem && mem.suite && mem.target === bot && (bot === "claude" || bot === "endpoint") ? mem.suite : undefined;
+        const target = bot === "endpoint" ? ep.endpoint : bot === "claude" ? "Claude (Anthropic API)" : bot === "twin" ? "a simulated copy (counts at reduced weight)" : `the demo ShopBot (${bot === "llm" ? "Claude-powered" : "planted flaws"})`;
+        const memSuite = mem && mem.suite && mem.target === bot && ["claude", "endpoint", "twin"].includes(bot) ? mem.suite : undefined;
         rt = await timed("redteam", () => api("/api/redteam", { insured: intake.insured, profile: intake.profile, bot, ...ep, suite: memSuite, access_code: code }),
           r => `${r.summary.failures} of ${r.summary.tested} material failures on ${target}` + (r.suite_from_memory ? " (same tests as last time)" : r.summary.plan ? ` (${r.summary.plan.n_cases} tests written for this system)` : "")
             + (r.summary.errors ? ` (${r.summary.errors} cases errored)` : ""));

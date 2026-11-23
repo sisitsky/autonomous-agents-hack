@@ -443,7 +443,9 @@
         px = `<div class="px">Premium ${fmt.money(before)} → ${fmt.money(after)} (${after >= before ? "+" : ""}${((after / before - 1) * 100).toFixed(1)}%)</div>`;
       }
       b.uwLog.pop();
-      b.uwLog.push({ html: `<div class="msg bot">${esc(r.reply)}${r.changes.length ? `<ul class="chg">${r.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}${px}</div>` });
+      if (!r.calculation) px = `<div class="px muted">No change to the risk profile, so the premium stays ${fmt.money(before)}.</div>`;
+      const ign = (r.ignored || []).length ? `<div class="muted small">Not applied: ${r.ignored.map(esc).join("; ")}</div>` : "";
+      b.uwLog.push({ html: `<div class="msg bot">${esc(r.reply)}${r.changes.length ? `<ul class="chg">${r.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}${px}${ign}</div>` });
       render(shown());
       document.getElementById("uw-log").scrollTop = 1e9;
     } catch (err) {

@@ -284,7 +284,11 @@ async def api_underwriter_chat(request: Request):
         raise HTTPException(400, "Write an answer or a question for the underwriting agent")
     r = _call(underwriter_chat.chat, ins, body.get("profile") or {}, body.get("open_questions") or [],
               body.get("history") or [], msg)
-    calc = _call(pricer.compute, r["insured"], plan=body.get("plan"))["calculation"] if r["changes"] else None
+    # Re-price on every applied change. If the agent moved the plan (to cover a new
+    # exposure), price on that plan rather than the one the page was showing.
+    plan_changed = any(c.startswith("plan:") for c in r["changes"])
+    plan = r["insured"].get("plan") if plan_changed else (body.get("plan") or r["insured"].get("plan"))
+    calc = _call(pricer.compute, r["insured"], plan=plan)["calculation"] if r["changes"] else None
     return {**r, "calculation": calc}
 
 

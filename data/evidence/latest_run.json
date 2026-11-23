@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-23T04:06:45+00:00",
+  "run_at": "2026-11-23T05:24:39+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.4
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 34,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.9
+      "seconds": 1.3
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,15 +66,16 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
-      "status": "ok",
-      "fetched": 15,
-      "new": 1,
-      "seconds": 12.6
+      "status": "error",
+      "error": "HTTP Error 429: Unknown Error",
+      "fetched": 0,
+      "new": 0,
+      "seconds": 0.3
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +83,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.2
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -93,22 +94,11 @@
       "seconds": 0.0
     }
   },
-  "new_items": [
-    {
-      "id": "arxiv:c1103d3029601c80",
-      "source": "arxiv",
-      "type": "research",
-      "title": "Beyond Self-Critique: Epistemic Convergence Control for Multi-Agent Research Verification",
-      "url": "http://arxiv.org/abs/2611.27839v1",
-      "date": "2026-11-20",
-      "summary": "Multi-agent systems for scientific claim verification increasingly rely on role-structured LLM debate to pressure-test hypotheses. However, when debating agents are instantiated from the same underlying base model, they share identical latent representations, making self-critique bias structurally inevitable. Static fixed-iteration protocols compound this by either halting prematurely before evidence stabilizes or wasting inference compute after convergence. We present \\sys{}, a multi-agent research verification framework that addresses both failure modes. First, we introduce an asymmetric role architecture comprising an Advocate, Skeptic, and Arbitrator with opposing epistemic directives, producing significantly lower role-embedding similarity (0.852 vs.\\ 0.918 for symmetric Multi-Agent D",
-      "first_seen": "2026-11-23T04:06:45+00:00"
-    }
-  ],
+  "new_items": [],
   "totals": {
-    "sources_ok": 9,
+    "sources_ok": 8,
     "sources": 11,
-    "new": 1,
+    "new": 0,
     "store": 215
   }
 }

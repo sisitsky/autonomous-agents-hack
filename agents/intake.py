@@ -42,6 +42,8 @@ USE_CASES = {
     "healthcare_or_clinical": "medical advice, triage, or clinical documentation",
     "legal_or_financial_advice": "advice a user relies on for legal or financial decisions",
     "internal_productivity": "internal drafting, search, or summarization for employees",
+    "foundation_model_or_general_assistant": "a general-purpose model, API or assistant sold to many users or "
+                                             "deployers (chat apps, model APIs, coding and computer-use agents)",
     "other": "anything else (explain in the description)",
 }
 
@@ -63,6 +65,11 @@ Rules:
   material does not state, and ask about them.
 - Never report test results or error rates as your own findings; red-team
   testing happens separately.
+- List EVERY peril that plausibly applies. A general-purpose model or assistant
+  used by many people is exposed to all of them (wrong information, commitments,
+  data leakage, prompt injection, bias, IP, harmful content, unsafe advice) and, if
+  it runs agents or tools, to autonomous_action_harm. Leaving a real peril out
+  prices it at zero.
 - In `policies`, copy the operating rules the AI system must follow (refund
   windows, prices, eligibility criteria, what it may promise, identity checks)
   as close to the documents' wording as possible. Don't invent rules.
@@ -279,19 +286,34 @@ def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_") or "insured"
 
 
-def choose_plan(requested: dict, params: dict) -> tuple[str, dict]:
-    """The smallest plan whose aggregate limit covers what the company asked for
-    (or the default plan when it asked for nothing)."""
+def choose_plan(requested: dict, params: dict, perils: list[str] | None = None) -> tuple[str, dict]:
+    """The smallest plan whose aggregate limit covers what the company asked for and
+    that covers every peril the system is exposed to (so no exposure is silently
+    priced at zero). Falls back to the plan covering the most of them."""
     plans = params["plans"]
     want = int(requested.get("aggregate_limit") or 0)
-    if not want:
+    need = set(perils or [])
+    ranked = sorted(plans["plans"].items(), key=lambda kv: kv[1]["policy"]["aggregate_limit"])
+    if not want and need <= set(plans["plans"][plans["default_plan"]]["covers"]):
         pid = plans["default_plan"]
         return pid, plans["plans"][pid]
-    ranked = sorted(plans["plans"].items(), key=lambda kv: kv[1]["policy"]["aggregate_limit"])
     for pid, plan in ranked:
-        if plan["policy"]["aggregate_limit"] >= want:
+        if plan["policy"]["aggregate_limit"] >= want and need <= set(plan["covers"]):
             return pid, plan
-    return ranked[-1]
+    return max(ranked, key=lambda kv: (len(need & set(kv[1]["covers"])), kv[1]["policy"]["aggregate_limit"]))
+
+
+def deployment_scale(profile: dict) -> str:
+    """Band for the post-cap deployment_scale factor (params/rating_factors.yaml)."""
+    n = int((profile.get("exposure") or {}).get("outputs_per_year") or 0)
+    general = (profile.get("use_case") or {}).get("category") == "foundation_model_or_general_assistant"
+    if n >= 100_000_000_000 or (general and n == 0):
+        return "frontier"
+    if n >= 1_000_000_000:
+        return "very_large" if not general else "frontier"
+    if n >= 10_000_000:
+        return "large" if not general else "very_large"
+    return "small" if not general else "large"
 
 
 def resolve_provider(profile: dict, params: dict, aliases: dict | None = None) -> str | None:
@@ -378,7 +400,9 @@ def to_insured(profile: dict, params: dict, insured_id: str | None = None,
         notes.append(f"Model provider '{profile['model_provider']['name']}' is not mapped to a provider bucket; "
                      "systemic capital uses the portfolio average. Add it to agents/provider_aliases.yaml.")
 
-    plan_id, plan = choose_plan(profile["requested_policy"], params)
+    if "deployment_scale" in rf:
+        factors["deployment_scale"] = deployment_scale(profile)
+    plan_id, plan = choose_plan(profile["requested_policy"], params, list(perils))
     policy = dict(plan["policy"])
     notes.append(f"Quoted on the {plan['name']} plan ({policy['limit_per_claim']:,} per claim / "
                  f"{policy['aggregate_limit']:,} aggregate); every plan is priced for comparison.")

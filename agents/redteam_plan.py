@@ -30,7 +30,7 @@ from . import llm
 from .config import MODEL_FAST, SUITES_DIR, llm_available
 
 TEMPLATES_PATH = SUITES_DIR / "templates.yaml"
-MAX_CASES = 40
+MAX_CASES = 48
 
 DEFAULT_GROUND_TRUTH = (
     "No written policy was supplied with this submission. Grade against these defaults:\n"
@@ -120,6 +120,19 @@ def capabilities(profile: dict) -> dict:
         flags["personal_data"] = (False, f"data sensitivity {data}")
     flags["tools"] = (bool(actions) or autonomy == "autonomous_actions",
                       "intake: " + ", ".join(actions) if actions else f"autonomy {autonomy}")
+    general = use_case == "foundation_model_or_general_assistant"
+    perils = {p.get("peril") if isinstance(p, dict) else p for p in profile.get("perils") or []}
+    public = _level(profile, "customer_facing") == "public"
+    g = "general-purpose model" if general else None
+    flags["agentic"] = (general or flags["tools"][0] or "autonomous_action_harm" in perils,
+                        g or ("runs tools or actions" if flags["tools"][0] else "no tools or agents"))
+    flags["advice"] = (general or use_case in ("healthcare_or_clinical", "legal_or_financial_advice") or "unsafe_advice" in perils,
+                       g or f"use case {use_case}")
+    flags["content"] = (general or use_case == "content_generation" or public
+                        or bool(perils & {"harmful_content", "ip_infringement"}),
+                        g or ("public-facing" if public else f"use case {use_case}"))
+    flags["decisions"] = (general or use_case in ("hiring_or_hr_screening", "lending_credit_or_eligibility")
+                          or "bias_discrimination" in perils, g or f"use case {use_case}")
     return {k: {"on": on, "why": why} for k, (on, why) in flags.items()}
 
 
@@ -133,14 +146,18 @@ def build_plan(profile: dict, templates: dict | None = None) -> dict:
         (skipped if missing else run).append(
             {"template_id": t["id"], "category": t["category"], "count": t["count"],
              **({"missing": missing, "why": "; ".join(f"{m}: {caps[m]['why']}" for m in missing)} if missing else {})})
-    total = 0
-    for r in run:                       # cap the suite size, trimming evenly from the end
-        r["count"] = min(r["count"], max(0, MAX_CASES - total)); total += r["count"]
+    total = sum(r["count"] for r in run)
+    while total > MAX_CASES:            # cap the suite size, trimming the largest templates first
+        r = max(run, key=lambda x: x["count"])
+        if r["count"] <= 1:
+            break
+        r["count"] -= 1; total -= 1
     run = [r for r in run if r["count"] > 0]
     pol = policies(profile)
     return {"capabilities": caps, "templates": run, "skipped": skipped, "n_cases": total,
             "ground_truth_source": "company policy from intake" if pol else "default rules (no policy supplied)",
-            "templates_version": templates.get("version")}
+            "templates_version": templates.get("version"),
+            "signal_categories": templates.get("signal_categories", {})}
 
 
 def ground_truth(profile: dict) -> str:
@@ -232,4 +249,5 @@ def generate_suite(profile: dict, use_llm: bool | None = None, workers: int = 4)
             "generator": MODEL_FAST if use_llm and not errors else ("template fallback" if not use_llm else
                                                                      f"{MODEL_FAST} with template fallback"),
             "generator_errors": errors,
-            "ground_truth": gt, "categories": templates["categories"], "plan": plan, "cases": cases}
+            "ground_truth": gt, "categories": templates["categories"],
+            "signal_categories": templates.get("signal_categories", {}), "plan": plan, "cases": cases}

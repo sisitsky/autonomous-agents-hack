@@ -123,11 +123,28 @@ def test_default_policy_when_not_requested(params):
 
 
 def test_requested_limits_choose_smallest_fitting_plan(params):
-    for agg, plan in ((400_000, "essential"), (2_000_000, "professional"), (4_000_000, "enterprise"),
+    # Northwind is exposed to data leakage and prompt injection, which Essential doesn't
+    # cover, so the smallest plan that covers every exposure is Professional.
+    for agg, plan in ((400_000, "professional"), (2_000_000, "professional"), (4_000_000, "enterprise"),
                       (50_000_000, "enterprise")):
         p = copy.deepcopy(NORTHWIND_PROFILE)
         p["requested_policy"]["aggregate_limit"] = agg
         assert intake.to_insured(p, params)[0]["plan"] == plan
+    small = copy.deepcopy(NORTHWIND_PROFILE)
+    small["perils"] = [x for x in small["perils"] if x["peril"] in ("wrong_information", "unauthorized_commitment")]
+    small["requested_policy"]["aggregate_limit"] = 400_000
+    assert intake.to_insured(small, params)[0]["plan"] == "essential"
+
+
+def test_every_exposure_is_covered_and_scaled(params):
+    p = copy.deepcopy(NORTHWIND_PROFILE)
+    p["use_case"]["category"] = "foundation_model_or_general_assistant"
+    p["perils"] = [{"peril": k, "rationale": ""} for k in params["priors"]["perils"]]
+    p["exposure"]["outputs_per_year"] = 0
+    ins = intake.to_insured(p, params)[0]
+    assert ins["plan"] == "enterprise" and set(ins["perils"]) == set(params["priors"]["perils"])
+    assert ins["factors"]["deployment_scale"] == "frontier"
+    assert intake.deployment_scale({"exposure": {"outputs_per_year": 5_000_000}, "use_case": {"category": "other"}}) == "small"
 
 
 def test_documents_become_labeled_blocks(tmp_path):

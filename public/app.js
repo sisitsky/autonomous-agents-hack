@@ -398,6 +398,13 @@
       <div class="facts"><span>${x.expected_claims_per_year.toFixed(2)} claims / yr</span><span>modifier ×${x.modifier.toFixed(2)}</span>
       ${x.failure_type ? `<span class="tag">red-team measured</span>` : `<span class="tag">profile priced</span>`}
       ${x.rating_factors.map(f => `<span class="tag">${esc(f.factor)} ${esc(f.level)} ×${f.relativity}</span>`).join("")}</div></div>`).join("");
+    const shocks = (calc.insured_full && calc.insured_full.shock_events) || [];
+    if (shocks.length) {
+      $("perils").insertAdjacentHTML("afterbegin", `<div class="peril shock"><div class="top"><span>⚠ Shock events on file</span>
+        <span class="tag">${esc((calc.underwriting || {}).decision || "")}</span></div>` + shocks.map(e =>
+        `<div class="facts"><span class="tag">${esc(e.severity)}</span><span>${esc(e.title)}</span>
+         <span class="muted small">raises ${esc(e.perils.map(x => x.replace(/_/g, " ")).join(", "))}</span></div>`).join("") + `</div>`);
+    }
     const qs = ((p && p.open_questions) || []).concat(b.uwFollowUps || []);
     const done = new Set(b.uwAnswered || []);
     $("questions").innerHTML = qs.map((q, i) => `<li class="${done.has(i) ? "done" : ""}">${esc(q)}</li>`).join("")
@@ -720,6 +727,7 @@
     $("case-verdict").onchange = drawCases;
     $("chat-form").onsubmit = chat;
     $("uw-form").onsubmit = uwSend;
+    $("uw-input").onkeydown = e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("uw-form").requestSubmit(); } };
     $("unlock").onclick = () => {
       if (getCode() && confirm("Forget the access code in this browser?")) return setCode("");
       const c = prompt("Access code (needed for steps that call Claude):", getCode());

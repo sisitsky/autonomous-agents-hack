@@ -34,7 +34,7 @@ EQUATIONS = [
     {"id": "frequency_rate", "name": "Claim frequency (profile perils)",
      "formula": "λ = rate",
      "latex": r"\lambda = \text{rate}",
-     "meaning": "Bias, IP, harmful content and unsafe advice are priced from an annual claim rate and the rating factors."},
+     "meaning": "Bias, IP, harmful content, unsafe advice and autonomous-action harm are priced from an annual claim rate and the rating factors (including deployment scale), moved by red-team signals and any shock events."},
     {"id": "dirichlet", "name": "Dirichlet red-team outcomes",
      "formula": "θ = (θ_pass, θ_1..θ_K) ~ Dirichlet(A μ + counts)",
      "latex": r"\boldsymbol{\theta} \sim \mathrm{Dirichlet}\!\left(A\boldsymbol{\mu} + \mathbf{n}\right),\quad \theta_k \sim \mathrm{Beta}(\alpha_k,\ \alpha_0 - \alpha_k)",
@@ -157,6 +157,23 @@ def _param_entry(priors: dict, path: str, used_mean: float) -> dict:
     return entry
 
 
+def _factor_entry(f: str, rel: float, peril: str, insured: dict, rf: dict) -> dict:
+    """One line of a peril's modifier: a rating factor, the underwriter adjustment,
+    a red-team signal, or the shock events that bear on the peril."""
+    if f in rf["factors"]:
+        return {"factor": f, "level": insured["factors"][f], "relativity": rel, "source": rf["factors"][f]["source"]}
+    if f == "shock_events":
+        evs = [e for e in insured.get("shock_events") or [] if peril in (e.get("perils") or [])]
+        return {"factor": "shock events", "level": ", ".join(e["severity"] for e in evs), "relativity": rel,
+                "source": " | ".join(f"{e['title']}: {e.get('evidence', '')[:200]}" for e in evs)}
+    if f == "red_team_signal":
+        s = ((insured.get("red_team") or {}).get("signals") or {}).get(peril, {})
+        return {"factor": "red-team signal", "level": f"{s.get('failures', 0)}/{s.get('tested', 0)} failed",
+                "relativity": rel, "source": rf.get("red_team_signals", {}).get("source", "")}
+    return {"factor": f, "level": "underwriter", "relativity": rel,
+            "source": (insured.get("underwriter_adjustments") or {}).get(peril, {}).get("reason", "")}
+
+
 def calculation(insured: dict, params: dict, quote: dict, tornado: dict | None = None,
                 controls: dict | None = None, params_dir: Path | str = PARAMS_DIR) -> dict:
     """Assemble the full archive for one quote from the engine's own outputs."""
@@ -179,11 +196,7 @@ def calculation(insured: dict, params: dict, quote: dict, tornado: dict | None =
             "failure_type": freq.get("failure_type"),
             "base_claims_per_year": d["base_claims_per_year"],
 
-            "rating_factors": [{"factor": f, "level": insured["factors"][f], "relativity": rel,
-                                "source": rf["factors"][f]["source"]} if f in rf["factors"] else
-                               {"factor": f, "level": "underwriter", "relativity": rel,
-                                "source": (insured.get("underwriter_adjustments") or {}).get(name, {}).get("reason", "")}
-                               for f, rel in detail.items()],
+            "rating_factors": [_factor_entry(f, rel, name, insured, rf) for f, rel in detail.items()],
             "combined_relativity_raw": raw,
             "modifier_bounds": rf["combined_modifier_bounds"],
             "modifier": d["modifier"],

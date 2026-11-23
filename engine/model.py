@@ -146,7 +146,7 @@ def apply_plan(insured: dict, params: dict, plan_id: str | None = None) -> dict:
 
 def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict]:
     rf = params["rating_factors"]
-    combined, detail = 1.0, {}
+    combined, post, detail = 1.0, 1.0, {}
     for name, spec in rf["factors"].items():
         if peril not in spec["applies_to"]:
             continue
@@ -157,7 +157,10 @@ def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict
             raise ValueError(f"Unknown level '{level}' for factor '{name}'")
         rel = spec["levels"][level]
         detail[name] = rel
-        combined *= rel
+        if spec.get("post_cap"):      # exposure size, applied after the stacking cap
+            post *= rel
+        else:
+            combined *= rel
     # Underwriter adjustment from answered open questions: one bounded relativity
     # per peril, recorded with its reason (insured-specific, not a global prior).
     adj = (insured.get("underwriter_adjustments") or {}).get(peril)
@@ -166,8 +169,36 @@ def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict
         m = min(max(float(adj["multiplier"]), lo), hi)
         detail["underwriter_adjustment"] = m
         combined *= m
+    # Red-team signal for a profile-priced peril (scope, content, advice, bias, IP tests):
+    # credibility-weighted relativity of the observed failure rate to the baseline.
+    sig_cfg = rf.get("red_team_signals")
+    sig = ((insured.get("red_team") or {}).get("signals") or {}).get(peril)
+    if sig_cfg and sig and peril in sig_cfg["baseline_failure_rate"] and sig.get("tested"):
+        n, k = float(sig["tested"]), float(sig_cfg["credibility_k"])
+        r = float(sig.get("failures", 0)) / n
+        z = n / (n + k)
+        rel = 1.0 + z * (r / sig_cfg["baseline_failure_rate"][peril] - 1.0)
+        rel = min(max(rel, sig_cfg["bounds"]["min"]), sig_cfg["bounds"]["max"])
+        detail["red_team_signal"] = round(rel, 4)
+        combined *= rel
     b = rf["combined_modifier_bounds"]
-    capped = min(max(combined, b["min"]), b["max"])
+    capped = min(max(combined, b["min"]), b["max"]) * post
+    # Shock events disclosed after intake: severity multipliers on the perils each bears
+    # on, applied after the combined cap (a material incident must move the price even
+    # when factors already sit at the cap), with their own cap.
+    shock_cfg = rf.get("shock_events")
+    if shock_cfg:
+        m = 1.0
+        for ev in insured.get("shock_events") or []:
+            if peril in (ev.get("perils") or []):
+                sev = ev.get("severity")
+                if sev not in shock_cfg["severity"]:
+                    raise ValueError(f"Unknown shock-event severity '{sev}'")
+                m *= shock_cfg["severity"][sev]
+        if m != 1.0:
+            m = min(m, shock_cfg["max_total"])
+            detail["shock_events"] = m
+            capped *= m
     return capped, detail
 
 

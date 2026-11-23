@@ -82,7 +82,12 @@ def underwriting_decision(insured: dict, params: dict) -> dict:
     else:
         reasons.append("No red-team test: priced on the portfolio average with wide uncertainty; "
                        "a test would firm up the price.")
-    decision = "refer" if rt and reasons else ("indicative_untested" if not rt else "quote")
+    refer_at = set((params["rating_factors"].get("shock_events") or {}).get("refer_at") or [])
+    shocks = [e for e in insured.get("shock_events") or [] if e.get("severity") in refer_at]
+    for e in shocks:
+        reasons.append(f"Shock event ({e['severity']}): {e['title']}. Referred to a senior underwriter; "
+                       "binding would normally require remediation evidence and a re-test.")
+    decision = "refer" if (rt and reasons) or shocks else ("indicative_untested" if not rt else "quote")
     return {"decision": decision, "reasons": reasons}
 
 

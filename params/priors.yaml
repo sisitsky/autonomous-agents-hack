@@ -19,7 +19,7 @@
 # pricing; severities reflect that most chatbot harms are small and the expensive
 # cases are rare group claims and regulatory actions. Judgment, illustrative.
 
-version: 1.2.0
+version: 1.3.0
 updated: '2026-11-22'
 
 # ---------------------------------------------------------------- red-team measured perils
@@ -39,6 +39,13 @@ red_team:
       Judgment (illustrative), 2026-11-22. Adversarial suites over-sample failure
       modes; roughly 6 in 1,000 live outputs face a comparable situation. Replace with
       paired adversarial vs. live-sample test data as it accumulates.
+  # Tests run on a simulated copy of the system (built from its documents, run on its
+  # model provider) count at this weight: each simulated case is worth this many real ones.
+  simulated_evidence_weight: 0.25
+  simulated_evidence_source: >-
+    Judgment (illustrative), 2026-11-23. A simulated copy reproduces the documented policies, tools and
+    model, not the company's real prompt, guardrails or integrations, so it informs the price without
+    overriding the portfolio prior. Replace with paired simulated-vs-real test results as they accumulate.
   # Used only when the portfolio has too little experience for Jewell estimation.
   fallback_prior:
     concentration: 10

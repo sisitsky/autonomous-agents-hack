@@ -137,9 +137,17 @@ async def api_redteam(request: Request):
     body = await request.json()
     _require_code(body); _require_llm()
     bot = body.get("bot", "deterministic")
-    generate = False
+    generate, evidence = False, "real"
     if bot in BOTS:
         transport, label = redteam.demo_transport(bot), f"demo ShopBot ({bot})"
+    elif bot == "twin":
+        from agents.config import MODEL_FAST
+        prof = body.get("profile") or {}
+        if not prof.get("company_name"):
+            raise HTTPException(400, "A simulated copy needs the intake profile")
+        transport = redteam.twin_transport(prof, MODEL_FAST)
+        label = f"simulated copy of {prof.get('system_name') or prof['company_name']} ({MODEL_FAST})"
+        generate, evidence = True, "simulated"
     elif bot == "claude":
         from agents.config import MODEL_FAST
         transport, label = redteam.claude_transport(MODEL_FAST), f"Claude via the Anthropic API ({MODEL_FAST})"
@@ -162,7 +170,7 @@ async def api_redteam(request: Request):
         memory.check_record({"key": "0" * 64, "suite": suite})
         suite = {**suite, "_path": suite.get("id") or "remembered"}
     ev = _call(redteam.evaluate, _insured(body), body.get("profile") or {}, transport,
-               label, scorer="judge", workers=10, generate=generate, suite=suite)
+               label, scorer="judge", workers=10, generate=generate, suite=suite, evidence=evidence)
     keep = {k: v for k, v in ev["suite"].items() if k != "_path"}
     return {"summary": ev["summary"], "cases": ev["results"], "insured": ev["insured"],
             "suite": keep if keep.get("plan") else None, "suite_from_memory": suite is not None}

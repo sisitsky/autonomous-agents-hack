@@ -104,7 +104,7 @@ def credibility(insured_id: str | None, suite_id: str, tested: int, counts: dict
     counts holds failure counts by type; passes are tested − Σ failures.
     Returns the prior (A, μ), credibility Z, observed and credibility-weighted shares,
     the posterior Dirichlet α, and every other insured's shrinkage for charts."""
-    counts = {k: int(counts.get(k, 0)) for k in outcomes if k != "pass"}
+    counts = {k: float(counts.get(k, 0)) for k in outcomes if k != "pass"}
     fails = sum(counts.values())
     if tested < 0 or fails > tested:
         raise ValueError(f"red-team failures ({fails}) exceed cases tested ({tested})")

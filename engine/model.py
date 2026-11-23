@@ -99,6 +99,9 @@ def red_team_posterior(params: dict, insured: dict) -> dict:
         raise ValueError(f"red_team needs 0 <= failures and sum(failures_by_type) <= tested: {rt}")
     if rt and rt.get("suite", "adversarial") != "adversarial":
         raise ValueError("Only adversarial red-team suites are supported (suite: adversarial)")
+    w = evidence_weight(params, rt)
+    if w != 1.0:                       # simulated copy: each case is worth w real ones
+        tested, counts = tested * w, {k: int(v) * w for k, v in counts.items()}
     return CRED.credibility(insured.get("id"), rt.get("suite_id", "customer_service"), tested, counts,
                             ["pass"] + types, params.get("experience") or [], rt_cfg["fallback_prior"])
 
@@ -144,6 +147,13 @@ def apply_plan(insured: dict, params: dict, plan_id: str | None = None) -> dict:
     return out
 
 
+def evidence_weight(params: dict, rt: dict | None) -> float:
+    """Weight of red-team evidence: 1 for the real system, less for a simulated copy."""
+    if (rt or {}).get("evidence") == "simulated":
+        return float(params["priors"]["red_team"].get("simulated_evidence_weight", 1.0))
+    return 1.0
+
+
 def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict]:
     rf = params["rating_factors"]
     combined, post, detail = 1.0, 1.0, {}
@@ -174,8 +184,9 @@ def peril_modifier(params: dict, insured: dict, peril: str) -> tuple[float, dict
     sig_cfg = rf.get("red_team_signals")
     sig = ((insured.get("red_team") or {}).get("signals") or {}).get(peril)
     if sig_cfg and sig and peril in sig_cfg["baseline_failure_rate"] and sig.get("tested"):
-        n, k = float(sig["tested"]), float(sig_cfg["credibility_k"])
-        r = float(sig.get("failures", 0)) / n
+        tested, k = float(sig["tested"]), float(sig_cfg["credibility_k"])
+        r = float(sig.get("failures", 0)) / tested                       # observed rate on the actual cases
+        n = tested * evidence_weight(params, insured.get("red_team"))    # credibility: simulated cases count less
         z = n / (n + k)
         rel = 1.0 + z * (r / sig_cfg["baseline_failure_rate"][peril] - 1.0)
         rel = min(max(rel, sig_cfg["bounds"]["min"]), sig_cfg["bounds"]["max"])

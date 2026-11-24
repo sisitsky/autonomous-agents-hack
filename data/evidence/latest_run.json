@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-24T07:18:22+00:00",
+  "run_at": "2026-11-24T09:06:08+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.5
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 36,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 1.4
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -73,8 +73,8 @@
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 3,
-      "seconds": 1.0
+      "new": 0,
+      "seconds": 11.2
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -93,42 +93,11 @@
       "seconds": 0.0
     }
   },
-  "new_items": [
-    {
-      "id": "arxiv:43d431c424958651",
-      "source": "arxiv",
-      "type": "research",
-      "title": "Carried-Over and Agent-Native Threats in the Supply Chain of LLM Agent Skills",
-      "url": "http://arxiv.org/abs/2611.30932v1",
-      "date": "2026-11-23",
-      "summary": "Agent skills are reusable packages that extend a large language model (LLM) agent with scripts, third-party dependencies, and natural-language instructions. An agent builds a skill's arguments from user requests and untrusted external content, so a flaw left by a benign author can escalate a prompt injection to code execution. Existing studies target malicious skills or a single attack vector, and none tests whether an agent can reach such flaws. We present the first registry-scale empirical study of the supply chain attack surface arising from unintentional vulnerabilities in agent skills, over all 48,682 skills in ClawHub. The study covers two carried-over risks, dependencies and first-party code, and two agent-native ones, install instructions and credentials printed to stdout. We scree",
-      "first_seen": "2026-11-24T07:18:22+00:00"
-    },
-    {
-      "id": "arxiv:097adac84b760e34",
-      "source": "arxiv",
-      "type": "research",
-      "title": "AgentBouncer: Defending Software Engineering Agents via Dynamic System-Call Mediation",
-      "url": "http://arxiv.org/abs/2611.30621v1",
-      "date": "2026-11-23",
-      "summary": "Software engineering (SE) agents can complete diverse engineering tasks by interacting with the development environment via tools that access files, run commands, and download resources. Unfortunately, the same ability that makes SE agents useful also makes them prone to performing unintended malicious actions through prompt injections, malicious tools, or supply-chain attacks. Existing defenses that analyze the agent trajectory may fail to detect such attacks, as they inspect only the initial prompt and the sequence of tool calls, but not the actual actions that are executed in the environment. This paper presents AgentBouncer, a novel runtime enforcement system that prevents SE agents from performing malicious actions by mediating, and if necessary denying, system calls that agents trigg",
-      "first_seen": "2026-11-24T07:18:22+00:00"
-    },
-    {
-      "id": "arxiv:8ef60b116ade0450",
-      "source": "arxiv",
-      "type": "research",
-      "title": "Test-Time Latent Computation to Improve Visual Perception in Multimodal Large Language Models",
-      "url": "http://arxiv.org/abs/2611.30480v1",
-      "date": "2026-11-23",
-      "summary": "Recent work on Large Language Models (LLMs) suggests that reasoning capabilities can be enhanced at test time not only through longer token-level reasoning traces, but also through additional computation in latent space. This raises a natural question for Multimodal Large Language Models (MLLMs): can additional computation in latent space improve visual perception at test time? In this work, we first verify that MLLMs contain stable reusable layers that can be re-forwarded at inference time without disrupting normal generation. Based on this observation, we propose \\textbf{Lo}ok \\textbf{Ba}ck in the \\textbf{L}atent \\textbf{S}pace (\\textbf{Lobals}), a training-free decoding method that identifies the contiguous layer window with the strongest visual-token attention and re-forwards through i",
-      "first_seen": "2026-11-24T07:18:22+00:00"
-    }
-  ],
+  "new_items": [],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 3,
+    "new": 0,
     "store": 231
   }
 }

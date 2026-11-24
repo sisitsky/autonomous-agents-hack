@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-24T03:59:58+00:00",
+  "run_at": "2026-11-24T05:08:47+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 36,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.9
+      "seconds": 1.5
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,15 +66,15 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 0.5
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 1,
-      "seconds": 1.8
+      "new": 5,
+      "seconds": 0.4
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.9
+      "seconds": 0.5
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -95,20 +95,60 @@
   },
   "new_items": [
     {
-      "id": "arxiv:89e3ff766c539cfd",
+      "id": "arxiv:00c5799fcb8d2fd8",
       "source": "arxiv",
       "type": "research",
-      "title": "Who Is Prompt-Injecting Coding Agents? An Empirical Study of Hidden AI-Directed Text on GitHub",
-      "url": "http://arxiv.org/abs/2611.28763v1",
-      "date": "2026-11-21",
-      "summary": "AI coding agents now triage issues, review pull requests and pick up tasks inside GitHub repositories, and to do so they read text that anyone with a GitHub account can write. This makes GitHub a prime surface for indirect prompt injection, in which instructions embedded in untrusted content steer a model that later processes it. Prior work has demonstrated such attacks against agents on GitHub in controlled settings, but how often they occur in practice, who deploys them, and for what purpose remain unknown. We present the first large-scale empirical study of AI-directed hidden text on GitHub. We analyzed roughly 145 million issues, pull requests, comments and README files, detected text that GitHub does not render to a human reader but that an agent receives in full, and filtered it with",
-      "first_seen": "2026-11-24T03:59:58+00:00"
+      "title": "SHAKTI: Evidence-Grounded Conversational AI for Nutrition and Health",
+      "url": "http://arxiv.org/abs/2611.29988v1",
+      "date": "2026-11-23",
+      "summary": "Large language models (LLMs) answer many diet and health questions but can state unsupported claims and cite sources that do not support them. We present SHAKTI (Smart Health Advisor for Knowledge-based Tailored Interventions), a conversational assistant that answers only from retrieved scholarly papers and exact food-composition data, and evaluate it with retrieval, generation, grounding, efficiency and contextawareness metrics. We indexed 484,368,086 OpenAlex works, searched exactly on a GPU for evaluation (10,065 NFCorpus, BioASQ, SciFact and PubMedQA questions) and through a compressed 230-million-abstract index in deployment. On 1,000 stratified questions, we compared single-shot, multi-hop, corrective and deep-research retrieval-augmented generation (RAG) with Claude Sonnet. SHAKTI a",
+      "first_seen": "2026-11-24T05:08:47+00:00"
+    },
+    {
+      "id": "arxiv:0043838c371f3fa3",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Conartist: Adaptive Agentic Red-Teaming of Computer-Using Agents against Multi-Step Prompt Injection",
+      "url": "http://arxiv.org/abs/2611.29977v1",
+      "date": "2026-11-23",
+      "summary": "Harnesses secure Computer-Using Agents by enforcing security constraints and defending against prompt injection attacks. However, we find that two core security mechanisms of agent harnesses remain vulnerable. First, consistency checking prevents agents from deviating from legitimate user objectives, while attackers can bypass it by embedding malicious actions that appear logically consistent with legitimate task execution. Second, risk auditing proactively examines high-risk operations. Yet, the auditing process itself would introduce additional exploitable actions that violate security boundaries. To evaluate above defects we found, we propose Conartist, a cascaded adaptive prompt injection framework comprising two progressive stages. First, Conartist employs a goal-pollution strategy to",
+      "first_seen": "2026-11-24T05:08:47+00:00"
+    },
+    {
+      "id": "arxiv:0d7c73595eac8cb9",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Relativising Integrity and Robustness: Prompt Injection and Partitioned Enclaves",
+      "url": "http://arxiv.org/abs/2611.29802v1",
+      "date": "2026-11-22",
+      "summary": "Relative security (RS) judges a system against a reference system, but has only been applied to confidentiality. We introduce relative integrity (RI), which states that every behaviour a system exhibits under an attacker's influence must be one the reference can exhibit for the same trusted inputs. RS and RI each choose their own reference runs, so together they accept attacks whose leak and effects the reference reproduces only in different runs. We therefore develop a further property, relative robustness (RR), which asks the same runs to reproduce both and is strictly stronger than RS and RI together. We give proof methods for RI and RR and a disproof method for RI, and apply them in two domains: (1) LLM agents under prompt injection, where the reference runs the same plan with a model ",
+      "first_seen": "2026-11-24T05:08:47+00:00"
+    },
+    {
+      "id": "arxiv:f49051332cb7a21c",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Can Speech LLMs Recognize When Audio Evidence Is Insufficient? A Diagnostic Study and a Pre-Generation Probing Mitigation",
+      "url": "http://arxiv.org/abs/2611.29393v1",
+      "date": "2026-11-22",
+      "summary": "Speech large language models are usually evaluated on questions that have answers. We ask what they do when a recording establishes none, and whether the standard way of finding out is sound. Diagnosed on synthesized speech the answer looks clear: Qwen2-Audio fabricates an answer to 92.5% of unanswerable questions, while an ASR cascade reading the same recordings reaches 2.5% hallucination at 6.7% over-refusal, placing the failure in reasoning rather than in perception. The identical protocol on 376 native SQuAD 2.0 questions over human-read recordings removes that conclusion: the cascade hallucinates on 67.7% against the end-to-end model's 69.8%, at a higher over-refusal cost. A paired subset asking the same questions of a synthesized and a human recording of each passage localises the ef",
+      "first_seen": "2026-11-24T05:08:47+00:00"
+    },
+    {
+      "id": "arxiv:b3b81ad74ca34aab",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Benchmarking Web Agent Defenses Against Adaptive Visual Prompt Injection",
+      "url": "http://arxiv.org/abs/2611.29268v1",
+      "date": "2026-11-22",
+      "summary": "Multimodal web agents automate website interactions but remain vulnerable to visual prompt injection (VPI), where malicious webpage content manipulates their visual processing and induces unintended actions. Although several defenses focus on detecting injected instructions in screenshots, malicious destinations such as phishing URLs embedded in HTML can remain hidden yet accessible through agent interactions. Existing evaluations have also not sufficiently examined adaptive attackers who know the defense mechanisms. To address these limitations, we introduce AdaptiveVPI, the first benchmark for systematically evaluating adaptive VPI threats in web agents. Specifically, we present a dataset of 360 webpage instances spanning 6 distinct hijack strategies across 10 real-world websites, with m",
+      "first_seen": "2026-11-24T05:08:47+00:00"
     }
   ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 1,
-    "store": 223
+    "new": 5,
+    "store": 228
   }
 }

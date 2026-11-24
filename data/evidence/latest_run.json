@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-24T19:00:10+00:00",
+  "run_at": "2026-11-24T20:04:44+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.3
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -42,15 +42,15 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
       "category": "security",
       "status": "ok",
       "fetched": 39,
-      "new": 3,
-      "seconds": 0.3
+      "new": 0,
+      "seconds": 0.6
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.0
+      "seconds": 1.5
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,7 +66,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
@@ -74,7 +74,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 11.7
+      "seconds": 0.6
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 1.2
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -93,45 +93,11 @@
       "seconds": 0.0
     }
   },
-  "new_items": [
-    {
-      "id": "cisa_kev:bfe817a74107802c",
-      "source": "cisa_kev",
-      "type": "security",
-      "title": "CVE-2026-132224: Optimizely Web Experimentation",
-      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-132224",
-      "date": "2026-11-24",
-      "summary": "Optimizely Web Experimentation contains an external control of critical state data vulnerability in its account signup flow that could allow an attacker to impersonate existing customer users and modify Project JavaScript. Successful exploitation can result in attacker-controlled JavaScript being distributed through Optimizely-hosted assets and executed in browsers visiting affected customer websites.",
-      "ai_related": false,
-      "first_seen": "2026-11-24T19:00:10+00:00"
-    },
-    {
-      "id": "cisa_kev:402c923b54c57988",
-      "source": "cisa_kev",
-      "type": "security",
-      "title": "CVE-2026-131914: Idunno AntiCsrf",
-      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-131914",
-      "date": "2026-11-24",
-      "summary": "Idunno AntiCsrf contains a deserialization of untrusted data vulnerability that allows an unauthenticated remote attacker to execute arbitrary code via object injection. The impacted product(s) could be end-of-life (EoL) and/or end-of-service (EoS). Users are advised to discontinue use and/or transition to a supported version.",
-      "ai_related": false,
-      "first_seen": "2026-11-24T19:00:10+00:00"
-    },
-    {
-      "id": "cisa_kev:fad5a69b16b48d34",
-      "source": "cisa_kev",
-      "type": "security",
-      "title": "CVE-2026-132165: Drupal Core",
-      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-132165",
-      "date": "2026-11-24",
-      "summary": "Drupal Core contains a not failing securely vulnerability that could allow an unauthenticated attacker to take over an existing site or execute arbitrary code via the Drupal installer. Under specific conditions, the attacker can use install.php to attempt to reinstall Drupal on the site.",
-      "ai_related": false,
-      "first_seen": "2026-11-24T19:00:10+00:00"
-    }
-  ],
+  "new_items": [],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 3,
+    "new": 0,
     "store": 234
   }
 }

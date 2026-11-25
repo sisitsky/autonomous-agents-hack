@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T13:25:35+00:00",
+  "run_at": "2026-11-25T15:07:51+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.0
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -48,9 +48,9 @@
       "name": "CISA Known Exploited Vulnerabilities",
       "category": "security",
       "status": "ok",
-      "fetched": 39,
-      "new": 0,
-      "seconds": 0.2
+      "fetched": 40,
+      "new": 1,
+      "seconds": 0.6
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -66,7 +66,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.9
+      "seconds": 0.7
     },
     "arxiv": {
       "name": "arXiv",
@@ -93,11 +93,23 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "cisa_kev:51f687ca388b8171",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-103406: Hewlett Packard Enterprise (HPE) Juniper Session Smart Conductor and Session Smart Router",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-103406",
+      "date": "2026-11-25",
+      "summary": "Hewlett Packard Enterprise (HPE) Juniper Session Smart Conductor and Session Smart Router contain an OS command injection vulnerability that could allow a remote attacker to execute arbitrary commands as root via a specially crafted salt minion ID.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T15:07:51+00:00"
+    }
+  ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 0,
-    "store": 241
+    "new": 1,
+    "store": 242
   }
 }

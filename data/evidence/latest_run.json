@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T02:58:21+00:00",
+  "run_at": "2026-11-25T04:05:54+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.5
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.4
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 39,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.1
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.1
+      "seconds": 0.7
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -73,7 +73,7 @@
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 2,
+      "new": 4,
       "seconds": 0.5
     },
     "edgar": {
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 0.4
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -95,30 +95,50 @@
   },
   "new_items": [
     {
-      "id": "arxiv:ed3765264f87c615",
+      "id": "arxiv:039b955fc9f7c251",
       "source": "arxiv",
       "type": "research",
-      "title": "Rethinking Document Indexing for LLM-based Analysis",
-      "url": "http://arxiv.org/abs/2611.31679v1",
-      "date": "2026-11-23",
-      "summary": "Documents such as clinical records, legal contracts, and scientific papers are increasingly analyzed with large language models (LLMs). The na\u00efve approach of prompting the model with the full text for every question is slow, expensive, prone to hallucination on long inputs, and reuses no work across questions. Retrieval-augmented generation (RAG) systems build reusable state to address this, but they store it as embedded chunks: slicing text into fragments can lose the meaning that spans them, and the resulting index is tied to one embedding model, so it must be rebuilt whenever that model changes. Answering many questions over a large body of data without a full rescan, however, is not a new problem: it is the problem database indexes have been solving for decades, and we argue that this ",
-      "first_seen": "2026-11-25T02:58:21+00:00"
+      "title": "Attestation is All You Need: Toward a Zero-Trust Architecture for HPC AI Agents",
+      "url": "http://arxiv.org/abs/2611.32958v1",
+      "date": "2026-11-24",
+      "summary": "AI agents are beginning to automate data analysis, orchestration, and simulation steering in HPC environments, but they introduce a security problem that existing cluster defenses do not address: the hijacked authorized agent. An adversary can subvert an agent through prompt injection, poisoned shared data, compromised tools, or multi-agent coordination, then exfiltrate sensitive data through legitimate encrypted LLM API traffic. We propose behavioral attestation as a runtime defense for this setting. Our system, AEGIS, compiles task-derived behavioral constraints, monitors agent actions with ebpf-based syscall interception, verifies evidence against constraint profiles, correlates behavior across agents, and triggers slurm-level containment. On the real attestation path, AEGIS detects all",
+      "first_seen": "2026-11-25T04:05:54+00:00"
     },
     {
-      "id": "arxiv:d4bad507ea545178",
+      "id": "arxiv:10b745ff940e52e9",
       "source": "arxiv",
       "type": "research",
-      "title": "ContextLure: Exploiting Benign Conversation History for Indirect Prompt Injection",
-      "url": "http://arxiv.org/abs/2611.31424v1",
-      "date": "2026-11-23",
-      "summary": "As LLMs become more capable, agents can perform more complex tasks with tools and maintain longer interactions with users. These benign conversations contain evidence on task results, user concerns, and operational constraints. The risk is that attackers who can observe benign conversations (evidence) may construct stronger indirect prompt injections without increasing the attackers' control over prior turns or the later injection. However, we still lack a clear study of how effectively attackers can select and use this evidence. To address this gap, we introduce ContextLure, a red-teaming framework in which an attacker silently observes an existing benign conversation, extracts evidence, and constructs an injection. The challenges are twofold: (a) selecting useful evidence and (b) present",
-      "first_seen": "2026-11-25T02:58:21+00:00"
+      "title": "CAPTA: Identifying LLMs Behind AI Agents",
+      "url": "http://arxiv.org/abs/2611.32686v1",
+      "date": "2026-11-24",
+      "summary": "Large language model (LLM)-based agents access remote services through tools to complete user tasks, often via API calls. In this setting, a remote service may want to identify the backend LLM of an agent to launch model-specific attacks, including prompt injection or selective delivery of manipulated content. However, the service cannot directly query the backend model and must instead collect observable responses through its interactions with the agent, making identification challenging. In this paper, we present Completely Automated Preference Test to tell LLMs Apart (CAPTA), a model identification approach inspired by CAPTCHA (Completely Automated Public Turing test to tell Computers and Humans Apart), which distinguishes humans from automated programs. CAPTA presents multiple-choice q",
+      "first_seen": "2026-11-25T04:05:54+00:00"
+    },
+    {
+      "id": "arxiv:8a81d266c82057bc",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Validating Multi-Model AI-Generated Acceptance Criteria in Requirements Engineering",
+      "url": "http://arxiv.org/abs/2611.32374v1",
+      "date": "2026-11-24",
+      "summary": "Large language models (LLMs) are increasingly used in software engineering to generate artifacts such as requirements, user stories, acceptance criteria, documentation, and code. Their use in requirements engineering raises important questions about correctness, traceability, and hallucination, especially because flawed specifications can affect later design, implementation, and verification activities. While much recent work on AI-assisted software engineering has focused on code generation and code-level validation, the validation of AI-generated specifications has received less attention. This paper addresses this gap by presenting a validation-oriented approach for AI-generated acceptance criteria. The approach combines retrieval-augmented generation (RAG), multi-model generation, and ",
+      "first_seen": "2026-11-25T04:05:54+00:00"
+    },
+    {
+      "id": "arxiv:367ca313323220af",
+      "source": "arxiv",
+      "type": "research",
+      "title": "LLM Agent Authorization Across Context Compaction",
+      "url": "http://arxiv.org/abs/2611.32194v1",
+      "date": "2026-11-24",
+      "summary": "Request-derived authorizers such as Progent protect LLM agents from prompt injection by deriving what an agent may do from the user's request. Their guarantee rests on attribution: the request is taken to be what the user said. Compaction breaks it. At every automatic compaction we observed, Claude Code and Codex placed a model-written summary of earlier turns as a user message, so the compactor's quotation of the user, documents and injected text reads as the user speaking. Because a policy frozen at the first request lets the agent finish few later tasks, we let Progent derive its policy for each request, and find that what it grants then follows what the compactor wrote. Even a payee the user stated is not safe: when an attacker's notice states another account as plain data and the user",
+      "first_seen": "2026-11-25T04:05:54+00:00"
     }
   ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 2,
-    "store": 236
+    "new": 4,
+    "store": 240
   }
 }

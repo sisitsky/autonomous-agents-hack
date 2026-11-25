@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T18:54:13+00:00",
+  "run_at": "2026-11-25T19:59:14+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.4
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -42,14 +42,14 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.0
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
       "category": "security",
       "status": "ok",
-      "fetched": 40,
-      "new": 0,
+      "fetched": 49,
+      "new": 9,
       "seconds": 0.3
     },
     "github_advisories": {
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 2.1
+      "seconds": 2.2
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -74,7 +74,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.6
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.7
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -93,11 +93,111 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "cisa_kev:25ca559e257b49ee",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-133469: Vates Xen Orchestra",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-133469",
+      "date": "2026-11-25",
+      "summary": "Vates Xen Orchestra contains an improper validation of specified type of input vulnerability that could allow an unauthenticated attacker to bypass authentication and perform actions with administrative privileges via a specially crafted authentication token containing an empty JSON object.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:d6d7714e57b33a31",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2025-41450: Danfoss AK-SM 800A Series",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-41450",
+      "date": "2026-11-25",
+      "summary": "Danfoss AK-SM 800A Series contains an improper authentication vulnerability that could allow an attacker to generate a web report exposing sensitive information, including internal IP addresses, usernames, and store names.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:410dcd85622db297",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2023-25914: Danfoss AK-SM 800A Series",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-25914",
+      "date": "2026-11-25",
+      "summary": "Danfoss AK-SM 800A Series contains a path traversal vulnerability that could allow an attacker to access and read underlying server system files via the XML interface.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:e58f28fbe2ccf7a4",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2023-25915: Danfoss AK-SM 800A Series",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-25915",
+      "date": "2026-11-25",
+      "summary": "Danfoss AK-SM 800A Series contains an improper input validation vulnerability that could allow a remote attacker to run arbitrary commands on the affected system.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:72faea345362ebff",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-133324: Mitel MiCollab",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-133324",
+      "date": "2026-11-25",
+      "summary": "Mitel MiCollab contains a not failing securely vulnerability in the Audio, Web and Video Conferencing (AWV) component that could allow an unauthenticated attacker to bypass authentication controls and perform unauthorized actions.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:36eeef08700eb1b1",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-133275: Mitel MiCollab",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-133275",
+      "date": "2026-11-25",
+      "summary": "Mitel MiCollab contains an unrestricted upload of file with dangerous type vulnerability in the Audio, Web and Video Conferencing (AWV) component due to insufficient file type validation that could allow an unauthenticated attacker to upload arbitrary files.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:cafdafa0145ac301",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-133311: Mitel MiCollab",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-133311",
+      "date": "2026-11-25",
+      "summary": "Mitel MiCollab contains a weak authentication vulnerability in the Audio, Web and Video Conferencing (AWV) component that could allow an unauthenticated attacker to access sensitive information using a specific system-generated random identifier or pre-staged content.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:9ca37ae079f4c49d",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-133303: Mitel MiCollab",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-133303",
+      "date": "2026-11-25",
+      "summary": "Mitel MiCollab contains an XML injection vulnerability in its Audio, Web, and Video Conferencing (AWV) component that could allow an unauthenticated attacker to execute arbitrary commands using pre-staged malicious content.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    },
+    {
+      "id": "cisa_kev:183eadc50f25ad82",
+      "source": "cisa_kev",
+      "type": "security",
+      "title": "CVE-2026-133323: Mitel MiCollab",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-133323",
+      "date": "2026-11-25",
+      "summary": "Mitel MiCollab contains an improper neutralization of special elements used in an OS command (OS command injection) vulnerability in its Audio, Web, and Video Conferencing (AWV) component that could allow an unauthenticated attacker to execute arbitrary system commands.",
+      "ai_related": false,
+      "first_seen": "2026-11-25T19:59:14+00:00"
+    }
+  ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 0,
-    "store": 242
+    "new": 9,
+    "store": 251
   }
 }

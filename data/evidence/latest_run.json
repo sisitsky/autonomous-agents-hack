@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T05:15:25+00:00",
+  "run_at": "2026-11-25T07:22:46+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -7,8 +7,8 @@
       "category": "regulation",
       "status": "ok",
       "fetched": 20,
-      "new": 0,
-      "seconds": 0.3
+      "new": 1,
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.5
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.4
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 39,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.1
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.4
+      "seconds": 0.6
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,7 +66,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -93,11 +93,23 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "federal_register:f8a102016f5127d2",
+      "source": "federal_register",
+      "type": "regulation",
+      "title": "Medicare Program; Contract Year 2028 Policy and Technical Changes to the Medicare Advantage Program, Medicare Prescription Drug Benefit Program, and Programs of All-Inclusive Care for the Elderly",
+      "url": "https://www.federalregister.gov/documents/2026/11/25/2026-23960/medicare-program-contract-year-2028-policy-and-technical-changes-to-the-medicare-advantage-program",
+      "date": "2026-11-25",
+      "summary": "This proposed rule would revise the Medicare Advantage (Part C), Medicare Prescription Drug Benefit (Part D), and Programs of All- Inclusive Care for the Elderly regulations to implement changes related to marketing and communications, drug coverage, enrollment processes, special needs plans, and other programmatic areas. Additionally, it would establish and implement a mandatory Medicare Advantage (MA) CMS Innovation Center model.",
+      "agency": "Health and Human Services Department, Centers for Medicare & Medicaid Services",
+      "first_seen": "2026-11-25T07:22:46+00:00"
+    }
+  ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 0,
-    "store": 240
+    "new": 1,
+    "store": 241
   }
 }

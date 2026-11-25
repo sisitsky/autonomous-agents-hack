@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T01:14:23+00:00",
+  "run_at": "2026-11-25T02:58:21+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.4
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 0.2
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,16 +50,15 @@
       "status": "ok",
       "fetched": 39,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.4
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
       "category": "security",
-      "status": "error",
-      "error": "HTTP Error 403: rate limit exceeded",
-      "fetched": 0,
+      "status": "ok",
+      "fetched": 10,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 1.1
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -67,15 +66,15 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 0,
-      "seconds": 0.3
+      "new": 2,
+      "seconds": 0.5
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -83,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.7
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -94,11 +93,32 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "arxiv:ed3765264f87c615",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Rethinking Document Indexing for LLM-based Analysis",
+      "url": "http://arxiv.org/abs/2611.31679v1",
+      "date": "2026-11-23",
+      "summary": "Documents such as clinical records, legal contracts, and scientific papers are increasingly analyzed with large language models (LLMs). The na\u00efve approach of prompting the model with the full text for every question is slow, expensive, prone to hallucination on long inputs, and reuses no work across questions. Retrieval-augmented generation (RAG) systems build reusable state to address this, but they store it as embedded chunks: slicing text into fragments can lose the meaning that spans them, and the resulting index is tied to one embedding model, so it must be rebuilt whenever that model changes. Answering many questions over a large body of data without a full rescan, however, is not a new problem: it is the problem database indexes have been solving for decades, and we argue that this ",
+      "first_seen": "2026-11-25T02:58:21+00:00"
+    },
+    {
+      "id": "arxiv:d4bad507ea545178",
+      "source": "arxiv",
+      "type": "research",
+      "title": "ContextLure: Exploiting Benign Conversation History for Indirect Prompt Injection",
+      "url": "http://arxiv.org/abs/2611.31424v1",
+      "date": "2026-11-23",
+      "summary": "As LLMs become more capable, agents can perform more complex tasks with tools and maintain longer interactions with users. These benign conversations contain evidence on task results, user concerns, and operational constraints. The risk is that attackers who can observe benign conversations (evidence) may construct stronger indirect prompt injections without increasing the attackers' control over prior turns or the later injection. However, we still lack a clear study of how effectively attackers can select and use this evidence. To address this gap, we introduce ContextLure, a red-teaming framework in which an attacker silently observes an existing benign conversation, extracts evidence, and constructs an injection. The challenges are twofold: (a) selecting useful evidence and (b) present",
+      "first_seen": "2026-11-25T02:58:21+00:00"
+    }
+  ],
   "totals": {
-    "sources_ok": 8,
+    "sources_ok": 9,
     "sources": 11,
-    "new": 0,
-    "store": 234
+    "new": 2,
+    "store": 236
   }
 }

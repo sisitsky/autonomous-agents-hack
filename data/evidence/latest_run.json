@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-26T04:02:14+00:00",
+  "run_at": "2026-11-26T05:12:23+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.5
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 0.5
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.2
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 47,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.2
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.4
+      "seconds": 0.8
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -73,8 +73,8 @@
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 4,
-      "seconds": 0.4
+      "new": 1,
+      "seconds": 0.5
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.3
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -95,50 +95,20 @@
   },
   "new_items": [
     {
-      "id": "arxiv:15ed8322f06dd055",
+      "id": "arxiv:ae917426755f0513",
       "source": "arxiv",
       "type": "research",
-      "title": "TASK Memory: Beyond Text-Only Memory with Activation Steering and Knowledge Editing against Memory Hallucination",
-      "url": "http://arxiv.org/abs/2611.34762v1",
+      "title": "Decoder-as-a-Probe: Verbalizing and Steering Visual Representations in LVLMs",
+      "url": "http://arxiv.org/abs/2611.34515v1",
       "date": "2026-11-25",
-      "summary": "LLM agents increasingly rely on external memory, yet they still hallucinate about what they remember. Often the correct memory is retrieved and placed in the prompt, but the answer contradicts it or the memory is applied to the wrong question. We call these use-time memory hallucinations. Across five open models, we find that they arise from the conflict between parametric knowledge and external memory and take three forms: memory-ignoring, where the model returns to a stale fact in its weights (up to 46% of queries); memory-misapplying, where it attributes the memory to unrelated entities (up to 24%, and 49% when retrieval is combined with weight editing); and version confusion, where 53% of answers about revised facts assert the superseded value when both versions remain stored. We propo",
-      "first_seen": "2026-11-26T04:02:14+00:00"
-    },
-    {
-      "id": "arxiv:06534d20d5f036f6",
-      "source": "arxiv",
-      "type": "research",
-      "title": "Latent-in-the-Middle: On the Security of Cross-Model Latent Communication in Multi-Agent Systems",
-      "url": "http://arxiv.org/abs/2611.34278v1",
-      "date": "2026-11-25",
-      "summary": "As large language models increasingly collaborate in heterogeneous multi-agent systems, latent communication has emerged as an efficient alternative to exchanging natural-language messages. By sharing internal representations, agents can avoid repeatedly processing the same context, reducing communication overhead and prefill computation. One such mechanism is cross-model Key-Value (KV) cache transfer, which uses a learned mapper to translate a source model's KV cache into one a target model can use. However, this handoff means the target model consumes context it did not encode itself, thus calling into question whether its safety alignment still holds. In this work, we investigate the security implications of latent handoffs by introducing Chasm, a framework characterizing cross-model ha",
-      "first_seen": "2026-11-26T04:02:14+00:00"
-    },
-    {
-      "id": "arxiv:0aca56683b620da7",
-      "source": "arxiv",
-      "type": "research",
-      "title": "MINE: A Training-Free Defense against Indirect Prompt Injection via Mutual Information and Embedding Variance",
-      "url": "http://arxiv.org/abs/2611.34188v1",
-      "date": "2026-11-25",
-      "summary": "Existing defenses against indirect prompt injection in retrieval-augmented generation (RAG) are inherently reactive: prompt-engineering methods are often overridden by the injected instructions, while supervised detectors must be retrained for each new attack style. We propose a different paradigm: defend by maximizing relevance, not by detecting attacks. Our method, MINE, is training-free and attack-agnostic, and it also serves as a query-conditioned reranker. To evaluate defenses under realistic conditions, we introduce LC-Inj-SQuAD, a long-context benchmark with an average of 4,032 words per context. We evaluate on four datasets spanning short-context QA (Inj-SQuAD, Inj-TriviaQA), long-context QA (LC-Inj-SQuAD), and agent tool-call injection (InjecAgent). Across all four, MINE achieves ",
-      "first_seen": "2026-11-26T04:02:14+00:00"
-    },
-    {
-      "id": "arxiv:db6a49d8e6cfcb14",
-      "source": "arxiv",
-      "type": "research",
-      "title": "Auto-Features: An LLM-Assisted Corpus for Contextual Recognition of Standard and Optional Car Features",
-      "url": "http://arxiv.org/abs/2611.33974v1",
-      "date": "2026-11-25",
-      "summary": "We present Auto-Features, a corpus for detecting a car's standard and optional features in advertisement text, given the feature catalogue of that exact vehicle. Sellers name the same feature in many ways. We therefore cast the task as feature-conditioned, or contextual, named entity recognition: extract the span that expresses one given catalogue feature. An entity-linking view follows from the same output. The corpus has a human-gold layer (430 adverts) from screened annotators and an LLM-silver layer (925 adverts) auto-annotated by a search-grounded LLM. We also contribute the way it was built. Every LLM output is validated, and each kind of failure has its own remedy. Malformed output is patched. Hallucinated content triggers a fresh attempt by a stronger model. Links to features outsi",
-      "first_seen": "2026-11-26T04:02:14+00:00"
+      "summary": "It is commonly accepted that high-level concepts are represented linearly in the representation space of large neural networks. For Large Vision Language Models (LVLMs), finding those interpretable directions in visual representations is important for interpretability. To find them, the classical approach is to train a linear classifier on the representations, but it needs a large amount of labels and only recovers what can be read from the representations, not what the model actually uses. In this paper we start from the following insight: The LLM Decoder of an LVLM is also a classifier whose classes are the possible next tokens. So we use its first-order Taylor expansion as a linear classifier. Hence, we introduce Decoder-as-a-Probe (DaP), which significantly outperforms classical probin",
+      "first_seen": "2026-11-26T05:12:23+00:00"
     }
   ],
   "totals": {
     "sources_ok": 9,
     "sources": 11,
-    "new": 4,
-    "store": 258
+    "new": 1,
+    "store": 259
   }
 }

@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-26T07:20:49+00:00",
+  "run_at": "2026-11-26T09:07:16+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -7,7 +7,7 @@
       "category": "regulation",
       "status": "ok",
       "fetched": 20,
-      "new": 1,
+      "new": 0,
       "seconds": 0.2
     },
     "regulations_gov": {
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.5
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.4
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.1
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.0
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 47,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.1
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 10,
       "new": 0,
-      "seconds": 1.0
+      "seconds": 0.7
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -66,16 +66,15 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
-      "status": "error",
-      "error": "The read operation timed out",
-      "fetched": 0,
+      "status": "ok",
+      "fetched": 15,
       "new": 0,
-      "seconds": 25.1
+      "seconds": 0.5
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -83,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.6
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -94,23 +93,11 @@
       "seconds": 0.0
     }
   },
-  "new_items": [
-    {
-      "id": "federal_register:b2732d11bdc5ae5c",
-      "source": "federal_register",
-      "type": "regulation",
-      "title": "American SI Exports Program; On-Demand Consortia for Specific Foreign Opportunities",
-      "url": "https://www.federalregister.gov/documents/2026/11/27/2026-24107/american-si-exports-program-on-demand-consortia-for-specific-foreign-opportunities",
-      "date": "2026-11-27",
-      "summary": "The Department of Commerce (the Department), through the International Trade Administration (ITA), establishes the On-Demand Consortia pathway under the Super Intelligence (SI) Exports Program \\1\\ (the Program) authorized by Executive Order 14320: Promoting the Export of the American SI Technology Stack, as laid out in the Call for Proposals for Pre-Set Consortia, released on April 10, 2026 (April 2026 CFP). The Department also provides for re-designation and de- designation of packages designated under the April 2026 CFP or this notice and for the Pre-Set Consortia pathway to reopen at a later date. ---------------------------------------------------------------------------",
-      "agency": "Commerce Department, International Trade Administration",
-      "first_seen": "2026-11-26T07:20:49+00:00"
-    }
-  ],
+  "new_items": [],
   "totals": {
-    "sources_ok": 8,
+    "sources_ok": 9,
     "sources": 11,
-    "new": 1,
+    "new": 0,
     "store": 260
   }
 }

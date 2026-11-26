@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-26T01:14:19+00:00",
+  "run_at": "2026-11-26T02:56:52+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 0.4
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 0.3
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -42,7 +42,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -50,16 +50,15 @@
       "status": "ok",
       "fetched": 47,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
       "category": "security",
-      "status": "error",
-      "error": "HTTP Error 403: rate limit exceeded",
-      "fetched": 0,
+      "status": "ok",
+      "fetched": 10,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 1.5
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -67,15 +66,15 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
       "status": "ok",
       "fetched": 15,
-      "new": 0,
-      "seconds": 0.4
+      "new": 3,
+      "seconds": 0.6
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -83,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.3
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -94,11 +93,42 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "arxiv:ee1a2b7af41316c6",
+      "source": "arxiv",
+      "type": "research",
+      "title": "The Detour Is the Danger: Preserving Security During LLM Agent Recovery",
+      "url": "http://arxiv.org/abs/2611.33605v1",
+      "date": "2026-11-25",
+      "summary": "LLM agents increasingly rely on external tools and reusable Skills to execute complex workflows, autonomously replanning when operations fail. However, such recovery may preserve task functionality while silently discarding the security protections required by the original workflow. In this paper, we investigate workflow security downgrade, a failure-induced security threat in which agents execute sensitive operations without satisfying their original protection requirements. Unlike prompt injection, this threat exploits autonomous recovery decisions triggered by execution failures, without modifying instructions or tool definitions. We systematically evaluate this behavior through fault injection in an executable MCP/Skill environment spanning seven LLMs, twelve task templates, and three ",
+      "first_seen": "2026-11-26T02:56:52+00:00"
+    },
+    {
+      "id": "arxiv:72acf6fef5f99a15",
+      "source": "arxiv",
+      "type": "research",
+      "title": "AVERT: Anomalous Value Erasure with Response Testing against Visual Prompt Injection",
+      "url": "http://arxiv.org/abs/2611.33532v1",
+      "date": "2026-11-24",
+      "summary": "Vision Language Models (VLMs) are vulnerable to visual prompt injection, in which an adversarially perturbed image forces the model to respond with the attacker's chosen content, such as malicious tool calls, website links, or advertisements, sometimes regardless of the user's question. Existing defenses, such as diffusion-based purification and image-token masking, mitigate these attacks at a substantial cost to the model's utility on benign inputs. To address this challenge, we propose AVERT, which removes adversarial feature directions only when the model's answer depends on them. Our key procedures involve identifying anomalous value subspaces and detecting answer dependence. To identify the anomalous value subspace, we compare the statistics of each input's attention-head outputs with",
+      "first_seen": "2026-11-26T02:56:52+00:00"
+    },
+    {
+      "id": "arxiv:415bd8c26034f0d6",
+      "source": "arxiv",
+      "type": "research",
+      "title": "Poisoning Self-Evolving Security Policies in LLM Agents",
+      "url": "http://arxiv.org/abs/2611.33385v1",
+      "date": "2026-11-24",
+      "summary": "Self-evolving defenses improve LLM-agent security by learning reusable policies from observed attacks. However, we demonstrate that this learning process itself can become an attack surface. Using SED (Self-Evolving Defense) in the AgentDojo benchmark, we construct a single prompt-injection episode that causes the defense to learn an over-broad policy and subsequently refuse legitimate requests. Across 10 Nemotron runs, every poisoned run over-refuses at least one legitimate task, while unrelated-task performance remains unchanged and the original prompt-injection defense remains effective. The attack also transfers to gpt-oss-120b; however, its poisoning mechanism depends on a successful initial prompt injection and therefore fails to activate when the target agent resists the underlying ",
+      "first_seen": "2026-11-26T02:56:52+00:00"
+    }
+  ],
   "totals": {
-    "sources_ok": 8,
+    "sources_ok": 9,
     "sources": 11,
-    "new": 0,
-    "store": 251
+    "new": 3,
+    "store": 254
   }
 }

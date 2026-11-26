@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-26T21:57:20+00:00",
+  "run_at": "2026-11-26T22:59:23+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -74,7 +74,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.5
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 1.4
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",

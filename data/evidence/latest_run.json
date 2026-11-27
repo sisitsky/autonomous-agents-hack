@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-27T11:59:07+00:00",
+  "run_at": "2026-11-27T13:17:49+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.5
+      "seconds": 0.2
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.1
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 45,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 8,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 1.5
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -74,16 +74,15 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.5
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
       "category": "disclosure",
-      "status": "error",
-      "error": "HTTP Error 500: Internal Server Error",
-      "fetched": 0,
+      "status": "ok",
+      "fetched": 16,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.4
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -96,7 +95,7 @@
   },
   "new_items": [],
   "totals": {
-    "sources_ok": 8,
+    "sources_ok": 9,
     "sources": 11,
     "new": 0,
     "store": 260

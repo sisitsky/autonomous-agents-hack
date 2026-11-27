@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-27T13:17:49+00:00",
+  "run_at": "2026-11-27T14:57:57+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -50,7 +50,7 @@
       "status": "ok",
       "fetched": 45,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -58,7 +58,7 @@
       "status": "ok",
       "fetched": 8,
       "new": 0,
-      "seconds": 1.5
+      "seconds": 1.9
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -82,7 +82,7 @@
       "status": "ok",
       "fetched": 16,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.7
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",

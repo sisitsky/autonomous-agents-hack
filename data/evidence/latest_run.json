@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-28T07:14:21+00:00",
+  "run_at": "2026-11-28T08:54:45+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -7,7 +7,7 @@
       "category": "regulation",
       "status": "ok",
       "fetched": 20,
-      "new": 0,
+      "new": 1,
       "seconds": 0.3
     },
     "regulations_gov": {
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -43,7 +43,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.1
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -51,7 +51,7 @@
       "status": "ok",
       "fetched": 46,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 1.1
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -59,7 +59,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 1.7
+      "seconds": 1.0
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -67,16 +67,15 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.8
+      "seconds": 0.5
     },
     "arxiv": {
       "name": "arXiv",
       "category": "research",
-      "status": "error",
-      "error": "The read operation timed out",
-      "fetched": 0,
+      "status": "ok",
+      "fetched": 15,
       "new": 0,
-      "seconds": 25.1
+      "seconds": 0.4
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -84,7 +83,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.4
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -95,11 +94,23 @@
       "seconds": 0.0
     }
   },
-  "new_items": [],
+  "new_items": [
+    {
+      "id": "federal_register:fc27d971b1c612ff",
+      "source": "federal_register",
+      "type": "regulation",
+      "title": "Agency Information Collection Activities; Submission for OMB Review; Comment Request; Fraud.gov Tip Intake and Referral Form",
+      "url": "https://www.federalregister.gov/documents/2026/11/30/2026-24266/agency-information-collection-activities-submission-for-omb-review-comment-request-fraudgov-tip",
+      "date": "2026-11-30",
+      "summary": "The Department of the Treasury will submit the following information collection request to the Office of Management and Budget (OMB) for review and clearance in accordance with the Paperwork Reduction Act of 1995, on or after the date of publication of this notice. The public is invited to submit comments on this request.",
+      "agency": "Treasury Department",
+      "first_seen": "2026-11-28T08:54:45+00:00"
+    }
+  ],
   "totals": {
-    "sources_ok": 7,
+    "sources_ok": 8,
     "sources": 11,
-    "new": 0,
-    "store": 263
+    "new": 1,
+    "store": 264
   }
 }

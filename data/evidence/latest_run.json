@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-28T12:59:33+00:00",
+  "run_at": "2026-11-28T14:06:09+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -8,7 +8,7 @@
       "status": "ok",
       "fetched": 20,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.2
     },
     "regulations_gov": {
       "name": "Regulations.gov",
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.3
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -51,7 +51,7 @@
       "status": "ok",
       "fetched": 46,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.4
     },
     "github_advisories": {
       "name": "GitHub Security Advisories",
@@ -67,7 +67,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
@@ -75,7 +75,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.8
+      "seconds": 7.9
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -83,7 +83,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 1.3
+      "seconds": 0.4
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",

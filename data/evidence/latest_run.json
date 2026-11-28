@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-28T19:55:30+00:00",
+  "run_at": "2026-11-28T20:50:25+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -17,7 +17,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.3
+      "seconds": 0.4
     },
     "congress_gov": {
       "name": "Congress.gov",
@@ -26,7 +26,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.4
     },
     "sec_press": {
       "name": "SEC press releases",
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.1
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -56,11 +56,10 @@
     "github_advisories": {
       "name": "GitHub Security Advisories",
       "category": "security",
-      "status": "error",
-      "error": "HTTP Error 403: rate limit exceeded",
+      "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 0.4
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -68,7 +67,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
@@ -76,7 +75,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.4
+      "seconds": 0.1
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
@@ -84,7 +83,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.2
+      "seconds": 0.3
     },
     "manual": {
       "name": "Manual evidence (data/incidents/)",
@@ -97,7 +96,7 @@
   },
   "new_items": [],
   "totals": {
-    "sources_ok": 7,
+    "sources_ok": 8,
     "sources": 11,
     "new": 0,
     "store": 264

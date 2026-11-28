@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-28T15:49:24+00:00",
+  "run_at": "2026-11-28T16:51:37+00:00",
   "window_days": 30,
   "sources": {
     "federal_register": {
@@ -34,7 +34,7 @@
       "status": "ok",
       "fetched": 1,
       "new": 0,
-      "seconds": 0.1
+      "seconds": 0.2
     },
     "cfpb": {
       "name": "CFPB newsroom",
@@ -43,7 +43,7 @@
       "error": "HTTP Error 403: Forbidden",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.0
+      "seconds": 0.1
     },
     "cisa_kev": {
       "name": "CISA Known Exploited Vulnerabilities",
@@ -59,7 +59,7 @@
       "status": "ok",
       "fetched": 0,
       "new": 0,
-      "seconds": 0.8
+      "seconds": 0.9
     },
     "mitre_atlas": {
       "name": "MITRE ATLAS case studies",
@@ -67,7 +67,7 @@
       "status": "ok",
       "fetched": 25,
       "new": 0,
-      "seconds": 0.7
+      "seconds": 0.6
     },
     "arxiv": {
       "name": "arXiv",
@@ -75,7 +75,7 @@
       "status": "ok",
       "fetched": 15,
       "new": 0,
-      "seconds": 0.6
+      "seconds": 0.4
     },
     "edgar": {
       "name": "SEC EDGAR full-text search",
